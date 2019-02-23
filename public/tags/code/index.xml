@@ -2,22 +2,22 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Code on Irregularly Scheduled Programming</title>
-    <link>http://determined-wing-c5cc93.netlify.com/tags/code/</link>
+    <link>/tags/code/</link>
     <description>Recent content in Code on Irregularly Scheduled Programming</description>
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>website@jcarroll.com.au (Jonathan Carroll)</managingEditor>
     <webMaster>website@jcarroll.com.au (Jonathan Carroll)</webMaster>
     <lastBuildDate>Tue, 08 Mar 2016 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="http://determined-wing-c5cc93.netlify.com/tags/code/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/code/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Code Sample</title>
-      <link>http://determined-wing-c5cc93.netlify.com/post/2016-03-08-code-sample/</link>
+      <link>/post/2016-03-08-code-sample/</link>
       <pubDate>Tue, 08 Mar 2016 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/post/2016-03-08-code-sample/</guid>
+      <guid>/post/2016-03-08-code-sample/</guid>
       <description>&lt;p&gt;The following are two code samples using syntax highlighting.&lt;/p&gt;</description>
     </item>
     

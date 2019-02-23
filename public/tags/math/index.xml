@@ -2,22 +2,22 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Math on Irregularly Scheduled Programming</title>
-    <link>http://determined-wing-c5cc93.netlify.com/tags/math/</link>
+    <link>/tags/math/</link>
     <description>Recent content in Math on Irregularly Scheduled Programming</description>
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>website@jcarroll.com.au (Jonathan Carroll)</managingEditor>
     <webMaster>website@jcarroll.com.au (Jonathan Carroll)</webMaster>
     <lastBuildDate>Sun, 05 Mar 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="http://determined-wing-c5cc93.netlify.com/tags/math/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/math/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Math Sample</title>
-      <link>http://determined-wing-c5cc93.netlify.com/post/2017-03-05-math-sample/</link>
+      <link>/post/2017-03-05-math-sample/</link>
       <pubDate>Sun, 05 Mar 2017 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/post/2017-03-05-math-sample/</guid>
+      <guid>/post/2017-03-05-math-sample/</guid>
       <description>&lt;p&gt;KaTeX can be used to generate complex math formulas server-side.&lt;/p&gt;
 
 &lt;p&gt;$$

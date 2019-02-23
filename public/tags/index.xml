@@ -2,94 +2,94 @@
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>Tags on Irregularly Scheduled Programming</title>
-    <link>http://determined-wing-c5cc93.netlify.com/tags/</link>
+    <link>/tags/</link>
     <description>Recent content in Tags on Irregularly Scheduled Programming</description>
     <generator>Hugo -- gohugo.io</generator>
     <managingEditor>website@jcarroll.com.au (Jonathan Carroll)</managingEditor>
     <webMaster>website@jcarroll.com.au (Jonathan Carroll)</webMaster>
     <lastBuildDate>Tue, 07 Mar 2017 00:00:00 +0000</lastBuildDate>
     
-	<atom:link href="http://determined-wing-c5cc93.netlify.com/tags/index.xml" rel="self" type="application/rss+xml" />
+	<atom:link href="/tags/index.xml" rel="self" type="application/rss+xml" />
     
     
     <item>
       <title>Bigimg</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/bigimg/</link>
+      <link>/tags/bigimg/</link>
       <pubDate>Tue, 07 Mar 2017 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/bigimg/</guid>
+      <guid>/tags/bigimg/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Code</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/code/</link>
+      <link>/tags/code/</link>
       <pubDate>Tue, 08 Mar 2016 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/code/</guid>
+      <guid>/tags/code/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Example</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/example/</link>
+      <link>/tags/example/</link>
       <pubDate>Mon, 20 Mar 2017 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/example/</guid>
+      <guid>/tags/example/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Markdown</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/markdown/</link>
+      <link>/tags/markdown/</link>
       <pubDate>Fri, 20 Feb 2015 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/markdown/</guid>
+      <guid>/tags/markdown/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Math</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/math/</link>
+      <link>/tags/math/</link>
       <pubDate>Sun, 05 Mar 2017 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/math/</guid>
+      <guid>/tags/math/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Photoswipe</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/photoswipe/</link>
+      <link>/tags/photoswipe/</link>
       <pubDate>Mon, 20 Mar 2017 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/photoswipe/</guid>
+      <guid>/tags/photoswipe/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Plot</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/plot/</link>
+      <link>/tags/plot/</link>
       <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/plot/</guid>
+      <guid>/tags/plot/</guid>
       <description></description>
     </item>
     
     <item>
       <title>R Markdown</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/r-markdown/</link>
+      <link>/tags/r-markdown/</link>
       <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/r-markdown/</guid>
+      <guid>/tags/r-markdown/</guid>
       <description></description>
     </item>
     
     <item>
       <title>Regression</title>
-      <link>http://determined-wing-c5cc93.netlify.com/tags/regression/</link>
+      <link>/tags/regression/</link>
       <pubDate>Thu, 23 Jul 2015 21:13:14 -0500</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>http://determined-wing-c5cc93.netlify.com/tags/regression/</guid>
+      <guid>/tags/regression/</guid>
       <description></description>
     </item>
     
