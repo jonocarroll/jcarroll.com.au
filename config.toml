@@ -12,6 +12,8 @@ pygmentsCodefencesGuessSyntax = true
 #pygmentOptions = "linenos=inline"
 disqusShortname = "jcarroll-com-au"
 googleAnalytics = "UA-135066967-1"
+enableGitInfo = true
+enableEmoji = true
 
 [Params]
 #  homeTitle = "Beautiful Hugo Theme" # Set a different text for the header on the home page
