@@ -1,4 +1,4 @@
-baseurl = "http://determined-wing-c5cc93.netlify.com"
+baseurl = "https://determined-wing-c5cc93.netlify.com"
 DefaultContentLanguage = "en"
 #DefaultContentLanguage = "ja"
 title = "Irregularly Scheduled Programming"
