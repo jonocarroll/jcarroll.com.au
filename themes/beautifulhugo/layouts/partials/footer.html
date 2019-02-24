@@ -55,7 +55,8 @@
         <p class="credits theme-by text-muted">
           {{ i18n "poweredBy" . | safeHTML }}
           {{ if $.GitInfo }} 
-            {{ .GitInfo.AbbreviatedHash }}
+            &nbsp;&bull;&nbsp;
+              <a href = "{{ .Site.Params.commit }}{{ .GitInfo.AbbreviatedHash }}">Commit: {{ .GitInfo.AbbreviatedHash }}</a>
           {{ end }}
         </p>
       </div>
