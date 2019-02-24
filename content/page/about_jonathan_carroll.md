@@ -1,7 +1,7 @@
 ---
 comments: false
-subtitle: Why you'd want to go on a date with me
-title: About me
+subtitle: Bio
+title: Dr Jonathan Carroll, PhD
 ---
 
 My name is Inigo Montoya. I have the following qualities:

@@ -68,11 +68,6 @@
   </url>
   
   <url>
-    <loc>/page/about/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-  </url>
-  
-  <url>
     <loc>/tags/bigimg/</loc>
     <lastmod>2019-02-23T23:05:03+10:30</lastmod>
     <priority>0</priority>
@@ -87,6 +82,14 @@
     <loc>/tags/code/</loc>
     <lastmod>2019-02-23T23:05:03+10:30</lastmod>
     <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/page/about_jonathan_carroll/</loc>
+  </url>
+  
+  <url>
+    <loc>/page/cv_jonathan_carroll/</loc>
   </url>
   
   <url>
@@ -109,7 +112,6 @@
   
   <url>
     <loc>/page/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
     <priority>0</priority>
   </url>
   

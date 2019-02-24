@@ -75,33 +75,38 @@ enableEmoji = true
     url = ""
     weight = 1
 
+#[[menu.main]]
+#    name = "About Me"
+#    url = "page/about/"
+#    weight = 3
+
 [[menu.main]]
+    identifier = "aboutme"
     name = "About Me"
-    url = "page/about/"
+    weight = 2
+
+[[menu.main]]
+    parent = "aboutme"
+    name = "Bio"
+    url = "page/about_jonathan_carroll"
+    weight = 1
+
+[[menu.main]]
+    parent = "aboutme"
+    name = "CV"
+    url = "page/cv_jonathan_carroll"
+    weight = 2
+
+[[menu.main]]
+    parent = "aboutme"
+    name = "Projects"
+    url = "page/projects_jonathan_carroll"
     weight = 3
 
-#[[menu.main]]
-#    identifier = "samples"
-#    name = "Samples"
-#    weight = 2
-#
-#[[menu.main]]
-#    parent = "samples"
-#    name = "Big Image Sample"
-#    url = "post/2017-03-07-bigimg-sample"
-#    weight = 1
-#
-#[[menu.main]]
-#    parent = "samples"
-#    name = "Math Sample"
-#    url = "post/2017-03-05-math-sample"
-#    weight = 2
-#
-#[[menu.main]]
-#    parent = "samples"
-#    name = "Code Sample"
-#    url = "post/2016-03-08-code-sample"
-#    weight = 3
+[[menu.main]]
+    name = "Book"
+    url = "https://beyondspreadsheetswithr.com/"
+    weight = 3
 
 [[menu.main]]
     name = "Tags"

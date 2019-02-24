@@ -180,14 +180,23 @@ Association football, more commonly known as football or soccer,[2] is a sport p
     </item>
     
     <item>
-      <title>About me</title>
-      <link>/page/about/</link>
+      <title>Dr Jonathan Carroll, PhD</title>
+      <link>/page/about_jonathan_carroll/</link>
       <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
       <author>website@jcarroll.com.au (Jonathan Carroll)</author>
-      <guid>/page/about/</guid>
+      <guid>/page/about_jonathan_carroll/</guid>
       <description>My name is Inigo Montoya. I have the following qualities:
  I rock a great mustache I&amp;rsquo;m extremely loyal to my family  What else do you need?
 my history To be honest, I&amp;rsquo;m having some trouble remembering right now, so why don&amp;rsquo;t you just watch my movie and it will answer all your questions.</description>
+    </item>
+    
+    <item>
+      <title>Dr Jonathan Carroll, PhD</title>
+      <link>/page/cv_jonathan_carroll/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/page/cv_jonathan_carroll/</guid>
+      <description>Education  CRAN Packages  mathpix ….. GitHub | GitLab ggghost ….. GitHub | GitLab   Development Packages   name stargazers    Font-Awesome-Pro 6360  rweekly.org 259  mathpix 150  ggshape 68  ggeasy 56  bomrang 46  ggghost 42  regexmagic 26  githubtools 24  dash 23  importAs 20  wayback 18  realtime 14  htmlhelp 14  tidyGDPR 11  starryeyes 10  butteRfly 8  opr 7  22degrees 6  btts 6  runkeepR 6  snowball 6  Book 5  VolunteerVignettes 5  ozdata 5  FacileDataSet 3  AUelection2016 3  jcarroll.</description>
     </item>
     
   </channel>
