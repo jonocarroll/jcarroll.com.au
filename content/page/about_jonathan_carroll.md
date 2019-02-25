@@ -37,5 +37,5 @@ To be honest, I'm having some trouble remembering right now, so why don't you ju
 </div>
 
 <script>
-    new GitHubCalendar(".calendar", "your-username");
+    new GitHubCalendar(".calendar", "jonocarroll");
 </script>
