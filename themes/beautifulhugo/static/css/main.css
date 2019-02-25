@@ -804,3 +804,6 @@ h4.see-also {
  ul.share li:hover .fab {
   transform: scale(1.4)
 }
+
+/* --- Smaller code --- */
+code{padding:2px 4px;font-size:85%;color:#bb1212;background-color:#c5919114;border-radius:4px}
