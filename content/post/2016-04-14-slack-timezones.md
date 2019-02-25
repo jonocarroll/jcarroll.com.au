@@ -2,7 +2,7 @@
 title: "#auunconf slack users' timezone locations"
 author: Jonathan Carroll
 date: 2016-04-14 23:04:15
-slug: testingyaml
+slug: slack-timezones
 categories: [R]
 tags: [rstats]
 type: ''

@@ -2,7 +2,7 @@
 title: 'Project Euler Q3 :: Largest prime factor'
 author: Jonathan Carroll
 date: 2015-01-03 00:52:07
-slug: testingyaml
+slug: project-euler-q3
 categories: [R]
 tags: [rstats]
 type: ''

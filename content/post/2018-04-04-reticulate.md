@@ -2,7 +2,7 @@
 title: Constricted development with reticulate
 author: Jonathan Carroll
 date: 2018-04-04 23:38:05
-slug: testingyaml
+slug: reticulate
 categories: [R]
 tags: [rstats]
 type: ''

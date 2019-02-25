@@ -2,7 +2,7 @@
 title: Bad Neighbours (no, not the movie)
 author: Jonathan Carroll
 date: 2016-04-30 01:06:29
-slug: testingyaml
+slug: bad-neighbours
 categories: [R]
 tags: [rstats]
 type: ''

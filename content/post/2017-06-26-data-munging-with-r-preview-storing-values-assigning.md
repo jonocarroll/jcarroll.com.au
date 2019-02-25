@@ -2,7 +2,7 @@
 title: 'Data Munging With R Preview &#8212; Storing Values (Assigning)'
 author: Jonathan Carroll
 date: 2017-06-26 23:10:03
-slug: testingyaml
+slug: data-munging-with-r-preview-storing-values-assigning
 categories: [R]
 tags: [rstats]
 type: ''

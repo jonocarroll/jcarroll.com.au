@@ -2,7 +2,7 @@
 title: Solving Inequality (the math kind)
 author: Jonathan Carroll
 date: 2016-04-27 22:47:55
-slug: testingyaml
+slug: solving-inequality-the-math-kind
 categories: [R]
 tags: [rstats]
 type: ''

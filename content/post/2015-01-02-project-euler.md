@@ -2,7 +2,7 @@
 title: Project Euler
 author: Jonathan Carroll
 date: 2015-01-02 22:27:10
-slug: testingyaml
+slug: project-euler
 categories: [R]
 tags: [rstats]
 type: ''

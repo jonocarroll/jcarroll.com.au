@@ -2,7 +2,7 @@
 title: Is it crowded in here?
 author: Jonathan Carroll
 date: 2016-03-09 22:31:13
-slug: testingyaml
+slug: is-it-crowded-in-here
 categories: [R]
 tags: [rstats]
 type: ''

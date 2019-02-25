@@ -2,7 +2,7 @@
 title: 'Project Euler Q4 :: Largest palindrome product'
 author: Jonathan Carroll
 date: 2015-01-08 22:24:09
-slug: testingyaml
+slug: project-euler-q4
 categories: [R]
 tags: [rstats]
 type: ''

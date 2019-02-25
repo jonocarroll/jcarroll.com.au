@@ -2,7 +2,7 @@
 title: Adding strings in R
 author: Jonathan Carroll
 date: 2018-10-06 00:09:15
-slug: testingyaml
+slug: adding-strings-in-r
 categories: [R]
 tags: [rstats]
 type: ''

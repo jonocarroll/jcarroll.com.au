@@ -4,7 +4,7 @@ title: >
   (except when it works)
 author: Jonathan Carroll
 date: 2017-09-04 15:02:07
-slug: testingyaml
+slug: thou-shalt-not-compare-numeric-values-except-when-it-works
 categories: [R]
 tags: [rstats]
 type: ''

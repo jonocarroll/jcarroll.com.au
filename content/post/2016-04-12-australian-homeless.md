@@ -2,7 +2,7 @@
 title: '52vis Week 2 Challenge -- Australian Version'
 author: Jonathan Carroll
 date: 2016-04-12 21:18:19
-slug: testingyaml
+slug: australian-homeless
 categories: [R]
 tags: [rstats]
 type: ''

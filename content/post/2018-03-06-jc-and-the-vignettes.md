@@ -2,7 +2,7 @@
 title: JC and the Vignettes
 author: Jonathan Carroll
 date: 2018-03-06 15:55:31
-slug: testingyaml
+slug: jc-and-the-vignettes
 categories: [R]
 tags: [rstats]
 type: ''

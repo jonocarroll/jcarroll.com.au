@@ -2,9 +2,9 @@
 title: Even more images as x-axis labels
 author: Jonathan Carroll
 date: 2018-10-16 23:18:32
-slug: testingyaml
+slug: even-more-images-as-x-axis-labels
 categories: [R]
-tags: [rstats]
+tags: [rstats, ggplot2, tikzDevice]
 type: ''
 subtitle: ''
 image: ''
@@ -31,7 +31,8 @@ One of these posts was recently shared again by the amazing <a href="https://twi
 The <a href="https://groups.google.com/forum/#!topic/ggplot2/OPhpWtVcwtY">example code</a> is straightforward enough
 
 ```r
-options(tikzLatexPackages = c(getOption('tikzLatexPackages'),"\\usepackage{acide-amine}\n")) 
+options(tikzLatexPackages = c(getOption('tikzLatexPackages'),
+                              "\\usepackage{acide-amine}\n")) 
 
 d = data.frame(x=1:10, y=1:10, f=factor(sample(letters[1:2], 10, repl=TRUE))) 
 
@@ -47,7 +48,7 @@ print(p)
 
 and produces this
 
-[caption align="center" width="680"]<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/annotation.png" />annotation.png[/caption]
+<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/annotation.png" />annotation.png[/caption]
 
 This got me curious, though -- if it can process _arbitrary_ $\LaTeX$, could it process a `\\includegraphics` call?
 

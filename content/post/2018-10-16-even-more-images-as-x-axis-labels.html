@@ -2,9 +2,9 @@
 title: Even more images as x-axis labels
 author: Jonathan Carroll
 date: 2018-10-16 23:18:32
-slug: testingyaml
+slug: even-more-images-as-x-axis-labels
 categories: [R]
-tags: [rstats]
+tags: [rstats, ggplot2, tikzDevice]
 type: ''
 subtitle: ''
 image: ''
@@ -25,7 +25,8 @@ image: ''
 </p>
 <p>One of these posts was recently shared again by the amazing <a href="https://twitter.com/dataandme">#rstats amplifier Mara Averick</a> (if you’re not following her on Twitter, you’re missing out) and <a href="https://twitter.com/baptiste_auguie"><span class="citation">@baptiste_auguie</span></a> (the saviour of the previous implementation) mentioned that he had written a ‘hack’ to get chemical symbols as a categorical axis label using <code>tikzDevice</code>. That package leverages <span class="math inline">\(\LaTeX\)</span> (of which I am <i>very</i> familiar, having written my PhD thesis entirely in <span class="math inline">\(\LaTeX\)</span> many moons ago) to treat all of the text in an image as potential <span class="math inline">\(\LaTeX\)</span> commands and produce a working source code which generates the required plot.</p>
 <p>The <a href="https://groups.google.com/forum/#!topic/ggplot2/OPhpWtVcwtY">example code</a> is straightforward enough</p>
-<pre class="r"><code>options(tikzLatexPackages = c(getOption(&#39;tikzLatexPackages&#39;),&quot;\\usepackage{acide-amine}\n&quot;)) 
+<pre class="r"><code>options(tikzLatexPackages = c(getOption(&#39;tikzLatexPackages&#39;),
+                              &quot;\\usepackage{acide-amine}\n&quot;)) 
 
 d = data.frame(x=1:10, y=1:10, f=factor(sample(letters[1:2], 10, repl=TRUE))) 
 
@@ -38,7 +39,7 @@ p &lt;- qplot(x,y,data=d) + theme_bw() +
 tikz(&quot;annotation.tex&quot;, standAlone=T, width=4, height=4) 
 print(p) </code></pre>
 <p>and produces this</p>
-<p>[caption align=“center” width=“680”]<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/annotation.png" />annotation.png[/caption]</p>
+<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/annotation.png" />annotation.png[/caption]</p>
 <p>This got me curious, though – if it can process <em>arbitrary</em> <span class="math inline">\(\LaTeX\)</span>, could it process a <code>\\includegraphics</code> call?</p>
 {{% tweet "1050535371241476096" %}}
 <p>Yes, as it turns out.</p>

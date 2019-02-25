@@ -2,7 +2,7 @@
 title: 'Project Euler Q2 :: Even Fibonacci numbers'
 author: Jonathan Carroll
 date: 2015-01-02 22:56:50
-slug: testingyaml
+slug: project-euler-q2
 categories: [R]
 tags: [rstats]
 type: ''

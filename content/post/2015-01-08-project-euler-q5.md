@@ -2,7 +2,7 @@
 title: 'Project Euler Q5 :: Smallest multiple'
 author: Jonathan Carroll
 date: 2015-01-08 23:25:58
-slug: testingyaml
+slug: project-euler-q5
 categories: [R]
 tags: [rstats]
 type: ''

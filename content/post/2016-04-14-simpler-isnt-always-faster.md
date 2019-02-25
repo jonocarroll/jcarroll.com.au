@@ -2,7 +2,7 @@
 title: "Simpler isn't always faster"
 author: Jonathan Carroll
 date: 2016-04-14 21:52:45
-slug: testingyaml
+slug: simpler-isnt-always-faster
 categories: [R]
 tags: [rstats]
 type: ''
