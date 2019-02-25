@@ -116,3 +116,14 @@ The other was specifying whether or not to include missing levels when consideri
 The cleanup really made me think about how much 'fluff' some of my code can have. Sure, it's nice to encapsulate some logic in a small additional function, but sometimes you can actually replace all of that with a one-liner and not need all that. If you're ever in the mood to see how compact internal code can really be, check out the source of `forcats`.
 
 Hopefully this pattern of `filter(fct_match(f, lvls))` is useful to others. It's certainly going to save me overlooking some typos.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
