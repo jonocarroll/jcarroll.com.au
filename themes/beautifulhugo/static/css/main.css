@@ -136,7 +136,7 @@ img {
 /* --- Navbar --- */
 
 .navbar-custom {
-  background: #F5F5F5;
+  background: #2466b9;
   border-bottom: 1px solid #EAEAEA;
   font-family: 'Open Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
@@ -363,6 +363,7 @@ footer .theme-by {
 .post-preview .post-title {
   font-size: 30px;
   margin-top: 0;
+  color: #2466b9;
 }
 .post-preview .post-subtitle {
   margin: 0;
@@ -410,11 +411,13 @@ footer .theme-by {
 .post-preview .post-read-more {
   font-weight: 800;
   float: right;
+  color: #2466b9;
 }
 
 @media only screen and (min-width: 768px) {
   .post-preview .post-title {
-    font-size: 36px;
+    font-size: 36px
+    color: #2466b9;
   }
 }
 
