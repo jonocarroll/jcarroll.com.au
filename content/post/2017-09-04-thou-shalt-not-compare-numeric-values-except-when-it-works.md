@@ -5,7 +5,7 @@ title: >
 author: Jonathan Carroll
 date: 2017-09-04 15:02:07
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

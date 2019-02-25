@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Thou shalt not compare numeric values (except when it works)
+ - Irregularly Scheduled Programming</title>
+  <meta property="og:title" content="Thou shalt not compare numeric values (except when it works)
+" />
+  <meta name="twitter:title" content="Thou shalt not compare numeric values (except when it works)
+" />
+  <meta name="description" content="This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.">
+  <meta property="og:description" content="This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.">
+  <meta name="twitter:description" content="This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ …">
+  <meta name="author" content="Jonathan Carroll"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "Irregularly Scheduled Programming",
+    
+    "url": "/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "/post/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works/",
+          "name": "Thou shalt not compare numeric values (except when it works)
+"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "Jonathan Carroll"
+  },
+  "headline": "Thou shalt not compare numeric values (except when it works)
+",
+  "description" : "This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.
+",
+  "inLanguage" : "en",
+  "wordCount": 1076,
+  "datePublished" : "2017-09-04T15:02:07",
+  "dateModified" : "2017-09-04T15:02:07",
+  "image" : "/img/logo.png",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "/post/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "/img/logo.png",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="Thou shalt not compare numeric values (except when it works)
+" />
+<meta property="og:description" content="This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.">
+<meta property="og:image" content="/img/logo.png" />
+<meta property="og:url" content="/post/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Irregularly Scheduled Programming" />
+  <meta name="twitter:title" content="Thou shalt not compare numeric values (except when it works)
+" />
+  <meta name="twitter:description" content="This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ …">
+  <meta name="twitter:image" content="/img/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@carroll_jono" />
+  <meta name="twitter:creator" content="@carroll_jono" />
+  <link href='/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="/img/logo.png" />
+  <meta name="twitter:image" content="/img/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@carroll_jono" />
+  <meta name="twitter:creator" content="@carroll_jono" />
+  <meta property="og:url" content="/post/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Irregularly Scheduled Programming" />
+
+  <meta name="generator" content="Hugo 0.54.0" />
+  <link rel="alternate" href="/index.xml" type="application/rss+xml" title="Irregularly Scheduled Programming">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="/css/highlight.min.css" /><link rel="stylesheet" href="/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-135066967-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/">Irregularly Scheduled Programming</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent">About Me</a>
+              <div class="navlinks-children">
+                
+                  <a href="/page/about_jonathan_carroll">Bio</a>
+                
+                  <a href="/page/cv_jonathan_carroll">CV</a>
+                
+                  <a href="/page/projects_jonathan_carroll">Projects</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Book" href="https://beyondspreadsheetswithr.com/">Book</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Tags" href="/tags">Tags</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="Irregularly Scheduled Programming" href="/">
+            <img class="avatar-img" src="/img/logo.png" alt="Irregularly Scheduled Programming" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>Thou shalt not compare numeric values (except when it works)
+</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on September 4, 2017
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-clock"></i>&nbsp;6&nbsp;minutes
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-book"></i>&nbsp;1076&nbsp;words
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;Jonathan Carroll
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p>This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.</p>
+
+<p>I’ve been working on the ‘merging data’ part of <a href="https://www.manning.com/books/data-munging-with-r" target="_blank">my book</a> and, as I do when I’m writing this stuff, I had a play around with some examples to see if there was anything funky going on if a reader was to try something slightly different. I’ve been using <code>dplyr</code> for the examples after being thoroughly convinced on Twitter to do so. It’s going well. Mostly.</p>
+
+<p>[code language=&ldquo;r&rdquo;]## if you haven&rsquo;t already done so, load dplyr
+suppressPackageStartupMessages(library(dplyr))[/code]</p>
+
+<p>My example involved joining together two <code>tibble</code>s containing text values. Nothing too surprising. I wondered though; do numbers behave the way I expect?</p>
+<p>Now, a big rule in programming is 'thou shalt not compare numbers', and it holds especially true <a href="http://0.30000000000000004.com/" target="_blank">when numbers aren't exactly integers</a>. This is because representing non-integers is hard, and what you see on the screen isn't always what the computer sees internally.</p>
+
+<p>[caption align=&ldquo;alignnone&rdquo; width=&ldquo;680&rdquo;]<a href="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg"><img src="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg" alt="Thou shalt not compare numbers." width="680" height="485" class="size-large" /></a> Thou shalt not compare numbers.[/caption]</p>
+
+<p><p>If I had a <code>tibble</code> where the column I would use to <code>join</code> had integers</p>
+[code language=&ldquo;r&rdquo;]dataA &lt;- tribble(
+    ~X, ~Y,
+    0L, 100L,
+    1L, 101L,
+    2L, 102L,
+    3L, 103L
+)
+dataA[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 4 x 2</p>
+
+<h2 id="x-y">X     Y</h2>
+
+<h2 id="lt-int-gt-lt-int-gt">&lt;int&gt; &lt;int&gt;</h2>
+
+<h2 id="1-0-100">1     0   100</h2>
+
+<h2 id="2-1-101">2     1   101</h2>
+
+<h2 id="3-2-102">3     2   102</h2>
+
+<h2 id="4-3-103-code">4     3   103[/code]</h2>
+
+<p><p>and another <code>tibble</code> with <code>numeric</code> in that column</p>
+[code language=&ldquo;r&rdquo;]dataB &lt;- tribble(
+    ~X, ~Z,
+    0, 1000L,
+    1, 1001L,
+    2, 1002L,
+    3, 1003L
+)
+dataB[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 4 x 2</p>
+
+<h2 id="x-z">X     Z</h2>
+
+<h2 id="lt-dbl-gt-lt-int-gt">&lt;dbl&gt; &lt;int&gt;</h2>
+
+<h2 id="1-0-1000">1     0  1000</h2>
+
+<h2 id="2-1-1001">2     1  1001</h2>
+
+<h2 id="3-2-1002">3     2  1002</h2>
+
+<h2 id="4-3-1003-code">4     3  1003[/code]</h2>
+
+<p><p>would they still <code>join</code>?</p>
+[code language=&ldquo;r&rdquo;]full_join(dataA, dataB)[/code]
+[code language=&ldquo;r&rdquo;]## Joining, by = &quot;X&quot;[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 4 x 3</p>
+
+<h2 id="x-y-z">X     Y     Z</h2>
+
+<h2 id="lt-dbl-gt-lt-int-gt-lt-int-gt">&lt;dbl&gt; &lt;int&gt; &lt;int&gt;</h2>
+
+<h2 id="1-0-100-1000">1     0   100  1000</h2>
+
+<h2 id="2-1-101-1001">2     1   101  1001</h2>
+
+<h2 id="3-2-102-1002">3     2   102  1002</h2>
+
+<h2 id="4-3-103-1003-code">4     3   103  1003[/code]</h2>
+
+<p><p>Okay, sure. <code>R</code> treats these as close enough to join. I mean, maybe it shouldn’t, but we’ll work with what we have. <code>R</code> doesn’t always think these are equal</p>
+[code language=&ldquo;r&rdquo;]identical(0L, 0)[/code]
+[code language=&ldquo;r&rdquo;]## [1] FALSE[/code]
+[code language=&ldquo;r&rdquo;]identical(2L, 2)[/code]
+[code language=&ldquo;r&rdquo;]## [1] FALSE[/code]
+<p>though sometimes it does</p>
+[code language=&ldquo;r&rdquo;]0L == 0[/code]
+[code language=&ldquo;r&rdquo;]## [1] TRUE[/code]
+[code language=&ldquo;r&rdquo;]2L == 2[/code]
+[code language=&ldquo;r&rdquo;]## [1] TRUE[/code]
+<p>(<code>==</code> coerces types before comparing). Well, what if one of these just ‘looks like’ the other value (can be coerced to the same?)</p>
+[code language=&ldquo;r&rdquo;]dataC &lt;- tribble(
+    ~X, ~Z,
+    &quot;0&quot;, 100L,
+    &quot;1&quot;, 101L,
+    &quot;2&quot;, 102L,
+    &quot;3&quot;, 103L
+)
+dataC[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 4 x 2</p>
+
+<h2 id="x-z-1">X     Z</h2>
+
+<h2 id="lt-chr-gt-lt-int-gt">&lt;chr&gt; &lt;int&gt;</h2>
+
+<h2 id="1-0-100-1">1     0   100</h2>
+
+<h2 id="2-1-101-1">2     1   101</h2>
+
+<h2 id="3-2-102-1">3     2   102</h2>
+
+<h2 id="4-3-103-code-1">4     3   103[/code]</h2>
+
+<p>[code language=&ldquo;r&rdquo;]full_join(dataA, dataC) [/code]
+[code language=&ldquo;r&rdquo;]## Joining, by = &quot;X&quot;[/code]
+[code language=&ldquo;r&rdquo;]## Error in full_join_impl(x, y, by$x, by$y, suffix$x, suffix$y, check_na_matches(na_matches)): Can&rsquo;t join on &lsquo;X&rsquo; x &lsquo;X&rsquo; because of incompatible types (character / integer)[/code]
+<p>That’s probably wise. Of course, <code>R</code> is perfectly happy with things like</p>
+[code language=&ldquo;r&rdquo;]&quot;2&quot;:&quot;5&quot;[/code]
+[code language=&ldquo;r&rdquo;]## [1] 2 3 4 5[/code]
+<p>and <code>==</code> thinks that’s fine</p>
+[code language=&ldquo;r&rdquo;]&quot;0&quot; == 0L[/code]
+[code language=&ldquo;r&rdquo;]## [1] TRUE[/code]
+[code language=&ldquo;r&rdquo;]&quot;2&quot; == 2L[/code]
+[code language=&ldquo;r&rdquo;]## [1] TRUE[/code]
+<p>but who am I to argue?</p>
+<p>Anyway, how far apart can those integers and numerics be before they aren’t able to be joined? What if we shift the ‘numeric in name only’ values away from the integers just a teensy bit? <code>.Machine$double.eps</code> is the built-in value for ‘the tiniest number you can produce’. On this system it’s 2.22044610^{-16}.</p>
+[code language=&ldquo;r&rdquo;]dataBeps &lt;- tribble(
+    ~X, ~Z,
+    0 + .Machine$double.eps, 1000L,
+    1 + .Machine$double.eps, 1001L,
+    2 + .Machine$double.eps, 1002L,
+    3 + .Machine$double.eps, 1003L
+)
+dataBeps[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 4 x 2</p>
+
+<h2 id="x-z-2">X     Z</h2>
+
+<h2 id="lt-dbl-gt-lt-int-gt-1">&lt;dbl&gt; &lt;int&gt;</h2>
+
+<h2 id="1-2-220446e-16-1000">1 2.220446e-16  1000</h2>
+
+<h2 id="2-1-000000e-00-1001">2 1.000000e+00  1001</h2>
+
+<h2 id="3-2-000000e-00-1002">3 2.000000e+00  1002</h2>
+
+<h2 id="4-3-000000e-00-1003-code">4 3.000000e+00  1003[/code]</h2>
+
+<p>[code language=&ldquo;r&rdquo;]full_join(dataA, dataBeps) [/code]
+[code language=&ldquo;r&rdquo;]## Joining, by = &quot;X&quot;[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 6 x 3</p>
+
+<h2 id="x-y-z-1">X     Y     Z</h2>
+
+<h2 id="lt-dbl-gt-lt-int-gt-lt-int-gt-1">&lt;dbl&gt; &lt;int&gt; &lt;int&gt;</h2>
+
+<h2 id="1-0-000000e-00-100-na">1 0.000000e+00   100    NA</h2>
+
+<h2 id="2-1-000000e-00-101-na">2 1.000000e+00   101    NA</h2>
+
+<h2 id="3-2-000000e-00-102-1002">3 2.000000e+00   102  1002</h2>
+
+<h2 id="4-3-000000e-00-103-1003">4 3.000000e+00   103  1003</h2>
+
+<h2 id="5-2-220446e-16-na-1000">5 2.220446e-16    NA  1000</h2>
+
+<h2 id="6-1-000000e-00-na-1001-code">6 1.000000e+00    NA  1001[/code]</h2>
+
+<p><p>Well, that’s… weirder. The values offset from <code>2</code> and <code>3</code> joined fine, but the <code>0</code> and <code>1</code> each got multiple copies since <code>R</code> thinks they’re different. What if we offset a little further?</p>
+[code language=&ldquo;r&rdquo;]dataB2eps &lt;- tribble(
+    ~X, ~Z,
+    0 + 2<em>.Machine$double.eps, 1000L,
+    1 + 2</em>.Machine$double.eps, 1001L,
+    2 + 2<em>.Machine$double.eps, 1002L,
+    3 + 2</em>.Machine$double.eps, 1003L
+)
+dataB2eps[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 4 x 2</p>
+
+<h2 id="x-z-3">X     Z</h2>
+
+<h2 id="lt-dbl-gt-lt-int-gt-2">&lt;dbl&gt; &lt;int&gt;</h2>
+
+<h2 id="1-4-440892e-16-1000">1 4.440892e-16  1000</h2>
+
+<h2 id="2-1-000000e-00-1001-1">2 1.000000e+00  1001</h2>
+
+<h2 id="3-2-000000e-00-1002-1">3 2.000000e+00  1002</h2>
+
+<h2 id="4-3-000000e-00-1003-code-1">4 3.000000e+00  1003[/code]</h2>
+
+<p>[code language=&ldquo;r&rdquo;]full_join(dataA, dataB2eps)[/code]
+[code language=&ldquo;r&rdquo;]## Joining, by = &quot;X&quot;[/code]
+[code language=&ldquo;r&rdquo;]## # A tibble: 8 x 3</p>
+
+<h2 id="x-y-z-2">X     Y     Z</h2>
+
+<h2 id="lt-dbl-gt-lt-int-gt-lt-int-gt-2">&lt;dbl&gt; &lt;int&gt; &lt;int&gt;</h2>
+
+<h2 id="1-0-000000e-00-100-na-1">1 0.000000e+00   100    NA</h2>
+
+<h2 id="2-1-000000e-00-101-na-1">2 1.000000e+00   101    NA</h2>
+
+<h2 id="3-2-000000e-00-102-na">3 2.000000e+00   102    NA</h2>
+
+<h2 id="4-3-000000e-00-103-na">4 3.000000e+00   103    NA</h2>
+
+<h2 id="5-4-440892e-16-na-1000">5 4.440892e-16    NA  1000</h2>
+
+<h2 id="6-1-000000e-00-na-1001">6 1.000000e+00    NA  1001</h2>
+
+<h2 id="7-2-000000e-00-na-1002">7 2.000000e+00    NA  1002</h2>
+
+<h2 id="8-3-000000e-00-na-1003-code">8 3.000000e+00    NA  1003[/code]</h2>
+
+<p><p>That’s what I’d expect. So, what’s going on? Why does <code>R</code> think those numbers are the same? Let’s check with a minimal example: For each of the values <code>0:4</code>, let’s compare that integer with the same offset by <code>.Machine$double.eps</code></p>
+[code language=&ldquo;r&rdquo;]suppressPackageStartupMessages(library(purrr)) ## for the &lsquo;thou shalt not for-loop&rsquo; crowd
+map_lgl(0:4, ~ as.integer(.x) == as.integer(.x) + .Machine$double.eps)[/code]
+[code language=&ldquo;r&rdquo;]## [1] FALSE FALSE  TRUE  TRUE  TRUE[/code]
+<p>And there we have it. Some sort of relative difference tolerance maybe? In any case, the general rule to live by is to <em>never</em> compare floats. Add this to the list of reasons why.</p>
+<p>For what it&rsquo;s worth, I&rsquo;m sure this is hardly a surprising detail to the <code>dplyr</code> team. They&rsquo;ve dealt with <a href="https://github.com/tidyverse/dplyr/issues/228">things like this for a long time</a> and I&rsquo;m sure it was much worse before those changes.</p>
+<p><b>Update: </b>As noted in the comments, <code>R</code> does have a way to check if things are &lsquo;nearly equal&rsquo; (within some specified tolerance) via <code>all.equal()</code></p>
+[code language=&ldquo;r&rdquo;]purrr::map_lgl(0:4, ~all.equal(.x, .x + .Machine$double.eps))</p>
+
+<h2 id="1-true-true-true-true-true-code">[1] TRUE TRUE TRUE TRUE TRUE[/code]</h2>
+
+<p><p> However, this does require the user to either specify the exact tolerance under which they consider two numbers &lsquo;equal&rsquo;, or to use the default (which, judging by the source of <code>all.equal.numeric()</code> is <code>sqrt(.Machine$double.eps)</code> or around 1.490116^{-8} on this system). This means that numbers can be &lsquo;quite&rsquo; different (depending on what&rsquo;s an important difference) and still considered equal</p>
+[code language=&ldquo;r&rdquo;]&gt; purrr::map_lgl(0:4, ~ all.equal(.x, .x + 1e-8))</p>
+
+<h2 id="1-true-true-true-true-true-code-1">[1] TRUE TRUE TRUE TRUE TRUE[/code]</h2>
+
+        
+
+        
+            <hr/>
+            <section id="social-share">
+              <div class="list-inline footer-links">
+                
+
+<div class="share-box" aria-hidden="true">
+    <ul class="share">
+      
+      <li>
+        <a href="//twitter.com/share?url=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f&amp;text=Thou%20shalt%20not%20compare%20numeric%20values%20%28except%20when%20it%20works%29%0a&amp;via=carroll_jono" target="_blank" title="Share on Twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//plus.google.com/share?url=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f" target="_blank" title="Share on Google Plus">
+          <i class="fab fa-google-plus"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.facebook.com/sharer/sharer.php?u=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f" target="_blank" title="Share on Facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//reddit.com/submit?url=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f&amp;title=Thou%20shalt%20not%20compare%20numeric%20values%20%28except%20when%20it%20works%29%0a" target="_blank" title="Share on Reddit">
+          <i class="fab fa-reddit"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.linkedin.com/shareArticle?url=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f&amp;title=Thou%20shalt%20not%20compare%20numeric%20values%20%28except%20when%20it%20works%29%0a" target="_blank" title="Share on LinkedIn">
+          <i class="fab fa-linkedin"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.stumbleupon.com/submit?url=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f&amp;title=Thou%20shalt%20not%20compare%20numeric%20values%20%28except%20when%20it%20works%29%0a" target="_blank" title="Share on StumbleUpon">
+          <i class="fab fa-stumbleupon"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.pinterest.com/pin/create/button/?url=%2fpost%2f2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works%2f&amp;description=Thou%20shalt%20not%20compare%20numeric%20values%20%28except%20when%20it%20works%29%0a" target="_blank" title="Share on Pinterest">
+          <i class="fab fa-pinterest"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  
+              </div>
+            </section>
+        
+
+        
+          
+          
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="/post/2017-06-26-data-munging-with-r-preview-storing-values-assigning/" data-toggle="tooltip" data-placement="top" title="Data Munging With R Preview &amp;#8212; Storing Values (Assigning)">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="/post/2018-03-06-jc-and-the-vignettes/" data-toggle="tooltip" data-placement="top" title="JC and the Vignettes">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+        
+          
+          <div class="disqus-comments">                  
+            <button id="show-comments" class="btn btn-default" type="button">Show <span class="disqus-comment-count" data-disqus-url="post/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works">comments</span></button>
+            <div id="disqus_thread"></div>
+
+            <script type="text/javascript">
+              var disqus_config = function () {
+              this.page.url = 'post\/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works';
+            };
+
+          </script>
+          </div>
+          
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:website@jcarroll.com.au" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/jonocarroll" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://gitlab.com/jonocarroll" title="GitLab">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-gitlab fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://bitbucket.org/jonocarroll" title="Bitbucket">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-bitbucket fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/carroll_jono" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/carrolljonathan" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://stackoverflow.com/users/4168169/jonathan-carroll" title="StackOverflow">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-stack-overflow fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://paypal.me/jonocarroll" title="PayPal">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-paypal fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            
+            <a href="/index.xml" title="RSS">
+            
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="jcarroll.com.au">Jonathan Carroll</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2019
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="/">Irregularly Scheduled Programming</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/main.js"></script>
+<script src="/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+<script type="text/javascript">
+$(function(){
+  $('#show-comments').on('click', function(){
+    var disqus_shortname = 'jcarroll-com-au';
+      
+    (function() {
+      var disqus = document.createElement('script'); 
+      disqus.type = 'text/javascript'; 
+      disqus.async = true;
+      disqus.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(disqus);
+    })();
+      
+    $(this).hide(); 
+    });
+  });
+      
+</script>
+<script id="dsq-count-scr" src="//jcarroll-com-au.disqus.com/count.js" async></script>
+
+
+
+
+  </body>
+</html>
+

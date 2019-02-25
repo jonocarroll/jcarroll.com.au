@@ -3,7 +3,7 @@ title: Image marginal histograms
 author: Jonathan Carroll
 date: 2016-03-12 00:37:37
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

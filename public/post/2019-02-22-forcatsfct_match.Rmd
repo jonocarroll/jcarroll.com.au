@@ -1,0 +1,118 @@
+---
+title: forcats::fct_match
+author: Jonathan Carroll
+date: 2019-02-22 23:57:25
+slug: forcatsfct_match
+categories: [R]
+tags: [rstats, tidyverse, forcats]
+type: ''
+subtitle: 'A small tidyverse contribution'
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(dplyr)
+library(forcats)
+```
+
+This journey started almost exactly a year ago, but it's finally been sufficiently worked through and merged! Yay, I've officially contributed to the [tidyverse](https://www.tidyverse.org/) (minor as it may be).
+
+![I'm at least as useful as Zoidberg](/post/2019-02-22-forcatsfct_match_files/zoidberg_helping.jpeg){width=300px}
+
+<!--more-->
+
+It began with [a tweet](https://twitter.com/carroll_jono/status/971093803099541504?ref_src=twsrc%5Etfw), recalling a surprise I encountered that day during some routine data processing
+
+```{r echo = FALSE}
+blogdown::shortcode('tweet', '971093803099541504')
+```
+
+For those of you not so comfortable with pipes and `dplyr`, I was trying to subset a `data.frame` '`data`' (with a column `g` having values `"W"`, `"X_Y"` and `"Z"`) to only those rows for which the column `g` had the value `"X_Y"` or `"Z"` (not the actual values, of course, but that's the idea). Without `dplyr` this might simply be
+
+```r
+data[data$g %in% c("X Y", "Z"), ]
+```
+
+To make that more concrete, let's actually show it in action
+
+```{r}
+data <- data.frame(a = 1:5, g = c("X_Y", "W", "Z", "Z", "W"))
+data
+
+data %>% 
+   filter(g %in% c("X Y", "Z"))
+```
+
+`filter` isn't at fault here -- the same issue would arise with `[` -- I have mis-specified the values I wish to match, so I am returned only the matching values. `%in%` is also performing its job - it returns a logical vector; the result of comparing the values in the column `g` to the vector `c("X Y", "Z")`. Both of these functions are behaving as they should, but the logic of what I was trying to achieve (subset to only these values) was lost.
+
+Now, in some instances, that is exactly the behaviour you want -- subset this vector to <em>any</em> of these values... where those values may not be present in the vector to begin with
+
+```r
+data %>% 
+   filter(values %in% all_known_values)
+```
+
+The problem, for me, is that there isn't a way to say "all of these should be there". The lack of matching happens silently. If you make a typo, you don't get that level, and you aren't told that it's been skipped
+
+```r
+simpsons_characters %>% 
+   filter(first_name %in% c("Homer", "Marge", "Bert", "Lisa", "Maggie")
+```
+
+Technically this is a double-post because I also want to sidenote this with something I am amazed I have not known about yet (I was approximately today years old when I learned about this)... I've used `regex`matching for a while, and have been surprised at [how well I've been able to make it work](https://twitter.com/carroll_jono/status/908186714350403584) occasionally. I'm familiar with counting patterns (`(A){2}`&nbsp;to match two occurrences of `A`) and ranges of counts (`(A){2,4}` Sto match between two and four occurrences of `A`) but I was not aware that you can specify a number of __mistakes__ that can be included to still make a match...;
+
+```{r}
+grep("Bart", c("Bart", "Bort", "Brat"), value = TRUE)
+
+grep("(Bart){~1}", c("Bart", "Bort", "Brat"), value = TRUE)
+```
+
+("Are you matching to me?"... "No, my regex _also_ matches to 'Bort'")
+
+Use `(pattern){~n}`to allow up to `n`substitutions in the pattern matching. Refer [here](https://twitter.com/klmr/status/1098238987968438273?s=20) and [here](https://laurikari.net/tre/documentation/regex-syntax/).
+
+Back to the original problem -- `filter`and `%in%`are doing their jobs, but we aren't getting the result we want because we made a typo, and we aren't told that we've done so.
+
+Enter a [new PR](https://github.com/tidyverse/forcats/pull/127) to `forcats` (originally to `dplyr`, but `forcats` does make more sense) which implements `fct_match(f, lvls)`. This checks that all of the values in `lvls` are actually present in `f` before returning the logical vector of which entries they correspond to. With this, the pattern becomes (after loading the development version of `forcats` from [github](https://github.com/tidyverse/forcats))
+
+```{r, error = TRUE}
+data %>% 
+   filter(fct_match(g, c("X Y", "Z")))
+```
+
+Yay! We're notified that we've made an error. `"X Y"` isn't actually in our column `g`. If we don't make the error, we get the result we actually wanted in the first place. We can now use this successfully
+
+```{r}
+data %>% 
+   filter(fct_match(g, c("X_Y", "Z")))
+```
+
+It took a while for the PR to be addressed (the tidyverse crew have plenty of backlog, no doubt) but after some minor requested changes and a very neat cleanup by Hadley himself, it's been merged.
+
+My original version had a few bells and whistles that the current implementation has put aside. The first was inverting the matching with&nbsp;`fct_exclude` to make it easier to negate the matching without having to create a new anonymous function, i.e. `~!fct_match(.x)`. I find this particularly useful since a pipe expects a call/named function, not a lambda/anonymous function, which is actually quite painful to construct
+
+```{r}
+data %>%
+   pull(g) %>%
+   (function(x) !fct_match(x, c("X_Y", "Z")))
+```
+
+whereas if we defined
+
+```{r}
+fct_exclude <- function(f, lvls, ...) !fct_match(f, lvls, ...)
+```
+
+we can use
+
+```{r}
+data %>%
+   pull(g) %>%
+   fct_exclude(c("X_Y", "Z"))
+```
+
+The other was specifying whether or not to include missing levels when considering if `lvls` is a valid value in `f` since `unique(f)` and `levels(f)` can return different answers.
+
+The cleanup really made me think about how much 'fluff' some of my code can have. Sure, it's nice to encapsulate some logic in a small additional function, but sometimes you can actually replace all of that with a one-liner and not need all that. If you're ever in the mood to see how compact internal code can really be, check out the source of `forcats`.
+
+Hopefully this pattern of `filter(fct_match(f, lvls))` is useful to others. It's certainly going to save me overlooking some typos.

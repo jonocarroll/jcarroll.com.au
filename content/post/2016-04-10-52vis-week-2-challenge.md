@@ -3,7 +3,7 @@ title: 52vis Week 2 Challenge
 author: Jonathan Carroll
 date: 2016-04-10 22:01:17
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

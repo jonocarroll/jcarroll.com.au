@@ -3,63 +3,153 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   
   <url>
-    <loc>/post/2015-01-15-pirates/</loc>
-    <lastmod>2019-02-23T23:20:20+10:30</lastmod>
+    <loc>/post/2019-02-25-testingyaml/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2017-03-20-photoswipe-gallery-sample/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/forcatsfct_match/</loc>
+    <lastmod>2019-02-22T23:57:25+00:00</lastmod>
   </url>
   
   <url>
-    <loc>/post/2017-03-07-bigimg-sample/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2017-03-05-math-sample/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2016-03-08-code-sample/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-07-23-r-rmarkdown/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-02-26-flake-it-till-you-make-it/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-02-20-test-markdown/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-02-13-hamlet-monologue/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-01-27-dear-diary/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-01-19-soccer/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/post/2015-01-04-first-post/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/testingyaml/</loc>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
   </url>
   
   <url>
@@ -68,98 +158,59 @@
   </url>
   
   <url>
-    <loc>/tags/bigimg/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
     <loc>/categories/</loc>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>/tags/code/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
     <loc>/page/about_jonathan_carroll/</loc>
+    <lastmod>2019-02-24T22:06:10+10:30</lastmod>
   </url>
   
   <url>
     <loc>/page/cv_jonathan_carroll/</loc>
+    <lastmod>2019-02-24T22:06:10+10:30</lastmod>
   </url>
   
   <url>
-    <loc>/tags/example/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/markdown/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/math/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/tags/forcats/</loc>
+    <lastmod>2019-02-22T23:57:25+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/page/</loc>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/photoswipe/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/categories/pirates/</loc>
-    <lastmod>2019-02-23T23:20:20+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/plot/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <lastmod>2019-02-24T22:06:10+10:30</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/post/</loc>
-    <lastmod>2019-02-23T23:20:20+10:30</lastmod>
+    <lastmod>2019-02-25T22:26:20+10:30</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/categories/r/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <lastmod>2019-02-22T23:57:25+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
-    <loc>/tags/r-markdown/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
-    <priority>0</priority>
-  </url>
-  
-  <url>
-    <loc>/tags/regression/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <loc>/tags/rstats/</loc>
+    <lastmod>2019-02-22T23:57:25+00:00</lastmod>
     <priority>0</priority>
   </url>
   
   <url>
     <loc>/tags/</loc>
-    <lastmod>2019-02-23T23:05:03+10:30</lastmod>
+    <lastmod>2019-02-22T23:57:25+00:00</lastmod>
+    <priority>0</priority>
+  </url>
+  
+  <url>
+    <loc>/tags/tidyverse/</loc>
+    <lastmod>2019-02-22T23:57:25+00:00</lastmod>
     <priority>0</priority>
   </url>
   

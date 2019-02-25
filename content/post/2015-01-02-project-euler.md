@@ -3,7 +3,7 @@ title: Project Euler
 author: Jonathan Carroll
 date: 2015-01-02 22:27:10
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

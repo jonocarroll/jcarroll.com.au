@@ -3,7 +3,7 @@ title: Solving Inequality (the math kind)
 author: Jonathan Carroll
 date: 2016-04-27 22:47:55
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

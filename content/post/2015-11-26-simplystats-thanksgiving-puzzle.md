@@ -3,7 +3,7 @@ title: SimplyStats Thanksgiving Puzzle
 author: Jonathan Carroll
 date: 2015-11-26 09:39:33
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

@@ -3,7 +3,7 @@ title: 'Bring on the ROpenSci #auunconf 2016!'
 author: Jonathan Carroll
 date: 2016-04-01 06:25:01
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

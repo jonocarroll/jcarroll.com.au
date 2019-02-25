@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Solving Inequality (the math kind) - Irregularly Scheduled Programming</title>
+  <meta property="og:title" content="Solving Inequality (the math kind)" />
+  <meta name="twitter:title" content="Solving Inequality (the math kind)" />
+  <meta name="description" content="This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&rsquo;t help but throw it at dplyr as soon as I could. Turns out that&rsquo;s not a terrible idea. The question posed is
+ optimise 200a &#43; 100b &#43; 50c &#43; 25d under the constraints 400a &#43; 400b &#43; 150c &#43; 50d ≤ 1000, b ≤ a, a ≤ 1, c ≤ 8, d ≤ 4, and (a,b,c,d) all non-negative integers.">
+  <meta property="og:description" content="This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&rsquo;t help but throw it at dplyr as soon as I could. Turns out that&rsquo;s not a terrible idea. The question posed is
+ optimise 200a &#43; 100b &#43; 50c &#43; 25d under the constraints 400a &#43; 400b &#43; 150c &#43; 50d ≤ 1000, b ≤ a, a ≤ 1, c ≤ 8, d ≤ 4, and (a,b,c,d) all non-negative integers.">
+  <meta name="twitter:description" content="This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&rsquo;t help but throw it at dplyr as soon as I could. Turns out that&rsquo;s not a terrible idea. …">
+  <meta name="author" content="Jonathan Carroll"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "Irregularly Scheduled Programming",
+    
+    "url": "/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "/post/2016-04-27-solving-inequality-the-math-kind/",
+          "name": "Solving inequality (the math kind)"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "Jonathan Carroll"
+  },
+  "headline": "Solving Inequality (the math kind)",
+  "description" : "This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&amp;rsquo;t help but throw it at dplyr as soon as I could. Turns out that&amp;rsquo;s not a terrible idea. The question posed is
+ optimise 200a &#43; 100b &#43; 50c &#43; 25d under the constraints 400a &#43; 400b &#43; 150c &#43; 50d ≤ 1000, b ≤ a, a ≤ 1, c ≤ 8, d ≤ 4, and (a,b,c,d) all non-negative integers.",
+  "inLanguage" : "en",
+  "wordCount": 555,
+  "datePublished" : "2016-04-27T22:47:55",
+  "dateModified" : "2016-04-27T22:47:55",
+  "image" : "/img/logo.png",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "/post/2016-04-27-solving-inequality-the-math-kind/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "/img/logo.png",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="Solving Inequality (the math kind)" />
+<meta property="og:description" content="This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&rsquo;t help but throw it at dplyr as soon as I could. Turns out that&rsquo;s not a terrible idea. The question posed is
+ optimise 200a &#43; 100b &#43; 50c &#43; 25d under the constraints 400a &#43; 400b &#43; 150c &#43; 50d ≤ 1000, b ≤ a, a ≤ 1, c ≤ 8, d ≤ 4, and (a,b,c,d) all non-negative integers.">
+<meta property="og:image" content="/img/logo.png" />
+<meta property="og:url" content="/post/2016-04-27-solving-inequality-the-math-kind/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Irregularly Scheduled Programming" />
+  <meta name="twitter:title" content="Solving Inequality (the math kind)" />
+  <meta name="twitter:description" content="This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&rsquo;t help but throw it at dplyr as soon as I could. Turns out that&rsquo;s not a terrible idea. …">
+  <meta name="twitter:image" content="/img/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@carroll_jono" />
+  <meta name="twitter:creator" content="@carroll_jono" />
+  <link href='/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="/img/logo.png" />
+  <meta name="twitter:image" content="/img/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@carroll_jono" />
+  <meta name="twitter:creator" content="@carroll_jono" />
+  <meta property="og:url" content="/post/2016-04-27-solving-inequality-the-math-kind/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Irregularly Scheduled Programming" />
+
+  <meta name="generator" content="Hugo 0.54.0" />
+  <link rel="alternate" href="/index.xml" type="application/rss+xml" title="Irregularly Scheduled Programming">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="/css/highlight.min.css" /><link rel="stylesheet" href="/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-135066967-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/">Irregularly Scheduled Programming</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent">About Me</a>
+              <div class="navlinks-children">
+                
+                  <a href="/page/about_jonathan_carroll">Bio</a>
+                
+                  <a href="/page/cv_jonathan_carroll">CV</a>
+                
+                  <a href="/page/projects_jonathan_carroll">Projects</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Book" href="https://beyondspreadsheetswithr.com/">Book</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Tags" href="/tags">Tags</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="Irregularly Scheduled Programming" href="/">
+            <img class="avatar-img" src="/img/logo.png" alt="Irregularly Scheduled Programming" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>Solving Inequality (the math kind)</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on April 27, 2016
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-clock"></i>&nbsp;3&nbsp;minutes
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-book"></i>&nbsp;555&nbsp;words
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;Jonathan Carroll
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        <p><a href="https://xianblog.wordpress.com/2016/04/21/an-integer-programming-riddle/" target="_blank">This neat approach</a> showed up recently as an answer to a <a href="http://fivethirtyeight.com/features/you-have-1-billion-to-win-a-space-race-go/" target="_blank">FiveThirtyEight puzzle</a> and of course I couldn&rsquo;t help but throw it at <code>dplyr</code> as soon as I could. Turns out that&rsquo;s not a terrible idea. The question posed is</p>
+
+<blockquote>
+optimise
+
+200a + 100b + 50c + 25d
+
+under the constraints
+
+400a + 400b + 150c + 50d ≤ 1000, 
+b ≤ a, 
+a ≤ 1, 
+c ≤ 8, 
+d ≤ 4,
+
+and (a,b,c,d) all non-negative integers.
+</blockquote>
+
+<p>Leaving aside any interpretations of wording of the original question (let&rsquo;s just start with trying to solve <em>this</em> system of inequalities) <a href="https://xianblog.wordpress.com/2016/04/21/an-integer-programming-riddle/" target="_blank">the solution provided used 4 nested loops</a>, which can definitely be avoided.</p>
+
+<p>My approach was to create all possible combinations of the 4 variables (within the given constraints), filter out the ones that don&rsquo;t meet the constraint criteria, then sort by the evaluating expression to find which one does best.</p>
+
+<p>[gist id = &ldquo;65315f0dc1061bd2fafa7607abbc3145&rdquo; file = &ldquo;inequality_1.R&rdquo;]</p>
+
+<p>I&rsquo;m not suggesting that this is by any means always the best approach, but when the phase-space of possible solutions is so low (especially combinations of small integers) then this is pretty tidy (technically a single <code>dplyr</code> chain).</p>
+
+<p>Alternatively, one could set this up as an equation and use a linear solver. In that case, we want to optimise</p>
+
+<p>$latex \max(|A x|) $</p>
+
+<p>subject to the constraints</p>
+
+<p>$latex G x \ge h $</p>
+
+<p>where $latex A$ and $latex x$ represent the coefficients and variables to be optimised, $latex h$ the constraint vector, and $latex G$  a matrix of coefficients for the constraints. For the system we&rsquo;re looking at, that matrix inequality looks like this</p>
+
+<p>$latex \left[\begin{array}{cccc}400 &amp; 400 &amp; 150 &amp; 50 \1 &amp; 0 &amp; 0 &amp; 0 \0 &amp; 1 &amp; 0 &amp; 0 \0 &amp; 0 &amp; 1 &amp; 0 \0 &amp; 0 &amp; 0 &amp; 1\end{array}\right] \left[\begin{array}{c}a \ b \ c \ d\end{array}\right] \le \left[\begin{array}{c}1000 \ 1 \ 1 \ 8 \ 4\end{array}\right]\ . $</p>
+
+<p>Of course, the constraint that $latex b \le a$ needs to be checked after the fact.</p>
+
+<p>Programming this is fairly straightforward, even with the constraint that these are integer solutions. <a href="http://www.inside-r.org/packages/cran/limSolve/docs/linp" target="_blank"><code>limSolve::linp</code></a> is made for exactly these types of problems.</p>
+
+<p>[gist id = &ldquo;65315f0dc1061bd2fafa7607abbc3145&rdquo; file = &ldquo;inequality_2.R&rdquo;]</p>
+
+<p>which results in the same answer as our manual brute-force search.</p>
+
+<p>One last thing to try is to plot the solution space and see how it looks. Sounds like a good opportunity to try out <a href="https://plot.ly/" target="_blank">plotly</a>.</p>
+
+<p>Since this is technically a 5D plot (4 variables and a value) it&rsquo;s a little difficult to visualise. I&rsquo;ve reduced the dimensionality by treating each unique combination of $latex a \le 1$ and $latex b \le a$ (i.e. $latex 00,~01,~10,~11$) as a group and using colour to distinguish those. The plot below should show up as a 3D object, so click, drag, and scroll it to have a closer look. Clicking on a group will remove/add it so you can get a clearer view, and hovering over a point should bring up the values of the axes and evaluation.</p>
+
+<div>
+    <a href="https://plot.ly/~jonocarroll/0/" target="_blank" title="00, 10, 01, 11" style="display: block; text-align: center;"><img src="https://plot.ly/~jonocarroll/0.png" alt="00, 10, 01, 11" style="max-width: 100%;width: 800px;"  width="800" onerror="this.onerror=null;this.src='https://plot.ly/404.png';" /></a>
+    <script data-plotly="jonocarroll:0"  src="https://plot.ly/embed.js" async></script>
+</div>
+
+<p>Going back to the expression that&rsquo;s being optimised it&rsquo;s pretty clear why it&rsquo;s broken down into 4 planes when grouped this way (substitute different values of $latex a$ and $latex b$ to see).</p>
+
+<p>Do you have another way to solve this? Drop a line or a link in the comments.</p>
+
+
+        
+
+        
+            <hr/>
+            <section id="social-share">
+              <div class="list-inline footer-links">
+                
+
+<div class="share-box" aria-hidden="true">
+    <ul class="share">
+      
+      <li>
+        <a href="//twitter.com/share?url=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f&amp;text=Solving%20Inequality%20%28the%20math%20kind%29&amp;via=carroll_jono" target="_blank" title="Share on Twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//plus.google.com/share?url=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f" target="_blank" title="Share on Google Plus">
+          <i class="fab fa-google-plus"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.facebook.com/sharer/sharer.php?u=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f" target="_blank" title="Share on Facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//reddit.com/submit?url=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f&amp;title=Solving%20Inequality%20%28the%20math%20kind%29" target="_blank" title="Share on Reddit">
+          <i class="fab fa-reddit"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.linkedin.com/shareArticle?url=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f&amp;title=Solving%20Inequality%20%28the%20math%20kind%29" target="_blank" title="Share on LinkedIn">
+          <i class="fab fa-linkedin"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.stumbleupon.com/submit?url=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f&amp;title=Solving%20Inequality%20%28the%20math%20kind%29" target="_blank" title="Share on StumbleUpon">
+          <i class="fab fa-stumbleupon"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.pinterest.com/pin/create/button/?url=%2fpost%2f2016-04-27-solving-inequality-the-math-kind%2f&amp;description=Solving%20Inequality%20%28the%20math%20kind%29" target="_blank" title="Share on Pinterest">
+          <i class="fab fa-pinterest"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  
+              </div>
+            </section>
+        
+
+        
+          
+          
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="/post/2016-04-14-slack-timezones/" data-toggle="tooltip" data-placement="top" title="#auunconf slack users&#39; timezone locations">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="/post/2016-04-30-bad-neighbours/" data-toggle="tooltip" data-placement="top" title="Bad Neighbours (no, not the movie)">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+        
+          
+          <div class="disqus-comments">                  
+            <button id="show-comments" class="btn btn-default" type="button">Show <span class="disqus-comment-count" data-disqus-url="post/2016-04-27-solving-inequality-the-math-kind">comments</span></button>
+            <div id="disqus_thread"></div>
+
+            <script type="text/javascript">
+              var disqus_config = function () {
+              this.page.url = 'post\/2016-04-27-solving-inequality-the-math-kind';
+            };
+
+          </script>
+          </div>
+          
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:website@jcarroll.com.au" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/jonocarroll" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://gitlab.com/jonocarroll" title="GitLab">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-gitlab fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://bitbucket.org/jonocarroll" title="Bitbucket">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-bitbucket fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/carroll_jono" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/carrolljonathan" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://stackoverflow.com/users/4168169/jonathan-carroll" title="StackOverflow">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-stack-overflow fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://paypal.me/jonocarroll" title="PayPal">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-paypal fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            
+            <a href="/index.xml" title="RSS">
+            
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="jcarroll.com.au">Jonathan Carroll</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2019
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="/">Irregularly Scheduled Programming</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/main.js"></script>
+<script src="/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+<script type="text/javascript">
+$(function(){
+  $('#show-comments').on('click', function(){
+    var disqus_shortname = 'jcarroll-com-au';
+      
+    (function() {
+      var disqus = document.createElement('script'); 
+      disqus.type = 'text/javascript'; 
+      disqus.async = true;
+      disqus.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(disqus);
+    })();
+      
+    $(this).hide(); 
+    });
+  });
+      
+</script>
+<script id="dsq-count-scr" src="//jcarroll-com-au.disqus.com/count.js" async></script>
+
+
+
+
+  </body>
+</html>
+

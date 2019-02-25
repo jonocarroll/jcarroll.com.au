@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Forcats on Irregularly Scheduled Programming</title>
+    <link>/tags/forcats/</link>
+    <description>Recent content in Forcats on Irregularly Scheduled Programming</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>website@jcarroll.com.au (Jonathan Carroll)</managingEditor>
+    <webMaster>website@jcarroll.com.au (Jonathan Carroll)</webMaster>
+    <lastBuildDate>Fri, 22 Feb 2019 23:57:25 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/forcats/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>forcats::fct_match</title>
+      <link>/post/forcatsfct_match/</link>
+      <pubDate>Fri, 22 Feb 2019 23:57:25 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/forcatsfct_match/</guid>
+      <description>This journey started almost exactly a year ago, but it’s finally been sufficiently worked through and merged! Yay, I’ve officially contributed to the tidyverse (minor as it may be).
+I’m at least as useful as Zoidberg
+ HUGOMORE42 It began with a tweet, recalling a surprise I encountered that day during some routine data processing
+Source of today&amp;#39;s mild heart-attack: I have categories W, X_Y, and Z in some data.</description>
+    </item>
+    
+  </channel>
+</rss>

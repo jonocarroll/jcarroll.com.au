@@ -3,7 +3,7 @@ title: What are the odds?
 author: Jonathan Carroll
 date: 2015-03-10 08:00:20
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''

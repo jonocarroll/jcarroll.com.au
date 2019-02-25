@@ -1,0 +1,316 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Rstats on Irregularly Scheduled Programming</title>
+    <link>/tags/rstats/</link>
+    <description>Recent content in Rstats on Irregularly Scheduled Programming</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <managingEditor>website@jcarroll.com.au (Jonathan Carroll)</managingEditor>
+    <webMaster>website@jcarroll.com.au (Jonathan Carroll)</webMaster>
+    <lastBuildDate>Fri, 22 Feb 2019 23:57:25 +0000</lastBuildDate>
+    
+	<atom:link href="/tags/rstats/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>forcats::fct_match</title>
+      <link>/post/forcatsfct_match/</link>
+      <pubDate>Fri, 22 Feb 2019 23:57:25 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/forcatsfct_match/</guid>
+      <description>This journey started almost exactly a year ago, but it’s finally been sufficiently worked through and merged! Yay, I’ve officially contributed to the tidyverse (minor as it may be).
+I’m at least as useful as Zoidberg
+ HUGOMORE42 It began with a tweet, recalling a surprise I encountered that day during some routine data processing
+Source of today&amp;#39;s mild heart-attack: I have categories W, X_Y, and Z in some data.</description>
+    </item>
+    
+    <item>
+      <title>Even more images as x-axis labels</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Tue, 16 Oct 2018 23:18:32 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;This is the last update to this strange saga&amp;hellip; I hope.&lt;/p&gt;
+
+&lt;p&gt;[caption align=&amp;ldquo;center&amp;rdquo; width=&amp;ldquo;680&amp;rdquo;]&lt;img src=&#34;https://jcarroll.com.au/wp-content/uploads/2018/10/labels.jpg&#34; /&gt;Image labels&amp;hellip; Photo: &lt;a href=&#34;http://www.premierpaper.com/shop/custom-labels/[/caption&#34;&gt;http://www.premierpaper.com/shop/custom-labels/[/caption&lt;/a&gt;]&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Adding strings in R</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Sat, 06 Oct 2018 00:09:15 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;This started out as a &lt;i&gt;&amp;ldquo;hey, I wonder&amp;hellip;&amp;rdquo;&lt;/i&gt; sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I&amp;rsquo;d write it up and share. Shoutout to &lt;a href=&#34;https://twitter.com/coolbutuseless&#34;&gt;@coolbutuseless&lt;/a&gt; for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.&lt;/p&gt;
+
+&lt;p&gt;[caption align=&amp;ldquo;center&amp;rdquo; width=&amp;ldquo;680&amp;rdquo;]&lt;img src=&#34;https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg&#34; width=&#34;680&#34; height=&#34;451&#34; alt=&#34;This is what you get if you &amp;quot;glue&amp;quot; &amp;quot;strings&amp;quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/&#34; /&gt; This is what you get if you &amp;quot;glue&amp;quot; &amp;quot;strings&amp;quot;. Photo: &lt;a href=&#34;https://craftwhack.com/cool-craft-string-easter-eggs/[/caption&#34;&gt;https://craftwhack.com/cool-craft-string-easter-eggs/[/caption&lt;/a&gt;]&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Constricted development with reticulate</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Wed, 04 Apr 2018 23:38:05 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;I&amp;rsquo;ve been using the &lt;a href=&#34;https://github.com/rstudio/reticulate&#34; rel=&#34;noopener&#34; target=&#34;_blank&#34;&gt;reticulate&lt;/a&gt; package occasionally for a while now, so I was surprised to see that it had only just been officially released.&lt;/p&gt;
+
+&lt;p&gt;&lt;blockquote class=&#34;twitter-tweet&#34; data-lang=&#34;en&#34;&gt;&lt;p lang=&#34;en&#34; dir=&#34;ltr&#34;&gt;reticulate: R interface to Python &lt;a href=&#34;https://t.co/qVWmwoMQAP&#34;&gt;https://t.co/qVWmwoMQAP&lt;/a&gt;. Comprehensive set of interoperability tools including R Markdown Python engine &lt;a href=&#34;https://twitter.com/hashtag/rstats?src=hash&amp;amp;ref_src=twsrc%5Etfw&#34;&gt;#rstats&lt;/a&gt; &lt;a href=&#34;https://twitter.com/hashtag/pydata?src=hash&amp;amp;ref_src=twsrc%5Etfw&#34;&gt;#pydata&lt;/a&gt; &lt;a href=&#34;https://t.co/SuWM6Y3Pk0&#34;&gt;pic.twitter.com/SuWM6Y3Pk0&lt;/a&gt;&lt;/p&gt;&amp;mdash; RStudio (@rstudio) &lt;a href=&#34;https://twitter.com/rstudio/status/978293244390985728?ref_src=twsrc%5Etfw&#34;&gt;March 26, 2018&lt;/a&gt;&lt;/blockquote&gt;
+&lt;script async src=&#34;https://platform.twitter.com/widgets.js&#34; charset=&#34;utf-8&#34;&gt;&lt;/script&gt;&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>JC and the Vignettes</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Tue, 06 Mar 2018 15:55:31 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;If that&amp;rsquo;s not a great 1960&amp;rsquo;s band name then I don&amp;rsquo;t know what is (hint: I don&amp;rsquo;t know what is).&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&#34;https://www.billboard.com/music/the-marvelettes&#34;&gt;&lt;img src=&#34;https://jcarroll.com.au/wp-content/uploads/2018/03/marvelettes-300x199.jpg&#34;, width=&#34;300&#34;, height=&#34;199&#34;, alt=&#34;The Marvelettes: https://www.billboard.com/music/the-marvelettes&#34;, link=&#34;https://jcarroll.com.au/wp-content/uploads/2018/03/marvelettes.jpg&#34;, align=&#34;none&#34;&gt;&lt;/img&gt;&lt;/a&gt;&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Thou shalt not compare numeric values (except when it works)
+</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Mon, 04 Sep 2017 15:02:07 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Data Munging With R Preview &amp;#8212; Storing Values (Assigning)</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Mon, 26 Jun 2017 23:10:03 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;div class=&#34;asciidoc_entry_display&#34;&gt;&lt;div class=&#34;paragraph&#34;&gt;
+&lt;p&gt;Since about October last year, I’ve been writing an introduction to R book. It’s
+been quite the experience. I’ve finally started making time to document some of
+the interesting things I’ve learned (about R, about writing, about how to
+bring those two together) along the way.&lt;/p&gt;
+&lt;/div&gt;</description>
+    </item>
+    
+    <item>
+      <title>2016 Australian Federal Election Flexdashboard
+</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Mon, 01 Aug 2016 22:50:01 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;Here in the land down under we&amp;rsquo;ve finally completed our Federal election. We complain that it seems to go on for too long, but it&amp;rsquo;s a brief distraction compared to the USA electoral process. I managed to do a small analysis on the votes at a finer scale than I thought would be available, and created &lt;a href=&#34;https://jcarroll.shinyapps.io/AUelection2016/&#34; target=&#34;_blank&#34;&gt;a flexdashboard to present the results&lt;/a&gt;. Given that I couldn&amp;rsquo;t make it to &lt;a href=&#34;http://www.govhack.org/&#34; target=&#34;_blank&#34;&gt;GovHack&lt;/a&gt; this year, this open-data analysis sort of makes up for it.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Images as x-axis labels (updated)</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Fri, 03 Jun 2016 08:18:26 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;They say &amp;ldquo;&lt;i&gt;if you want to find an answer on the internet, just present a wrong one as fact. Then wait.&lt;/i&gt;&amp;ldquo;&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Images as x-axis labels</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Thu, 02 Jun 2016 22:42:31 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;Open-source software is awesome. If I found that a piece of closed-source software was missing a feature that I wanted, well, bad luck. I probably couldn&amp;rsquo;t even tell if was actually missing or if I just didn&amp;rsquo;t know about it. When the source is available, maintained, and documented however, things get fun. We can identify, and perhaps fill gaps.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>From a (set.)seed grows a mighty dataset</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Mon, 30 May 2016 21:35:26 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &amp;lt;- function(str) paste(str, collapse=&amp;quot;&amp;quot;) set.seed(12173423); x &amp;lt;- sample(LETTERS, 5, replace=TRUE) set.seed(7723132); y &amp;lt;- sample(LETTERS, 5, replace=TRUE) paste(printStr(x), printStr(y)) [/code] Okay, the first bit is straightforward; it’s a function that puts two string together into one. The next two lines appear to provide a random integer to the set.seed function then sample the pool of LETTERS 5 times with replacement.</description>
+    </item>
+    
+    <item>
+      <title>Bad Neighbours (no, not the movie)</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Sat, 30 Apr 2016 01:06:29 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;Another day, another compulsion to see if I can do any better than someone&amp;rsquo;s solution.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Solving Inequality (the math kind)</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Wed, 27 Apr 2016 22:47:55 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>This neat approach showed up recently as an answer to a FiveThirtyEight puzzle and of course I couldn&amp;rsquo;t help but throw it at dplyr as soon as I could. Turns out that&amp;rsquo;s not a terrible idea. The question posed is
+ optimise 200a + 100b + 50c + 25d under the constraints 400a + 400b + 150c + 50d ≤ 1000, b ≤ a, a ≤ 1, c ≤ 8, d ≤ 4, and (a,b,c,d) all non-negative integers.</description>
+    </item>
+    
+    <item>
+      <title>#auunconf slack users&#39; timezone locations</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Thu, 14 Apr 2016 23:04:15 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;I had never used &lt;a href=&#34;https://slack.com/&#34; target=&#34;_blank&#34;&gt;slack&lt;/a&gt; before, but had read a heap of &lt;a href=&#34;http://www.gizmodo.com.au/2016/04/10-tips-to-make-you-a-slack-wizard/&#34; target=&#34;_blank&#34;&gt;tech articles&lt;/a&gt; extolling its virtues. &lt;a href=&#34;http://www.gizmodo.com.au/2015/10/malcolm-turnbull-wants-cabinet-ministers-to-use-slack/&#34; target=&#34;_blank&#34;&gt;Apparently this is what our current Prime Minister advocates within Cabinet&lt;/a&gt;. The upcoming #auunconf organising team set up a channel and invited the participants, so I checked it out. Slack is pretty awesome as far as a unified workspace/messaging protocol can go. What makes it even more awesome, is that someone (@hrbrmstr, no surprise) has made an &lt;a href=&#34;https://github.com/hrbrmstr/slackr&#34; target=&#34;_blank&#34;&gt;R package that talks to it&lt;/a&gt;.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Simpler isn&#39;t always faster</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Thu, 14 Apr 2016 21:52:45 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;My name is Jonathan, and I have a coding obsession.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>52vis Week 2 Challenge -- Australian Version</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Tue, 12 Apr 2016 21:18:19 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;I &lt;a href=&#34;http://jcarroll.com.au/2016/04/10/52vis-week-2-challenge/&#34;&gt;mapped out the USA homelessness rate&lt;/a&gt; in my last post as a challenge and noted at the end that it would be interesting to do the same for Australia. That was the first comment I received in person, too. &amp;ldquo;Let&amp;rsquo;s do it!&amp;rdquo; I said. What I found may shock you (click-bait title; check).&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>52vis Week 2 Challenge</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Sun, 10 Apr 2016 22:01:17 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;From &lt;a href=&#34;https://rud.is/b/2016/04/06/52vis-week-2-2016-week-14-honing-in-on-the-homeless/&#34; target=&#34;_blank&#34;&gt;Bob Rudis&amp;rsquo; blog&lt;/a&gt; comes a weekly data/coding challenge. I didn&amp;rsquo;t quite get the time to tackle last week&amp;rsquo;s but I thought this one offered up a pretty good opportunity.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Bring on the ROpenSci #auunconf 2016!</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Fri, 01 Apr 2016 06:25:01 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;I&amp;rsquo;ll be heading to the &lt;a href=&#34;http://auunconf.ropensci.org&#34; target=&#34;_blank&#34;&gt;2016 ROpenSci un-conference&lt;/a&gt; (hackathon) in Brisbane later this month to smash out a heap of open-science R code. Ideas are already flowing quite nicely, and I&amp;rsquo;m confident that any ideas we don&amp;rsquo;t end up officially working on will get their chance in the very near future.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Image marginal histograms</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Sat, 12 Mar 2016 00:37:37 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;Another day, another interesting challenge.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Is it crowded in here?</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Wed, 09 Mar 2016 22:31:13 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;&lt;a href=&#34;http://i.imgur.com/5sYruU9.jpg&#34;&gt;This was a neat graphic that someone made&lt;/a&gt;. It shows the population at a given latitude or longitude as a bar chart, overlayed on a map of the world itself. It shows where people live; the bigger the bar, the more people living at that latitude/longitude.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Jackpot!</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Wed, 13 Jan 2016 15:18:22 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;The powerball lottery in the USA has jackpotted to a first prize of $1.3 billion, which is just a silly amount of money.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>SimplyStats Thanksgiving Puzzle</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Thu, 26 Nov 2015 09:39:33 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>I owe a lot to Jeff Leek and Roger Peng for their great Coursera courses, in which I learned to program in R. They (along with Rafa Irizarry) run the Simply Statistics blog, which I highly reccomend. They posted a Thanksgiving puzzle in which a data.frame needs to be converted from one form to another, spelling out &amp;lsquo;thanksgiving&amp;rsquo;.
+http://simplystatistics.org/2015/11/25/a-thanksgiving-dplyr-rubiks-cube-puzzle-for-you/
+The puzzle: convert this
+ into this
+ My solution, which uses Rubik&amp;rsquo;s Cube rotations of rows and columns (and dplyr of course):</description>
+    </item>
+    
+    <item>
+      <title>What are the odds?</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Tue, 10 Mar 2015 08:00:20 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;&lt;em&gt;[ Trigger warning: this post contains maths. Please don&amp;rsquo;t be afraid, it probably won&amp;rsquo;t bite. ]&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;After posting this photo of our lottery ticket to Facebook[caption width=&amp;ldquo;450&amp;rdquo; id=&amp;ldquo;attachment_463&amp;rdquo; align=&amp;ldquo;aligncenter&amp;rdquo;]&lt;a href=&#34;http://jcarroll.com.au/wp-content/uploads/2015/03/soclose.jpg&#34;&gt;&lt;img src=&#34;http://jcarroll.com.au/wp-content/uploads/2015/03/soclose-300x166.jpg&#34; alt=&#34;So close&#34; width=&#34;300&#34; height=&#34;166&#34; class=&#34;size-medium wp-image-463&#34;&gt;&lt;/a&gt;So close[/caption]I thought more and more about random-event probabilities.&lt;/p&gt;</description>
+    </item>
+    
+    <item>
+      <title>Project Euler Q5 :: Smallest multiple</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Thu, 08 Jan 2015 23:25:58 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>Explanation.&amp;nbsp;Standard caveat: don&amp;rsquo;t look here if you are trying to do these yourself. 2520 is the smallest number that can be divided by each of the numbers from 1 to 10 without any remainder.
+What is the smallest positive number that is evenly divisible by all of the numbers from 1 to 20?
+I&amp;rsquo;m getting the feeling that brute-force is going to be quite the useful tool for these questions.</description>
+    </item>
+    
+    <item>
+      <title>Project Euler Q4 :: Largest palindrome product</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Thu, 08 Jan 2015 22:24:09 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>Explanation.&amp;nbsp;Standard caveat: don&amp;rsquo;t look here if you are trying to do these yourself. A palindromic number reads the same both ways. The largest palindrome made from the product of two 2-digit numbers is 9009 = 91 × 99.
+Find the largest palindrome made from the product of two 3-digit numbers.
+This seems like another brute-force question. There&amp;rsquo;s not that many numbers to test.
+[code language=&amp;ldquo;r&amp;rdquo;]
+check the worked solution 91*99 # 9009 [/code]</description>
+    </item>
+    
+    <item>
+      <title>Project Euler Q3 :: Largest prime factor</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Sat, 03 Jan 2015 00:52:07 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>Explanation. Standard caveat: don&amp;rsquo;t look here if you are trying to do these yourself. The prime factors of 13195 are 5, 7, 13 and 29.
+What is the largest prime factor of the number 600851475143 ? It seems so simple at first glance, until of course you look at how big that last number is. I started off by making sure I understood the issue.
+[code language=&amp;ldquo;r&amp;rdquo;]
+check the worked solution 5*7*13*29 # 13195 [/code]</description>
+    </item>
+    
+    <item>
+      <title>Project Euler Q2 :: Even Fibonacci numbers</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Fri, 02 Jan 2015 22:56:50 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>Explanation. Standard caveat: don&amp;rsquo;t look here if you are trying to do these yourself. Each new term in the Fibonacci sequence is generated by adding the previous two terms. By starting with 1 and 2, the first 10 terms will be:
+1, 2, 3, 5, 8, 13, 21, 34, 55, 89, &amp;hellip;
+By considering the terms in the Fibonacci sequence whose values do not exceed four million, find the sum of the even-valued terms.</description>
+    </item>
+    
+    <item>
+      <title>Project Euler Q1 :: Multiples of 3 and 5</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Fri, 02 Jan 2015 22:45:10 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>Explanation. Standard caveat: don&amp;rsquo;t look here if you are trying to do these yourself. If we list all the natural numbers below 10 that are multiples of 3 or 5, we get 3, 5, 6 and 9. The sum of these multiples is 23.
+Find the sum of all the multiples of 3 or 5 below 1000. This one&amp;rsquo;s pretty straight forward, really, as one might hope being the first question.</description>
+    </item>
+    
+    <item>
+      <title>Project Euler</title>
+      <link>/post/testingyaml/</link>
+      <pubDate>Fri, 02 Jan 2015 22:27:10 +0000</pubDate>
+      <author>website@jcarroll.com.au (Jonathan Carroll)</author>
+      <guid>/post/testingyaml/</guid>
+      <description>&lt;p&gt;As a means of honing my &lt;a title=&#34;R&#34; href=&#34;http://www.r-project.org/&#34; target=&#34;_blank&#34;&gt;R&lt;/a&gt; programming skills, I&amp;rsquo;ve decided to tackle the &lt;a title=&#34;Project Euler&#34; href=&#34;https://projecteuler.net/about&#34; target=&#34;_blank&#34;&gt;Project Euler&lt;/a&gt; questions exclusively using my new favourite programming language. Besides, it seems that R can do just about everything; surely it can handle some programming games. If I get the time, I&amp;rsquo;ll add updates in other languages as I build my knowledge of them.&lt;/p&gt;</description>
+    </item>
+    
+  </channel>
+</rss>

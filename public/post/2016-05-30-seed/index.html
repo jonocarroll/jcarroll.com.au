@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en" itemscope itemtype="http://schema.org/WebPage">
+  <head>
+    
+
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>From a (set.)seed grows a mighty dataset - Irregularly Scheduled Programming</title>
+  <meta property="og:title" content="From a (set.)seed grows a mighty dataset" />
+  <meta name="twitter:title" content="From a (set.)seed grows a mighty dataset" />
+  <meta name="description" content="Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &lt;- function(str) paste(str, collapse=&quot;&quot;) set.seed(12173423); x &lt;- sample(LETTERS, 5, replace=TRUE) set.seed(7723132); y &lt;- sample(LETTERS, 5, replace=TRUE) paste(printStr(x), printStr(y)) [/code] Okay, the first bit is straightforward; it’s a function that puts two string together into one. The next two lines appear to provide a random integer to the set.seed function then sample the pool of LETTERS 5 times with replacement.">
+  <meta property="og:description" content="Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &lt;- function(str) paste(str, collapse=&quot;&quot;) set.seed(12173423); x &lt;- sample(LETTERS, 5, replace=TRUE) set.seed(7723132); y &lt;- sample(LETTERS, 5, replace=TRUE) paste(printStr(x), printStr(y)) [/code] Okay, the first bit is straightforward; it’s a function that puts two string together into one. The next two lines appear to provide a random integer to the set.seed function then sample the pool of LETTERS 5 times with replacement.">
+  <meta name="twitter:description" content="Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &lt;- function(str) paste(str, collapse=&quot;&quot;) set.seed(12173423); x &lt;- sample(LETTERS, 5, replace=TRUE) …">
+  <meta name="author" content="Jonathan Carroll"/><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "Irregularly Scheduled Programming",
+    
+    "url": "/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "/post/2016-05-30-seed/",
+          "name": "From a (set.)seed grows a mighty dataset"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : "Jonathan Carroll"
+  },
+  "headline": "From a (set.)seed grows a mighty dataset",
+  "description" : "Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &amp;lt;- function(str) paste(str, collapse=&amp;quot;&amp;quot;) set.seed(12173423); x &amp;lt;- sample(LETTERS, 5, replace=TRUE) set.seed(7723132); y &amp;lt;- sample(LETTERS, 5, replace=TRUE) paste(printStr(x), printStr(y)) [/code] Okay, the first bit is straightforward; it’s a function that puts two string together into one. The next two lines appear to provide a random integer to the set.seed function then sample the pool of LETTERS 5 times with replacement.",
+  "inLanguage" : "en",
+  "wordCount": 1840,
+  "datePublished" : "2016-05-30T21:35:26",
+  "dateModified" : "2016-05-30T21:35:26",
+  "image" : "/img/logo.png",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "/post/2016-05-30-seed/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "/img/logo.png",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="From a (set.)seed grows a mighty dataset" />
+<meta property="og:description" content="Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &lt;- function(str) paste(str, collapse=&quot;&quot;) set.seed(12173423); x &lt;- sample(LETTERS, 5, replace=TRUE) set.seed(7723132); y &lt;- sample(LETTERS, 5, replace=TRUE) paste(printStr(x), printStr(y)) [/code] Okay, the first bit is straightforward; it’s a function that puts two string together into one. The next two lines appear to provide a random integer to the set.seed function then sample the pool of LETTERS 5 times with replacement.">
+<meta property="og:image" content="/img/logo.png" />
+<meta property="og:url" content="/post/2016-05-30-seed/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Irregularly Scheduled Programming" />
+  <meta name="twitter:title" content="From a (set.)seed grows a mighty dataset" />
+  <meta name="twitter:description" content="Can you predict the output from this code?
+[code language=&#34;r&#34;] printStr &lt;- function(str) paste(str, collapse=&quot;&quot;) set.seed(12173423); x &lt;- sample(LETTERS, 5, replace=TRUE) …">
+  <meta name="twitter:image" content="/img/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@carroll_jono" />
+  <meta name="twitter:creator" content="@carroll_jono" />
+  <link href='/img/favicon.ico' rel='icon' type='image/x-icon'/>
+  <meta property="og:image" content="/img/logo.png" />
+  <meta name="twitter:image" content="/img/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:site" content="@carroll_jono" />
+  <meta name="twitter:creator" content="@carroll_jono" />
+  <meta property="og:url" content="/post/2016-05-30-seed/" />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Irregularly Scheduled Programming" />
+
+  <meta name="generator" content="Hugo 0.54.0" />
+  <link rel="alternate" href="/index.xml" type="application/rss+xml" title="Irregularly Scheduled Programming">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+  <link rel="stylesheet" href="/css/main.css" /><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lora:400,700,400italic,700italic" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800" />
+  <link rel="stylesheet" href="/css/highlight.min.css" /><link rel="stylesheet" href="/css/codeblock.css" /><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/default-skin/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous">
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'UA-135066967-1', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+
+
+  </head>
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/">Irregularly Scheduled Programming</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="/">Blog</a>
+            </li>
+          
+        
+          
+            <li class="navlinks-container">
+              <a class="navlinks-parent">About Me</a>
+              <div class="navlinks-children">
+                
+                  <a href="/page/about_jonathan_carroll">Bio</a>
+                
+                  <a href="/page/cv_jonathan_carroll">CV</a>
+                
+                  <a href="/page/projects_jonathan_carroll">Projects</a>
+                
+              </div>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Book" href="https://beyondspreadsheetswithr.com/">Book</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Tags" href="/tags">Tags</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="Irregularly Scheduled Programming" href="/">
+            <img class="avatar-img" src="/img/logo.png" alt="Irregularly Scheduled Programming" />
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>From a (set.)seed grows a mighty dataset</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on May 30, 2016
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-clock"></i>&nbsp;9&nbsp;minutes
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-book"></i>&nbsp;1840&nbsp;words
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;Jonathan Carroll
+  
+  
+</span>
+
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+<p>Can you predict the output from this code?</p>
+[code language="r"]
+printStr &lt;- function(str) paste(str, collapse=&quot;&quot;)
+
+set.seed(12173423); x &lt;- sample(LETTERS, 5, replace=TRUE)
+set.seed(7723132);  y &lt;- sample(LETTERS, 5, replace=TRUE)
+
+paste(printStr(x), printStr(y))
+[/code]
+
+<p>Okay, the first bit is straightforward; it’s a function that puts two string together into one. The next two lines appear to provide a random integer to the <code>set.seed</code> function then sample the pool of <code>LETTERS</code> 5 times with replacement. The last line uses the function from the first line to combine those samples of letters together into one string. Easy enough. Looks like it will produce a random string. Give it a try... go on, the seeds should make it reproducible.</p>
+
+<p>[code language=&ldquo;r&rdquo; light=&ldquo;1&rdquo;][1] &quot;HELLO WORLD&quot;[/code]</p>
+
+<p>Whoa! What are the odds of that!?! Of all the possible letters we could have sampled, we get that!</p>
+<p>Okay, yes, it’s rigged. Pretty neat choice of values for <code>set.seed</code> there, right? I came across the <a href="http://stackoverflow.com/questions/15182496/why-does-this-code-using-random-strings-print-hello-world">Java variant of this</a> via StackOverflow’s ‘Hot Network Questions’ sidebar (a rabbit-hole equal in depth to a Wikipedia <a href="http://www.urbandictionary.com/define.php?term=wiki-hole">wiki-hole</a>). The seeds just happen to be ones that when sampled 5 times with replacement produce the right values to extract those letters in order. That seems simple enough until you want to find them.</p>
+<p>The possible combinations of 5 letters, chosen with replacement, from the pool of 26 is $latex 26^5$ which is a lot, but not insanely many. I work with multi-million row datasets frequently enough. So, we could just run a loop over all integers (<code>set.seed</code> rounds to nearest integer anyway; refer to <code>?set.seed</code>), set the seed to that value, and save the sampled letters. The first combination will be</p>
+
+<p>[code language=&ldquo;r&rdquo; light=&ldquo;1&rdquo;]set.seed(1L)
+sample(LETTERS, 5, replace=TRUE)
+[1] &quot;G&quot; &quot;J&quot; &quot;O&quot; &quot;X&quot; &quot;F&quot;[/code]</p>
+
+<p>So, we write a loop and iterate over the seed, saving the outputs. But wait, you may wonder, what’s to guarantee that we don’t get the same sample twice? Nothing. It’s a random sample starting from a different seed every time; there’s no control over the results after the fact. A quick check confirms this; here's a duplicate of the first record appearing at seed 3415066L</p>
+
+<p>[code language=&ldquo;r&rdquo; light=&ldquo;1&rdquo;]set.seed(1L);       sample1 &lt;- sample(LETTERS, 5, replace=TRUE)
+set.seed(3415066L); sample2 &lt;- sample(LETTERS, 5, replace=TRUE)
+identical(sample1, sample2)
+[1] TRUE[/code]</p>
+
+<p>So, <code>set.seed(1L)</code> produces the same 5 letter sample as <code>set.seed(3415066L)</code>. There’s definitely duplicates of other combinations between those two too. Okay, so we’re not going to be limited to $latex 26^5$. How many though? Who knows? What’s the distribution of duplication? Without knowing how many we need to try for, we can take the upper limit and go for that; on my machine I get <code>.Machine$integer.max = </code>2147483647 which is certainly a bigger number, but not out of the realm of possibility.</p>
+<p>To make life easier, we can split the problem up. It’s “embarrassingly parallel” (each iteration is completely independent of the others) so it’s perfect for parallelisation. If you haven’t read <a href="https://wrathematics.github.io/">Drew Schmidt a.k.a wrathematics’</a> <a href="https://wrathematics.github.io/RparallelGuide/">semi-NSFW guide to Parallelism, R, and OpenMP</a> then stop reading this and go read that.</p>
+
+<p>You’re back, great. Let’s assume for now that you too have access to a big, fast computer and want to parallelise the loop over all positive integers. If you’re lucky, it’s as easy as</p>
+
+<p>[code language=&ldquo;r&rdquo;]library(parallel)
+cl &lt;- makeCluster(7) ## 8-core machine, leave one out to remain stable
+clusterApply(cl, seq(1, (.Machine$integer.max-1), 1e7), function(x) {
+   wordvec &lt;- data.frame(word=character(1e7L), seed=integer(1e7L))
+   for(iloop in 1:(1e7)) {
+      iseed &lt;- x + iloop - 1
+      if(abs(iseed) &lt; .Machine$integer.max) {
+         set.seed(iseed)
+         wordvec[iloop, &quot;word&quot;] &lt;- paste0(LETTERS[sample(26, 5, replace=TRUE)], collapse=&quot;&quot;)
+         wordvec[iloop, &quot;word&quot;] &lt;- iseed
+      }
+   }
+   write.csv(wordvec, file=paste0(&quot;seeded<em>words</em>&quot;,as.character(x),&quot;.csv&quot;))
+   }
+})[/code]</p>
+
+<p>but life’s not that easy. This is slow as a week of Mondays. For starters, updating the <code>data.frame</code> this many times will probably exhaust your RAM. This was run on a machine with 32GB available, and it got full, fast. Writing out large <code>.csv</code> files is slow, and given that each of them has ten million rows, the 215 files aren't particularly small; there are a lot of duplicate entries.</p>
+
+<p>We can make this better with a few adjustments;</p>
+
+<p>[code language=&ldquo;r&rdquo;]library(parallel)
+cl &lt;- makeCluster(7) ## 8-core machine, leave one out to remain stable
+clusterApply(cl, seq(1, (.Machine$integer.max-1), 1e7), function(x) {
+   library(data.table)
+   wordvec &lt;- data.table(word=character(1e7L), seed=integer(1e7L))
+   for(iloop in 1:(1e7)) {
+      iseed &lt;- x + iloop - 1
+      if(abs(iseed) &lt; .Machine$integer.max) {
+         set.seed(iseed)
+         set(wordvec, i=iloop, j=&quot;word&quot;, value=paste0(LETTERS[sample(26, 5, replace=TRUE)], collapse=&quot;&quot;))
+         set(wordvec, i=iloop, j=&quot;seed&quot;, value=iseed)
+      }
+   }
+   unique_wordvec &lt;- unique(wordvec, by=&quot;word&quot;)
+   save(unique_wordvec, file=paste0(&quot;seeded<em>words</em>&quot;,as.character(x),&quot;.rds&quot;))
+   }
+})[/code]</p>
+
+<p>Using <code>data.table</code> means that the <code>set()</code> operations <a href="https://gist.github.com/jonocarroll/a738212afde6394b4f251c7cac7f3348">are all in-memory</a> and this alone speeds up the loops. Removing duplicates using <code>unique</code> (now dispatched for <code>data.table</code>) and saving as a compressed binary <code>.rds</code> file makes this a little less bulky. All in all, this can be completed in a few hours on a decent enough machine. I did try using <a href="https://cran.r-project.org/web/packages/feather/index.html">feather</a> for the saving of files and my early tests using smaller subsets showed it to be amazingly fast. Unfortunately there are still some bugs to be ironed out of that package for large files/lots of rows, and my 215 files ended up small, but unreadable.</p>
+<p>Given that there’s only $latex 26^5 = 11881376$ combinations that we’re looking for, depending on how often duplicates come up, we probably don’t need all the results. I’ll save you the trouble and let you know that the loop only needs to go up to at most, <code>113449118</code>. Reading all of the files back in and merging them again requires some careful considerations. <code>R</code> isn’t too keen on creating objects larger than 2GB, so we can’t really just merge 113449118 lines of data. Taking it step-wise, I managed to get it to work</p>
+
+<p>[code language=&ldquo;r&rdquo;]library(data.table)
+library(dplyr)
+load(&quot;seeded_words_1.rds&quot;) ## load the first file
+bigdf &lt;- unique_wordvec    ## objects were saved as unique_wordvec so save
+                           ## to a new name to avoid overwriting
+rm(unique_wordvec)         ## then drop the saved version</p>
+
+<p>allfiles &lt;- list.files(pattern=&quot;01.rds&quot;)</p>
+
+<h2 id="files-were-saved-as-seeded-words-x-rds-where-x-was-steps-of-1e7">files were saved as &lsquo;seeded_words_X.rds&rsquo; where x was steps of 1e7</h2>
+
+<h2 id="sorting-alphabetically-gives-the-wrong-order">sorting alphabetically gives the wrong order</h2>
+
+<p>for (file in allfiles[order(as.numeric(sub(&quot;\.rds&quot;,&quot;&quot;,sub(&quot;[a-z_]*&quot;,&quot;&quot;,allfiles))))]) {
+  cat(paste0(&quot;** Processing file &quot;,file,&quot;\n&quot;)) ## show notifications on the screen
+  load(file)
+  bigdf &lt;- unique(data.table(bind_rows(bigdf, unique_wordvec)), by=&quot;word&quot;) ## drop duplicates as we go
+  rm(unique_wordvec)
+  if(nrow(bigdf)&amp;gt;=26^5) {
+    cat(paste0(&quot;** Processing OUTPUT file.\n&quot;))
+    save(bigdf, file=&quot;all_seeded_words.rds&quot;)
+    stop()
+  }
+}[/code]</p>
+
+<p>This results in a 75MB <code>.rds</code> of all unique combinations of 5 letters sampled with replacement, and the seed that generates them. Not particularly share-able or convenient. We’re mainly interested in actual words. We can filter this list down to English words if we can think of some way to do that (with the associated assumptions and limitations that may bring). Here’s one <code>R</code> option:</p>
+
+<p>[code language=&ldquo;r&rdquo; light=&ldquo;1&rdquo;]library(ScrabbleScore)
+words &lt;- bigdf[is.twl06.word(bigdf$word), ][/code]</p>
+
+<p>This filters the generated 5-letter words against a <a href="https://en.wikipedia.org/wiki/Official_Tournament_and_Club_Word_List">Scrabble Official Tournament and Club Word List</a> which is as close as I can be bothered getting to ‘English’ words. What’s left is a list of <code>8938</code> 5-letter words with their associated generating seeds. Sure enough, filtering the <code>twl06</code> wordlist down to the 5-letter words gives exactly that many; we've generated all the 5-letter words in that data set. Cool. What were we hoping to do with it? Oh, right.</p>
+
+<p>[code language=&ldquo;r&rdquo; light=&ldquo;1&rdquo;]print(words[&quot;HELLO&quot;])
+     word     seed
+ 1: HELLO 12173423
+print(words[&quot;WORLD&quot;])
+     word    seed
+ 1: WORLD 7723132
+[/code]</p>
+
+<p>There we go, the seeds used in the original question for this post. If we wanted, we could write other words or phrases in this way.</p>
+[code language="r" light="1"]set.seed(5360994);   x &lt;- sample(LETTERS, 5, replace=TRUE)
+set.seed(21732771);  y &lt;- sample(LETTERS, 5, replace=TRUE)
+
+paste(printStr(x), printStr(y))
+
+[1] &quot;STATS RULES&quot;[/code]
+
+<p>We might be interested in what the distribution of unique, English words looks like. Here you go;</p>
+[code language="r"]
+library(ggplot2)
+gg &lt;- ggplot(words, aes(x=seq_along(seed), y=seed)) 
+gg &lt;- gg + geom_point(alpha=0.6, col=&quot;steelblue1&quot;, pch=20, size=2) 
+gg &lt;- gg + theme_bw()
+gg &lt;- gg + labs(title=&quot;Seed that generates unique, English words&quot;, 
+                subtitle=&quot;Filtered as valid Scrabble TW06 words&quot;,
+                caption=&quot;https://en.wikipedia.org/wiki/Official_Tournament_and_Club_Word_List&quot;,
+                x=&quot;Index&quot;,
+                y=&quot;Seed&quot;)
+gg
+[/code]
+
+I've converted that using the excellent <a href="https://plot.ly/ggplot2/"><code>plotly::ggplotly()</code> function</a> so you can mouseover each point to see the corresponding word.
+
+<iframe width="600" height="800" frameborder="0" scrolling="no" src="https://plot.ly/~jonocarroll/4.embed"></iframe>
+
+<p>Fairly uniform looking in that plot. How about the density?</p>
+
+<p>[code language=&ldquo;r&rdquo;]
+library(ggplot2)
+gv &lt;- ggplot(words, aes(x=factor(0), y=seed))
+gv &lt;- gv + geom_violin(fill=&quot;steelblue1&quot;)
+gv &lt;- gv + theme_bw()
+gv &lt;- gv + theme(axis.title.x=element_blank(),
+                 axis.text.x=element_blank(),
+                 axis.ticks.x=element_blank())
+gv &lt;- gv + labs(title=&quot;Violin plot of seed that generates unique, English words&quot;,
+                subtitle=&quot;Filtered as valid Scrabble TW06 words&quot;,
+                caption=&quot;<a href="https://en.wikipedia.org/wiki/Official_Tournament_and_Club_Word_List&quot;">https://en.wikipedia.org/wiki/Official_Tournament_and_Club_Word_List&quot;</a>,
+                y=&quot;Seed&quot;)
+gv
+[/code]</p>
+
+<p><a href="http://jcarroll.com.au/wp-content/uploads/2016/05/violinplot-1.png"><img src="http://jcarroll.com.au/wp-content/uploads/2016/05/violinplot-1.png" alt="violinplot" width="665" height="428" class="alignnone size-full wp-image-934" /></a></p>
+
+<p>which looks pretty nicely vanishing as more duplicates are produced.</p>
+
+<p>Finally, what about the distribution by starting letter?</p>
+
+<iframe width="600" height="800" frameborder="0" scrolling="no" src="https://plot.ly/~jonocarroll/2.embed"></iframe>
+
+<p>Unsurprisingly; not many words starting with &ldquo;X&rdquo; (13) and lots starting with &ldquo;S&rdquo; (1084). The last word produced (the one with the largest unique seed before we run out of unique words) is &ldquo;HUTCH&rdquo; at 113449118.</p>
+
+<p>Can we do anything else with this? The first thing that comes to mind is using this to encode a message. This method is reminiscent of a hash function; it takes some data and via a 1-way mechanism, produces an encoded message. Of course, the 1-way nature of this takes a word and encodes it to an integer that can’t be easily predicted, so hopefully your message is all integers. Many reasons make this a bad idea to actually use for this purpose. The first being that in the world of digital security, if you’re thinking of rolling your own, you’re setting yourself up for trouble. Much smarter people than you or I have spent a lot of time getting digital security right, and it still isn't.</p>
+
+<p>As for actual technical issues, the obvious one is that it can be brute-forced (as we just showed) easily. I produced the list of all 5-letter combinations produced from all possible integers in a few hours. Modern GPU processing can perform many millions of these calculations per second. Another technical fault of this would be that collisions are all too easy, as demonstrated by our duplicates. A good encoding should only generate the hashed value from the input, not any other input. <a href="http://www.mathstat.dal.ca/~selinger/md5collision/">MD5 has this flaw</a>. If you were to try and use this encoding to validate a message (say, the integer represents a checksum of the message contents, encoded as a difficult to predict word) then it would be far too easy for a malicious entity to produce the same word from their own message padded out with junk data.</p>
+
+<p>So, not very useful for encryption/hashing (not that it should be). I don’t really have a useful application for this apart from the riddle at the start of this post, but it’s been an interesting journey through optimisation, parallelisation, filtering, and file input/output. I’d say that has made it worthwhile enough.</p>
+
+<p>The data file of valid Scrabble words can be <a href="https://github.com/jonocarroll/wp_content/raw/master/_data/scrabble_words.rds">downloaded here</a> if you’d like it. I’ll gladly provide the full 5-letter list on request.</p>
+
+<p>The original content (not updated on RSS feed scraped syndicators) of this post is available on GitHub and you&rsquo;re welcome to [wpghs text=&lsquo;provide suggestions/edits.&rsquo;]</p>
+
+<p>I&rsquo;m not a data-security expert so any and all of my advice there is liable to be rubbish. Do you know a better way to generate this data, or an aspect I haven&rsquo;t considered? Hit the comments and let me know.</p>
+
+<p>Title image: <a href="https://www.flickr.com/photos/usdagov/16024807396/">CC-BY U.S. Department of Agriculture</a></p>
+
+
+        
+
+        
+            <hr/>
+            <section id="social-share">
+              <div class="list-inline footer-links">
+                
+
+<div class="share-box" aria-hidden="true">
+    <ul class="share">
+      
+      <li>
+        <a href="//twitter.com/share?url=%2fpost%2f2016-05-30-seed%2f&amp;text=From%20a%20%28set.%29seed%20grows%20a%20mighty%20dataset&amp;via=carroll_jono" target="_blank" title="Share on Twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//plus.google.com/share?url=%2fpost%2f2016-05-30-seed%2f" target="_blank" title="Share on Google Plus">
+          <i class="fab fa-google-plus"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.facebook.com/sharer/sharer.php?u=%2fpost%2f2016-05-30-seed%2f" target="_blank" title="Share on Facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//reddit.com/submit?url=%2fpost%2f2016-05-30-seed%2f&amp;title=From%20a%20%28set.%29seed%20grows%20a%20mighty%20dataset" target="_blank" title="Share on Reddit">
+          <i class="fab fa-reddit"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.linkedin.com/shareArticle?url=%2fpost%2f2016-05-30-seed%2f&amp;title=From%20a%20%28set.%29seed%20grows%20a%20mighty%20dataset" target="_blank" title="Share on LinkedIn">
+          <i class="fab fa-linkedin"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.stumbleupon.com/submit?url=%2fpost%2f2016-05-30-seed%2f&amp;title=From%20a%20%28set.%29seed%20grows%20a%20mighty%20dataset" target="_blank" title="Share on StumbleUpon">
+          <i class="fab fa-stumbleupon"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="//www.pinterest.com/pin/create/button/?url=%2fpost%2f2016-05-30-seed%2f&amp;description=From%20a%20%28set.%29seed%20grows%20a%20mighty%20dataset" target="_blank" title="Share on Pinterest">
+          <i class="fab fa-pinterest"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  
+              </div>
+            </section>
+        
+
+        
+          
+          
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="/post/2016-04-30-bad-neighbours/" data-toggle="tooltip" data-placement="top" title="Bad Neighbours (no, not the movie)">&larr; Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="/post/2016-06-02-images-as-x-axis-labels/" data-toggle="tooltip" data-placement="top" title="Images as x-axis labels">Next Post &rarr;</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+        
+          
+          <div class="disqus-comments">                  
+            <button id="show-comments" class="btn btn-default" type="button">Show <span class="disqus-comment-count" data-disqus-url="post/2016-05-30-seed">comments</span></button>
+            <div id="disqus_thread"></div>
+
+            <script type="text/javascript">
+              var disqus_config = function () {
+              this.page.url = 'post\/2016-05-30-seed';
+            };
+
+          </script>
+          </div>
+          
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+    <footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:website@jcarroll.com.au" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/jonocarroll" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://gitlab.com/jonocarroll" title="GitLab">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-gitlab fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://bitbucket.org/jonocarroll" title="Bitbucket">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-bitbucket fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/carroll_jono" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/carrolljonathan" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://stackoverflow.com/users/4168169/jonathan-carroll" title="StackOverflow">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-stack-overflow fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://paypal.me/jonocarroll" title="PayPal">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-paypal fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+          <li>
+            
+            <a href="/index.xml" title="RSS">
+            
+              <span class="fa-stack fa-lg">
+                <i class="fas fa-circle fa-stack-2x"></i>
+                <i class="fas fa-rss fa-stack-1x fa-inverse"></i>
+              </span>
+            </a>
+          </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+            
+              <a href="jcarroll.com.au">Jonathan Carroll</a>
+            
+          
+
+          &nbsp;&bull;&nbsp;&copy;
+          
+            2019
+          
+
+          
+            &nbsp;&bull;&nbsp;
+            <a href="/">Irregularly Scheduled Programming</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="http://gohugo.io">Hugo v0.54.0</a> powered &nbsp;&bull;&nbsp; Theme by <a href="http://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a> adapted to <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/contrib/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/main.js"></script>
+<script src="/js/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/photoswipe/4.1.2/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script>
+<script src="/js/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+<script type="text/javascript">
+$(function(){
+  $('#show-comments').on('click', function(){
+    var disqus_shortname = 'jcarroll-com-au';
+      
+    (function() {
+      var disqus = document.createElement('script'); 
+      disqus.type = 'text/javascript'; 
+      disqus.async = true;
+      disqus.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(disqus);
+    })();
+      
+    $(this).hide(); 
+    });
+  });
+      
+</script>
+<script id="dsq-count-scr" src="//jcarroll-com-au.disqus.com/count.js" async></script>
+
+
+
+
+  </body>
+</html>
+

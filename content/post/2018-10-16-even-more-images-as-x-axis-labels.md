@@ -3,7 +3,7 @@ title: Even more images as x-axis labels
 author: Jonathan Carroll
 date: 2018-10-16 23:18:32
 slug: testingyaml
-categories: []
+categories: [R]
 tags: [rstats]
 type: ''
 subtitle: ''
