@@ -18,11 +18,11 @@ To be honest, I'm having some trouble remembering right now, so why don't you ju
 ## GitHub Contributions
 
 <!-- Prepare a container for your calendar. -->
-<script src="https://cdn.rawgit.com/IonicaBizau/github-calendar/gh-pages/dist/github-calendar.min.js">
+<script src="https://ionicabizau.github.io/github-calendar/dist/github-calendar.min.js">
 </script>
 
 <!-- Optionally, include the theme (if you don't want to struggle to write the CSS) -->
-<link rel="stylesheet" href="https://cdn.rawgit.com/IonicaBizau/github-calendar/gh-pages/dist/github-calendar.css"/>
+<link rel="stylesheet" href="https://github.com/IonicaBizau/github-calendar/blob/gh-pages/dist/github-calendar.css"/>
 
 <!-- Prepare a container for your calendar. -->
 <div class="calendar">
