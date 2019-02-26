@@ -56,7 +56,7 @@
           {{ i18n "poweredBy" . | safeHTML }}
           {{ if $.GitInfo }} 
             &nbsp;&bull;&nbsp;
-              <a href = "{{ .Site.Params.commit }}{{ .GitInfo.AbbreviatedHash }}">Commit: {{ .GitInfo.AbbreviatedHash }}</a>
+              <a href = "{{ .Site.Params.commit }}tree/{{ .GitInfo.AbbreviatedHash }}">Commit: {{ .GitInfo.AbbreviatedHash }}</a>
           {{ end }}
         </p>
       </div>
