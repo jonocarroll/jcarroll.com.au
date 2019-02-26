@@ -16,7 +16,7 @@
   {{ else }}
     &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;{{ .Site.Author.name | safeHTML }}
   {{ end }}
-  {{ if .Params.linktosource }} 
+  {{ if .Params.linkToSource }} 
     &nbsp;|&nbsp;<i class="fas fa-link"></i>&nbsp;<a href = "{{ .Params.commit }}/master/{{ .File.Path }}">Link to source</a>
   {{ end }}
   {{- if .Site.Params.staticman -}}
