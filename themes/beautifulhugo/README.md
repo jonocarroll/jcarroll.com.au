@@ -1,12 +1,12 @@
 # Beautiful Hugo - A port of Beautiful Jekyll Theme
 
-![Beautiful Hugo Theme Screenshot](https://github.com/halogenica/beautifulhugo/blob/master/images/screenshot.png)
+![Beautiful Hugo Theme Screenshot](https://github.com/jonocarroll/beautifulhugo/blob/master/images/screenshot.png)
 
 ## Installation
 
     $ mkdir themes
     $ cd themes
-    $ git submodule add https://github.com/halogenica/beautifulhugo.git beautifulhugo
+    $ git submodule add https://github.com/jonocarroll/beautifulhugo.git beautifulhugo
     
 
 See [the Hugo documentation](https://gohugo.io/themes/installing/) for more information.
@@ -107,21 +107,28 @@ To add Google Analytics, simply sign up to [Google Analytics](https://www.google
 
 ### Commit SHA on the footer
 
-If the source of your site is in a Git repo, the SHA corresponding to the commit the site is built from can be shown on the footer. To do so, two environment variables have to be set (`GIT_COMMIT_SHA` and `GIT_COMMIT_SHA_SHORT`) and parameter `commit` has to be defined in the config file:
+If the source of your site is in a Git repo, the SHA corresponding to the commit the site is built from can be shown on the footer. To do so a parameter `commit` has to be defined in the config file:
 
 ```
 [Params]
-  commit = "https://github.com/<username>/<siterepo>/tree/"
+  commit = "https://github.com/<username>/<siterepo>/"
 ```
   
-This can be achieved by running the next command prior to calling Hugo:
+(note that the parameter in [halogenica/beautifulhugo](https://github.com/halogenica/beautifulhugo) also has `/tree/`.
+
+### Link to Source in Post Headers
+
+Additionally, a 'Link to source' link can be added to the post titles by setting another parameter `linkToSource`:
 
 ```
-  GIT_COMMIT_SHA=`git rev-parse --verify HEAD` GIT_COMMIT_SHA_SHORT=`git rev-parse --short HEAD`
+[Params]
+  linkToSource = true
 ```
-  
-See at [xor-gate/xor-gate.org](https://github.com/xor-gate/xor-gate.org) an example of how to add it to a continuous integration system.
- 
+
+![Link to Source](https://github.com/jonocarroll/beautifulhugo/blob/master/images/linkToSource.png)
+
+This assumes your source is an `Rmd` file which can be found at `{{ .Site.Params.commit }}blob/master/content/{{ .File.Dir }}{{ .File.BaseFileName }}.Rmd`, such as when hosting on GitHub. This has not yet been tested with bundle posts but may work if `.File.Dir` behaves.
+
 ### Extra shortcodes
 
 There are two extra shortcodes provided (along with the customized figure shortcode):
@@ -150,8 +157,8 @@ This is column 2.
 
 ## About
 
-This is a port of the Jekyll theme [Beautiful Jekyll](https://deanattali.com/beautiful-jekyll/) by [Dean Attali](https://deanattali.com/aboutme#contact). It supports most of the features of the original theme.
+This is a fork of the Hugo theme [Beautiful Hugo](https://github.com/halogenica/beautifulhugo) by [Michael Romero](https://github.com/halogenica), personalised for [jonocarroll.com.au](https://jonocarroll.com.au). That is a port of the Jekyll theme [Beautiful Jekyll](https://deanattali.com/beautiful-jekyll/) by [Dean Attali](https://deanattali.com/aboutme#contact). It supports most of the features of the original theme.
 
 ## License
 
-MIT Licensed, see [LICENSE](https://github.com/halogenica/Hugo-BeautifulHugo/blob/master/LICENSE).
+MIT Licensed, see [LICENSE](https://github.com/jonocarroll/Hugo-BeautifulHugo/blob/master/LICENSE).
