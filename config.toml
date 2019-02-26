@@ -32,6 +32,7 @@ ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
   delayDisqus = true
   showRelatedPosts = true
   #gcse = "012345678901234567890:abcdefghijk" # Get your code from google.com/cse. Make sure to go to "Look and Feel" and change Layout to "Full Width" and Theme to "Classic"
+  linkToSource = true
 
 #[[Params.bigimg]]
 #  src = "img/triangle.jpg"
