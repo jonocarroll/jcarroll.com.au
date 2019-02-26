@@ -15,6 +15,7 @@ googleAnalytics = "UA-135066967-1"
 enableGitInfo = true
 enableEmoji = true
 ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
+rssLimit = 50
 
 [Params]
 #  homeTitle = "Beautiful Hugo Theme" # Set a different text for the header on the home page
