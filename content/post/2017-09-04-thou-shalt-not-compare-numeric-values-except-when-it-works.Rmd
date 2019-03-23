@@ -1,0 +1,178 @@
+---
+title: >
+  Thou shalt not compare numeric values
+  (except when it works)
+author: Jonathan Carroll
+date: 2017-09-04 15:02:07
+slug: compare-numerics
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(dplyr)
+library(tibble)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.
+
+<!--more-->
+
+I’ve been working on the ‘merging data’ part of [my book](https://www.manning.com/books/data-munging-with-r) and, as I do when I’m writing this stuff, I had a play around with some examples to see if there was anything funky going on if a reader was to try something slightly different. I’ve been using `dplyr` for the examples after being thoroughly convinced on Twitter to do so. It’s going well. Mostly.
+
+```r
+## if you haven't already done so, load dplyr
+library(dplyr)
+```
+
+My example involved joining together two `tibble`s containing text values. Nothing too surprising. I wondered though; do numbers behave the way I expect? Now, a big rule in programming is 'thou shalt not compare numbers', and it holds especially true [when numbers aren't exactly integers](http://0.30000000000000004.com/). This is because representing non-integers is hard, and what you see on the screen isn't always what the computer sees internally.
+
+[caption align="alignnone" width="680"]<a href="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg"><img src="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg" alt="Thou shalt not compare numbers." width="680" height="485" class="size-large" /></a> Thou shalt not compare numbers.[/caption]
+
+If I had a `tibble` where the column I would use to `join` had integers
+
+```{r}
+dataA <- tribble(
+    ~X, ~Y,
+    0L, 100L,
+    1L, 101L,
+    2L, 102L,
+    3L, 103L
+)
+dataA
+```
+
+and another `tibble` with `numeric` in that column
+
+```{r}
+dataB <- tribble(
+    ~X, ~Z,
+    0, 1000L,
+    1, 1001L,
+    2, 1002L,
+    3, 1003L
+)
+dataB
+```
+
+would they still `join`?
+
+```{r}
+full_join(dataA, dataB)
+```
+
+Okay, sure. R treats these as close enough to join. I mean, maybe it shouldn’t, but we’ll work with what we have. R doesn’t always think these are equal
+```{r}
+identical(0L, 0)
+identical(2L, 2)
+```
+
+though sometimes it does
+
+```{r}
+0L == 0
+2L == 2
+```
+
+(`==` coerces types before comparing). Well, what if one of these just ‘looks like’ the other value (can be coerced to the same?)
+
+```{r}
+dataC <- tribble(
+    ~X, ~Z,
+    "0", 100L,
+    "1", 101L,
+    "2", 102L,
+    "3", 103L
+)
+dataC
+```
+
+```{r, error = TRUE}
+full_join(dataA, dataC)
+```
+
+That’s probably wise. Of course, R is perfectly happy with things like
+
+```{r}
+"2":"5"
+```
+
+and `==` thinks that’s fine
+
+```{r}
+"0" == 0L
+"2" == 2L
+```
+
+but who am I to argue?
+
+Anyway, how far apart can those integers and numerics be before they aren’t able to be joined? What if we shift the ‘numeric in name only’ values away from the integers just a teensy bit? `.Machine$double.eps` is the built-in value for ‘the tiniest number you can produce’. On this system it’s `r .Machine$double.eps`.
+
+```{r}
+dataBeps <- tribble(
+    ~X, ~Z,
+    0 + .Machine$double.eps, 1000L,
+    1 + .Machine$double.eps, 1001L,
+    2 + .Machine$double.eps, 1002L,
+    3 + .Machine$double.eps, 1003L
+)
+dataBeps
+```
+
+Well, that’s… weirder. The values offset from `2` and `3` joined fine, but the `0` and `1` each got multiple copies since R thinks they’re different. What if we offset a little further?
+
+```{r}
+dataB2eps <- tribble(
+    ~X, ~Z,
+    0 + 2*.Machine$double.eps, 1000L,
+    1 + 2*.Machine$double.eps, 1001L,
+    2 + 2*.Machine$double.eps, 1002L,
+    3 + 2*.Machine$double.eps, 1003L
+)
+dataB2eps
+```
+
+That’s what I’d expect. So, what’s going on? Why does R think those numbers are the same? Let’s check with a minimal example: For each of the values `0:4`, let’s compare that integer with the same offset by `.Machine$double.eps`
+
+```{r}
+library(purrr) ## for the 'thou shalt not for-loop' crowd
+map_lgl(0:4, ~ as.integer(.x) == as.integer(.x) + .Machine$double.eps)
+```
+
+And there we have it. Some sort of relative difference tolerance maybe? In any case, the general rule to live by is to <em>never</em> compare floats. Add this to the list of reasons why.
+
+For what it's worth, I'm sure this is hardly a surprising detail to the `dplyr` team. They've dealt with [things like this for a long time](https://github.com/tidyverse/dplyr/issues/228) and I'm sure it was much worse before those changes.
+
+**Update: ** As noted in the comments, R does have a way to check if things are 'nearly equal' (within some specified tolerance) via `all.equal()`
+
+```{r}
+purrr::map_lgl(0:4, ~all.equal(.x, .x + .Machine$double.eps))
+```
+
+However, this does require the user to either specify the exact tolerance under which they consider two numbers 'equal', or to use the default (which, judging by the source of `all.equal.numeric()` is `sqrt(.Machine$double.eps)` or around `r sqrt(.Machine$double.eps)` on this system). This means that numbers can be 'quite' different (depending on what's an important difference) and still considered equal
+
+```{r}
+purrr::map_lgl(0:4, ~ all.equal(.x, .x + 1e-8))
+```
+
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

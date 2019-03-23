@@ -1,0 +1,216 @@
+---
+title: >
+  Thou shalt not compare numeric values
+  (except when it works)
+author: Jonathan Carroll
+date: 2017-09-04 15:02:07
+slug: compare-numerics
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.</p>
+<!--more-->
+<p>I’ve been working on the ‘merging data’ part of <a href="https://www.manning.com/books/data-munging-with-r">my book</a> and, as I do when I’m writing this stuff, I had a play around with some examples to see if there was anything funky going on if a reader was to try something slightly different. I’ve been using <code>dplyr</code> for the examples after being thoroughly convinced on Twitter to do so. It’s going well. Mostly.</p>
+<pre class="r"><code>## if you haven&#39;t already done so, load dplyr
+library(dplyr)</code></pre>
+<p>My example involved joining together two <code>tibble</code>s containing text values. Nothing too surprising. I wondered though; do numbers behave the way I expect? Now, a big rule in programming is ‘thou shalt not compare numbers’, and it holds especially true <a href="http://0.30000000000000004.com/">when numbers aren’t exactly integers</a>. This is because representing non-integers is hard, and what you see on the screen isn’t always what the computer sees internally.</p>
+<p>[caption align=“alignnone” width=“680”]<a href="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg"><img src="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg" alt="Thou shalt not compare numbers." width="680" height="485" class="size-large" /></a> Thou shalt not compare numbers.[/caption]</p>
+<p>If I had a <code>tibble</code> where the column I would use to <code>join</code> had integers</p>
+<pre class="r"><code>dataA &lt;- tribble(
+    ~X, ~Y,
+    0L, 100L,
+    1L, 101L,
+    2L, 102L,
+    3L, 103L
+)
+dataA</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 x 2
+##       X     Y
+##   &lt;int&gt; &lt;int&gt;
+## 1     0   100
+## 2     1   101
+## 3     2   102
+## 4     3   103</code></pre>
+<p>and another <code>tibble</code> with <code>numeric</code> in that column</p>
+<pre class="r"><code>dataB &lt;- tribble(
+    ~X, ~Z,
+    0, 1000L,
+    1, 1001L,
+    2, 1002L,
+    3, 1003L
+)
+dataB</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 x 2
+##       X     Z
+##   &lt;dbl&gt; &lt;int&gt;
+## 1     0  1000
+## 2     1  1001
+## 3     2  1002
+## 4     3  1003</code></pre>
+<p>would they still <code>join</code>?</p>
+<pre class="r"><code>full_join(dataA, dataB)</code></pre>
+<pre class="bg-info text-info"><code>## Joining, by = &quot;X&quot;</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 x 3
+##       X     Y     Z
+##   &lt;dbl&gt; &lt;int&gt; &lt;int&gt;
+## 1     0   100  1000
+## 2     1   101  1001
+## 3     2   102  1002
+## 4     3   103  1003</code></pre>
+<p>Okay, sure. R treats these as close enough to join. I mean, maybe it shouldn’t, but we’ll work with what we have. R doesn’t always think these are equal</p>
+<pre class="r"><code>identical(0L, 0)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>identical(2L, 2)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<p>though sometimes it does</p>
+<pre class="r"><code>0L == 0</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>2L == 2</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>(<code>==</code> coerces types before comparing). Well, what if one of these just ‘looks like’ the other value (can be coerced to the same?)</p>
+<pre class="r"><code>dataC &lt;- tribble(
+    ~X, ~Z,
+    &quot;0&quot;, 100L,
+    &quot;1&quot;, 101L,
+    &quot;2&quot;, 102L,
+    &quot;3&quot;, 103L
+)
+dataC</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 x 2
+##   X         Z
+##   &lt;chr&gt; &lt;int&gt;
+## 1 0       100
+## 2 1       101
+## 3 2       102
+## 4 3       103</code></pre>
+<pre class="r"><code>full_join(dataA, dataC)</code></pre>
+<pre class="bg-info text-info"><code>## Joining, by = &quot;X&quot;</code></pre>
+<pre class="bg-danger text-danger"><code>## Error: Can&#39;t join on &#39;X&#39; x &#39;X&#39; because of incompatible types (character / integer)</code></pre>
+<p>That’s probably wise. Of course, R is perfectly happy with things like</p>
+<pre class="r"><code>&quot;2&quot;:&quot;5&quot;</code></pre>
+<pre class="bg-success"><code>## [1] 2 3 4 5</code></pre>
+<p>and <code>==</code> thinks that’s fine</p>
+<pre class="r"><code>&quot;0&quot; == 0L</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>&quot;2&quot; == 2L</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>but who am I to argue?</p>
+<p>Anyway, how far apart can those integers and numerics be before they aren’t able to be joined? What if we shift the ‘numeric in name only’ values away from the integers just a teensy bit? <code>.Machine$double.eps</code> is the built-in value for ‘the tiniest number you can produce’. On this system it’s 2.22044610^{-16}.</p>
+<pre class="r"><code>dataBeps &lt;- tribble(
+    ~X, ~Z,
+    0 + .Machine$double.eps, 1000L,
+    1 + .Machine$double.eps, 1001L,
+    2 + .Machine$double.eps, 1002L,
+    3 + .Machine$double.eps, 1003L
+)
+dataBeps</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 x 2
+##          X     Z
+##      &lt;dbl&gt; &lt;int&gt;
+## 1 2.22e-16  1000
+## 2 1.00e+ 0  1001
+## 3 2.00e+ 0  1002
+## 4 3.00e+ 0  1003</code></pre>
+<p>Well, that’s… weirder. The values offset from <code>2</code> and <code>3</code> joined fine, but the <code>0</code> and <code>1</code> each got multiple copies since R thinks they’re different. What if we offset a little further?</p>
+<pre class="r"><code>dataB2eps &lt;- tribble(
+    ~X, ~Z,
+    0 + 2*.Machine$double.eps, 1000L,
+    1 + 2*.Machine$double.eps, 1001L,
+    2 + 2*.Machine$double.eps, 1002L,
+    3 + 2*.Machine$double.eps, 1003L
+)
+dataB2eps</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 x 2
+##          X     Z
+##      &lt;dbl&gt; &lt;int&gt;
+## 1 4.44e-16  1000
+## 2 1.00e+ 0  1001
+## 3 2.00e+ 0  1002
+## 4 3.00e+ 0  1003</code></pre>
+<p>That’s what I’d expect. So, what’s going on? Why does R think those numbers are the same? Let’s check with a minimal example: For each of the values <code>0:4</code>, let’s compare that integer with the same offset by <code>.Machine$double.eps</code></p>
+<pre class="r"><code>library(purrr) ## for the &#39;thou shalt not for-loop&#39; crowd
+map_lgl(0:4, ~ as.integer(.x) == as.integer(.x) + .Machine$double.eps)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE FALSE  TRUE  TRUE  TRUE</code></pre>
+<p>And there we have it. Some sort of relative difference tolerance maybe? In any case, the general rule to live by is to <em>never</em> compare floats. Add this to the list of reasons why.</p>
+<p>For what it’s worth, I’m sure this is hardly a surprising detail to the <code>dplyr</code> team. They’ve dealt with <a href="https://github.com/tidyverse/dplyr/issues/228">things like this for a long time</a> and I’m sure it was much worse before those changes.</p>
+<p><strong>Update: </strong> As noted in the comments, R does have a way to check if things are ‘nearly equal’ (within some specified tolerance) via <code>all.equal()</code></p>
+<pre class="r"><code>purrr::map_lgl(0:4, ~all.equal(.x, .x + .Machine$double.eps))</code></pre>
+<pre class="bg-success"><code>## [1] TRUE TRUE TRUE TRUE TRUE</code></pre>
+<p>However, this does require the user to either specify the exact tolerance under which they consider two numbers ‘equal’, or to use the default (which, judging by the source of <code>all.equal.numeric()</code> is <code>sqrt(.Machine$double.eps)</code> or around 1.490116110^{-8} on this system). This means that numbers can be ‘quite’ different (depending on what’s an important difference) and still considered equal</p>
+<pre class="r"><code>purrr::map_lgl(0:4, ~ all.equal(.x, .x + 1e-8))</code></pre>
+<pre class="bg-success"><code>## [1] TRUE TRUE TRUE TRUE TRUE</code></pre>
+<br />
+<details>
+<p><summary>
+<tt>devtools::session_info()</tt>
+</summary></p>
+<pre class="bg-success"><code>## ─ Session info ──────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 3.5.1 (2018-07-02)
+##  os       Pop!_OS 18.10               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2019-03-23                  
+## 
+## ─ Packages ──────────────────────────────────────────────────────────────
+##  package     * version date       lib source                      
+##  assertthat    0.2.0   2017-04-11 [1] CRAN (R 3.5.1)              
+##  backports     1.1.3   2018-12-14 [1] CRAN (R 3.5.1)              
+##  blogdown      0.10    2019-01-09 [1] CRAN (R 3.5.1)              
+##  bookdown      0.9     2018-12-21 [1] CRAN (R 3.5.1)              
+##  callr         3.1.1   2018-12-21 [1] CRAN (R 3.5.1)              
+##  cli           1.0.1   2018-09-25 [1] CRAN (R 3.5.1)              
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)              
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)              
+##  devtools      2.0.1   2018-10-26 [1] CRAN (R 3.5.1)              
+##  digest        0.6.18  2018-10-10 [1] CRAN (R 3.5.1)              
+##  dplyr       * 0.8.0.1 2019-02-15 [1] CRAN (R 3.5.1)              
+##  evaluate      0.13    2019-02-12 [1] CRAN (R 3.5.1)              
+##  fansi         0.4.0   2018-10-05 [1] CRAN (R 3.5.1)              
+##  fs            1.2.6   2018-08-23 [1] CRAN (R 3.5.1)              
+##  glue          1.3.0   2018-07-17 [1] CRAN (R 3.5.1)              
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)              
+##  knitr         1.22.5  2019-03-23 [1] Github (yihui/knitr@072253d)
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)              
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)              
+##  pillar        1.3.1   2018-12-15 [1] CRAN (R 3.5.1)              
+##  pkgbuild      1.0.2   2018-10-16 [1] CRAN (R 3.5.1)              
+##  pkgconfig     2.0.2   2018-08-16 [1] CRAN (R 3.5.1)              
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)              
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)              
+##  processx      3.2.1   2018-12-05 [1] CRAN (R 3.5.1)              
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)              
+##  purrr       * 0.3.0   2019-01-27 [1] CRAN (R 3.5.1)              
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)              
+##  Rcpp          1.0.0   2018-11-07 [1] CRAN (R 3.5.1)              
+##  remotes       2.0.2   2018-10-30 [1] CRAN (R 3.5.1)              
+##  rlang         0.3.1   2019-01-08 [1] CRAN (R 3.5.1)              
+##  rmarkdown     1.11    2018-12-08 [1] CRAN (R 3.5.1)              
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)              
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)              
+##  stringi       1.3.1   2019-02-13 [1] CRAN (R 3.5.1)              
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)              
+##  tibble      * 2.0.1   2019-01-12 [1] CRAN (R 3.5.1)              
+##  tidyselect    0.2.5   2018-10-11 [1] CRAN (R 3.5.1)              
+##  usethis       1.4.0   2018-08-14 [1] CRAN (R 3.5.1)              
+##  utf8          1.1.4   2018-05-24 [1] CRAN (R 3.5.1)              
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)              
+##  xfun          0.5     2019-02-20 [1] CRAN (R 3.5.1)              
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)              
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>

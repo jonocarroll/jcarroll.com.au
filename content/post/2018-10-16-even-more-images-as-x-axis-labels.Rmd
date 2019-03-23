@@ -14,6 +14,13 @@ image: ''
 library(ggplot2)
 library(tinytex)
 library(tikzDevice)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
 ```
 
 This is the last update to this strange saga... I hope.
@@ -83,3 +90,15 @@ The $\LaTeX$ component of this also meant that a few changes were necessary in t
 That still only produced a PDF. The last step was to use the `magick` package to convert this into an image.
 
 Overall, this is a nice proof of concept, but I don't think it's a particularly tidy way of achieving the goal of image axis labels. It does however lay the groundwork for anyone else who decides this might be a useful route to take. Plus I learned a bit more about how `tikzDevice` works and got to revisit my $\LaTeX$ knowledge.
+
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
