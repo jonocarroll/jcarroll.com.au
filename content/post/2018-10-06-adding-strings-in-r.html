@@ -1,0 +1,263 @@
+---
+title: Adding strings in R
+author: Jonathan Carroll
+date: 2018-10-06 00:09:15
+slug: adding-strings-in-r
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>This started out as a <em>“hey, I wonder…”</em> sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I’d write it up and share. Shoutout to <span class="citation">[@coolbutuseless]</span>(<a href="https://twitter.com/coolbutuseless" class="uri">https://twitter.com/coolbutuseless</a>) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.</p>
+<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" /> This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
+<!--more-->
+<p><a href="http://www.happylittlescripts.com/2018/09/make-your-r-code-nicer-with-roperators.html">This post</a> came across my feed last week, referring to the <a href="https://cran.r-project.org/package=roperators">roperators package on CRAN</a>. In that post, the author introduces an infix operator from that package which ‘adds’ (concatenates/pastes) strings</p>
+<pre class="r"><code>&quot;using infix (%) operators &quot; %+% &quot;R can do simple string addition&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;using infix (%) operators R can do simple string addition&quot;</code></pre>
+<p>This might be familiar if you use python</p>
+<pre class="python"><code>&quot;python &quot; + &quot;adds &quot; + &quot;strings&quot;</code></pre>
+<pre class="bg-success"><code>## &#39;python adds strings&#39;</code></pre>
+<p>or javascript</p>
+<pre class="js"><code>&quot;javascript &quot; + &quot;also adds &quot; + &quot;strings&quot;
+## javascript also adds strings</code></pre>
+<p>or perhaps even go</p>
+<pre class="go"><code>package main
+
+import &quot;fmt&quot;
+
+func main() {
+  fmt.Println(&quot;go &quot; + &quot;even adds &quot; + &quot;strings&quot;)
+}</code></pre>
+<pre class="bg-success"><code>## go even adds strings</code></pre>
+<p>or Julia</p>
+<pre class="julia"><code>&quot;julia can &quot; * &quot;add strings&quot;</code></pre>
+<pre class="bg-success"><code>## &quot;julia can add strings&quot;</code></pre>
+<p>but this is not something natively available in R</p>
+<pre class="r"><code>&quot;this doesn&#39;t&quot; + &quot;work&quot;</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in &quot;this doesn&#39;t&quot; + &quot;work&quot;: non-numeric argument to binary operator</code></pre>
+<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/nazi-240x300.jpg" /></p>
+<p>Could we make it work, though? That got me wondering. My first guess was to just create a new <code>+</code> function which <em>does</em> allow for this. The normal addition operator is</p>
+<pre class="r"><code>`+`</code></pre>
+<pre class="bg-success"><code>## function (e1, e2)  .Primitive(&quot;+&quot;)</code></pre>
+<p>so a first attempt might be</p>
+<pre class="r"><code>`+` &lt;- function(e1, e2) {
+  if (is.character(e1) | is.character(e2)) {
+    paste0(e1, e2)
+  } else {
+    base::`+`(e1, e2)
+  }
+}</code></pre>
+<p>This checks to see if the left or right side of the operator is a character-classed object, and if either is, it pastes the two together. Otherwise it just uses the ‘regular’ addition operator between the two arguments. This works for simple cases, e.g.</p>
+<pre class="r"><code>&quot;a&quot; + &quot;b&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ab&quot;</code></pre>
+<pre class="r"><code>&quot;a&quot; + 2</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a2&quot;</code></pre>
+<pre class="r"><code>2 + 2</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
+<pre class="r"><code>2 + &quot;a&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;2a&quot;</code></pre>
+<p>But we hit an important snag if we try to add to character-represented numbers</p>
+<pre class="r"><code>&quot;200&quot; + &quot;200&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;200200&quot;</code></pre>
+<p>That’s probably going to be an issue if we read in unformatted data (e.g. from a CSV) as characters and try to treat it like numbers. Normally this would throw the above error about not being numeric, but now we get a silent weird number-character. That’s no good.</p>
+<p>An extension to this checks whether or not we have the number-as-a-character situation and falls back to the correct interpretation in that case</p>
+<pre class="r"><code>`+` &lt;- function(e1, e2) {
+  ## unary
+  if (missing(e2)) return(e1)
+  if (!is.na(suppressWarnings(as.numeric(e1))) &amp; !is.na(suppressWarnings(as.numeric(e2)))) {
+    ## both arguments numeric-like but characters
+    return(base::`+`(as.numeric(e1), as.numeric(e2)))
+  } else if ((is.character(e1) &amp; is.na(suppressWarnings(as.numeric(e1)))) | 
+             (is.character(e2) &amp; is.na(suppressWarnings(as.numeric(e2))))) {
+    ## at least one true character 
+    return(paste0(e1, e2))
+  } else {
+    ## both numeric
+    return(base::`+`(e1, e2))
+  }
+}
+
+&quot;a&quot; + &quot;b&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ab&quot;</code></pre>
+<pre class="r"><code>&quot;a&quot; + 2</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a2&quot;</code></pre>
+<pre class="r"><code>2 + 2</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
+<pre class="r"><code>2 + &quot;a&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;2a&quot;</code></pre>
+<pre class="r"><code>&quot;2&quot; + &quot;2&quot;</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
+<pre class="r"><code>2 + &quot;edgy&quot; + 4 + &quot;me&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;2edgy4me&quot;</code></pre>
+<p>So, that’s one option for string addition in R. Is it the right one? The idea of actually dispatching on a character class is inviting. Can we just add a <code>+.character</code> method (since there doesn’t seem to already be one)? Normally when we have S3 dispatch we need a generic function, which calls <code>UseMethod(&quot;class&quot;)</code>, but we don’t have that in this case. <code>+</code> is an internal generic, which is probably the first sign that we’re going to have trouble. If we try to define the method</p>
+<pre class="r"><code>`+.character` &lt;- function(e1, e2) {
+  paste0(e1, e2)
+}
+&quot;a&quot; + &quot;b&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ab&quot;</code></pre>
+<p>It seems to fail. What went wrong? Is dispatch not working?</p>
+<iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="480" height="261" frameBorder="0" class="giphy-embed" allowFullScreen>
+</iframe>
+<p>
+<a href="https://giphy.com/gifs/richard-ayoade-it-crowd-maurice-moss-dbtDDSvWErdf2">via GIPHY</a>
+</p>
+<p>We want to dispatch on “character” – is that what we have?</p>
+<pre class="r"><code>class(&quot;a&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;character&quot;</code></pre>
+<p>What if we explicitly create an object with that class?</p>
+<pre class="r"><code>structure(&quot;a&quot;, class = &quot;character&quot;) + 2</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a2&quot;</code></pre>
+<pre class="r"><code>2 + structure(&quot;a&quot;, class = &quot;character&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;2a&quot;</code></pre>
+<p>What if we try to dispatch on some new class?</p>
+<pre class="r"><code>`+.foo` &lt;- function(e1, e2) {
+  paste0(e1, e2)
+}
+
+structure(&quot;a&quot;, class = &quot;foo&quot;) + 2</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a2&quot;</code></pre>
+<p>but no dice for just a regular atomic character object. Time to revisit the help pages.</p>
+<p>In R, addition is limited to particular classes of objects, defined by the Ops group (there are also Math, Summary, and Complex groups). The methods for the Ops group members describe which classes can be involved in operations involving any of the Ops group members:</p>
+<pre class="r"><code>&quot;+&quot;, &quot;-&quot;, &quot;*&quot;, &quot;/&quot;, &quot;^&quot;, &quot;%%&quot;, &quot;%/%&quot;
+&quot;&amp;&quot;, &quot;|&quot;, &quot;!&quot;
+&quot;==&quot;, &quot;!=&quot;, &quot;&lt;&quot;, &quot;&lt;=&quot;, &quot;&gt;=&quot;, &quot;&gt;&quot;</code></pre>
+<p>These methods are:</p>
+<pre class="r"><code>.S3methods(&quot;Ops&quot;)</code></pre>
+<pre class="bg-success"><code>##  [1] Ops.data.frame      Ops.Date            Ops.difftime       
+##  [4] Ops.factor          Ops.numeric_version Ops.ordered        
+##  [7] Ops.POSIXt          Ops.quosure*        Ops.raster*        
+## [10] Ops.roman*          Ops.ts*             Ops.unit*          
+## see &#39;?methods&#39; for accessing help and source code</code></pre>
+<p>What’s missing from this list, in order for us to be able to just use “string” + “string” is a character method. What’s perhaps even more surprising is that there <em>is</em> a <code>roman</code> method! Whaaaat?</p>
+<pre class="r"><code>as.roman(&quot;1&quot;) + as.roman(&quot;5&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] VI</code></pre>
+<pre class="r"><code>as.roman(&quot;2000&quot;) + as.roman(&quot;18&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] MMXVIII</code></pre>
+<p><img src=https://jcarroll.com.au/wp-content/uploads/2018/10/groove_small.gif" width="60%" /></p>
+<p>Since the operations need to be defined for all the members of the Ops group, we would also need to define what to do with, say, <code>*</code> between strings. When one side is a string and the other is a number, a reasonable approach might be that which was taken in the original post (using a new infix <code>%s*%</code>)</p>
+<pre class="r"><code>&quot;a&quot; %s*% 3</code></pre>
+<pre class="bg-success"><code>##     a 
+## &quot;aaa&quot;</code></pre>
+<p>There is, of course, a function to do this already</p>
+<pre class="r"><code>strrep(&quot;a&quot;, 3)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;aaa&quot;</code></pre>
+<p>but I could see creating <code>&quot;a&quot; * 3</code> as a shortcut to this. Note: this exists in python</p>
+<pre class="python"><code>&quot;a&quot; * 3</code></pre>
+<pre class="bg-success"><code>## &#39;aaa&#39;</code></pre>
+<p>I don’t know what one would expect <code>&quot;a&quot; * &quot;b&quot;</code> to produce.</p>
+<p>The problem with where this is heading is that we aren’t allowed to create the method for an atomic class, as <a href="https://twitter.com/JorisMeys">Joris Meys</a> and <a href="https://twitter.com/BrodieGaslam">Brodie Gaslam</a> point out on Twitter</p>
+<blockquote class="twitter-tweet" data-lang="en">
+<p lang="en" dir="ltr">
+Yes, you're right. Below is what I remembered, which suggested that if it were not sealed, it could be defined, but that isn't true b/c <code>do_arith</code> only dispatches on objects (as you point out), although in theory it could dispatch on atomics, but probably doesn't for speed. <a href="https://t.co/UXk6Tdm3lW">pic.twitter.com/UXk6Tdm3lW</a>
+</p>
+— BrodieG (<span class="citation">@BrodieGaslam</span>) <a href="https://twitter.com/BrodieGaslam/status/1047838113052155904?ref_src=twsrc%5Etfw">October 4, 2018</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<pre class="r"><code>setMethod(&quot;+&quot;, c(&quot;character&quot;, &quot;character&quot;), function(e1, e2) paste0(e1, e2))</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in setMethod(&quot;+&quot;, c(&quot;character&quot;, &quot;character&quot;), function(e1, e2) paste0(e1, : the method for function &#39;+&#39; and signature e1=&quot;character&quot;, e2=&quot;character&quot; is sealed and cannot be re-defined</code></pre>
+<p>so no luck there. Brodie also links to <a href="https://stackoverflow.com/questions/1319698/why-doesnt-operate-on-characters-in-r/1321491#1321491">a Stack Overflow discussion</a> on this very topic where it is pointed out by <a href="https://twitter.com/MMaechler">Martin Mächler</a> that this has been discussed on <a href="https://stat.ethz.ch/pipermail/r-devel/2006-August/038991.html">r-devel</a>q – that makes for some interesting historical weigh-ins on why this isn’t a thing in R. Incidentally, the small-world effect comes into play regarding that Stack Overflow post as one of the three answers happens to be a former work colleague of mine.</p>
+<p>So, in the end, it seems the best we can do is the rather long-winded overwrite of <code>+</code> which checks if the arguments really are characters. I don’t mind this, and would probably use it if it was in base R or a package. The biggest issue that people seem to have with this is that it ‘looks like’ addition, but it’s not commutative. If that word is new to you, it just means that <code>x + y</code> should give the same answer as <code>y + x</code>. For numbers, the regular <code>+</code> satisfies this:</p>
+<pre class="r"><code>2 + 3</code></pre>
+<pre class="bg-success"><code>## [1] 5</code></pre>
+<pre class="r"><code>3 + 2</code></pre>
+<pre class="bg-success"><code>## [1] 5</code></pre>
+<p>but when we try to do this with strings… not so much</p>
+<pre class="r"><code>&quot;a&quot; + &quot;b&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ab&quot;</code></pre>
+<pre class="r"><code>&quot;b&quot; + &quot;a&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ba&quot;</code></pre>
+<p>This doesn’t particularly bother me, because I’m okay with this not actually being ‘mathematical addition’. The fun turn this then took was the suggestion from <a href="https://twitter.com/JorisMeys">Joris Meys</a> that <a href="https://docs.julialang.org/en/stable/manual/mathematical-operations/#Operator-Precedence-and-Associativity-1">Julia’s non-associative operators</a> is a strength of the language. There, the way that <a href="https://docs.julialang.org/en/stable/manual/mathematical-operations/#footnote-2">you group values matters</a></p>
+<blockquote>
+a + b + c is parsed as +(a, b, c) not +(+(a, b), c).
+</blockquote>
+<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/wack.gif" width="250" height="188" /></p>
+<p>I’ll eventually get around to learning more Julia, but this is already hurting my brain.</p>
+<p>That distinction may be of interest, however, to <a href="https://twitter.com/MilesMcBain/">Miles McBain</a>, whose concern was more about repeated applications of <code>+</code> being a bottleneck</p>
+<blockquote class="twitter-tweet" data-lang="en">
+<p lang="en" dir="ltr">
+I hate + for string concatenation. “a” + “b” + “c” is paste(“a”, paste(“b”,“c”)). So you end up copying the data in “b” and “c” twice due to the data being immutable. That can really add up fast with more +'s if you are careless. Like I was in my first programming job.
+</p>
+— Miles McBain (<span class="citation">@MilesMcBain</span>) <a href="https://twitter.com/MilesMcBain/status/1047743465562431489?ref_src=twsrc%5Etfw">October 4, 2018</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+<p>In that case, parsing as <code>+(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)</code> is exactly what would be desired.</p>
+<p>So, what’s the conclusion of all of this? I’ve learned (and re-learned) a heap more about how the Ops group works, I’ve played a lot with dispatch, and I’ve thought deeply about edge-cases for adding strings. I’ve also been exposed to a bit more Julia. All in all, a worthwhile dive into something potentially silly, but a lot of fun. If you have some thoughts on the matter, leave a comment here or reply on Twitter – I’d love to hear about another angle to this story.</p>
+<br />
+<details>
+<p><summary>
+<tt>devtools::session_info()</tt>
+</summary></p>
+<pre class="bg-success"><code>## ─ Session info ──────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 3.5.1 (2018-07-02)
+##  os       Pop!_OS 18.10               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2019-03-23                  
+## 
+## ─ Packages ──────────────────────────────────────────────────────────────
+##  package     * version date       lib source                      
+##  assertthat    0.2.0   2017-04-11 [1] CRAN (R 3.5.1)              
+##  backports     1.1.3   2018-12-14 [1] CRAN (R 3.5.1)              
+##  blogdown      0.10    2019-01-09 [1] CRAN (R 3.5.1)              
+##  bookdown      0.9     2018-12-21 [1] CRAN (R 3.5.1)              
+##  callr         3.1.1   2018-12-21 [1] CRAN (R 3.5.1)              
+##  cli           1.0.1   2018-09-25 [1] CRAN (R 3.5.1)              
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)              
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)              
+##  devtools      2.0.1   2018-10-26 [1] CRAN (R 3.5.1)              
+##  digest        0.6.18  2018-10-10 [1] CRAN (R 3.5.1)              
+##  dplyr       * 0.8.0.1 2019-02-15 [1] CRAN (R 3.5.1)              
+##  evaluate      0.13    2019-02-12 [1] CRAN (R 3.5.1)              
+##  forcats     * 0.4.0   2019-02-17 [1] CRAN (R 3.5.1)              
+##  fs            1.2.6   2018-08-23 [1] CRAN (R 3.5.1)              
+##  glue          1.3.0   2018-07-17 [1] CRAN (R 3.5.1)              
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)              
+##  jsonlite      1.6     2018-12-07 [1] CRAN (R 3.5.1)              
+##  knitr         1.22.5  2019-03-23 [1] Github (yihui/knitr@072253d)
+##  lattice       0.20-38 2018-11-04 [1] CRAN (R 3.5.1)              
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)              
+##  Matrix        1.2-16  2019-03-08 [1] CRAN (R 3.5.1)              
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)              
+##  pillar        1.3.1   2018-12-15 [1] CRAN (R 3.5.1)              
+##  pkgbuild      1.0.2   2018-10-16 [1] CRAN (R 3.5.1)              
+##  pkgconfig     2.0.2   2018-08-16 [1] CRAN (R 3.5.1)              
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)              
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)              
+##  processx      3.2.1   2018-12-05 [1] CRAN (R 3.5.1)              
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)              
+##  purrr         0.3.0   2019-01-27 [1] CRAN (R 3.5.1)              
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)              
+##  Rcpp          1.0.0   2018-11-07 [1] CRAN (R 3.5.1)              
+##  remotes       2.0.2   2018-10-30 [1] CRAN (R 3.5.1)              
+##  reticulate    1.11.1  2019-03-06 [1] CRAN (R 3.5.1)              
+##  rlang         0.3.1   2019-01-08 [1] CRAN (R 3.5.1)              
+##  rmarkdown     1.11    2018-12-08 [1] CRAN (R 3.5.1)              
+##  roperators  * 1.1.0   2018-09-28 [1] CRAN (R 3.5.1)              
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)              
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)              
+##  stringi       1.3.1   2019-02-13 [1] CRAN (R 3.5.1)              
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)              
+##  tibble        2.0.1   2019-01-12 [1] CRAN (R 3.5.1)              
+##  tidyselect    0.2.5   2018-10-11 [1] CRAN (R 3.5.1)              
+##  usethis       1.4.0   2018-08-14 [1] CRAN (R 3.5.1)              
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)              
+##  xfun          0.5     2019-02-20 [1] CRAN (R 3.5.1)              
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)              
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>

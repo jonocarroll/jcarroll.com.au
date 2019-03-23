@@ -13,6 +13,13 @@ image: ''
 ```{r, setup, include = FALSE}
 library(dplyr)
 library(forcats)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
 ```
 
 This journey started almost exactly a year ago, but it's finally been sufficiently worked through and merged! Yay, I've officially contributed to the [tidyverse](https://www.tidyverse.org/) (minor as it may be).

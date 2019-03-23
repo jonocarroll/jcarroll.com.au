@@ -1,0 +1,297 @@
+---
+title: Adding strings in R
+author: Jonathan Carroll
+date: 2018-10-06 00:09:15
+slug: adding-strings-in-r
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+library(dplyr)
+library(forcats)
+library(roperators)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+This started out as a _"hey, I wonder..."_ sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I'd write it up and share. Shoutout to [@coolbutuseless](https://twitter.com/coolbutuseless) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.
+
+![This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/](https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg) This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/
+
+<!--more-->
+
+[This post](http://www.happylittlescripts.com/2018/09/make-your-r-code-nicer-with-roperators.html) came across my feed last week, referring to the [roperators package on CRAN](https://cran.r-project.org/package=roperators). In that post, the author introduces an infix operator from that package which 'adds' (concatenates/pastes) strings
+
+```{r}
+"using infix (%) operators " %+% "R can do simple string addition"
+```
+
+This might be familiar if you use python
+
+```{python, cache = TRUE}
+"python " + "adds " + "strings"
+``` 
+
+or javascript
+
+```{js, eval = FALSE}
+"javascript " + "also adds " + "strings"
+## javascript also adds strings
+``` 
+
+or perhaps even go
+
+```{go, cache = TRUE}
+package main
+
+import "fmt"
+
+func main() {
+  fmt.Println("go " + "even adds " + "strings")
+}
+```
+
+or Julia
+
+```{julia, cache = TRUE}
+"julia can " * "add strings"
+```
+
+but this is not something natively available in R
+
+```{r error = TRUE}
+"this doesn't" + "work"
+```
+
+![](https://jcarroll.com.au/wp-content/uploads/2018/10/nazi-240x300.jpg)
+
+Could we make it work, though? That got me wondering. My first guess was to just create a new `+` function which _does_ allow for this. The normal addition operator is
+
+```{r}
+`+`
+```
+
+so a first attempt might be
+
+```{r}
+`+` <- function(e1, e2) {
+  if (is.character(e1) | is.character(e2)) {
+    paste0(e1, e2)
+  } else {
+    base::`+`(e1, e2)
+  }
+}
+```
+
+This checks to see if the left or right side of the operator is a character-classed object, and if either is, it pastes the two together. Otherwise it just uses the 'regular' addition operator between the two arguments. This works for simple cases, e.g.
+
+```{r}
+"a" + "b"
+
+"a" + 2
+
+2 + 2
+
+2 + "a"
+```
+
+But we hit an important snag if we try to add to character-represented numbers
+
+```{r}
+"200" + "200"
+```
+
+That's probably going to be an issue if we read in unformatted data (e.g. from a CSV) as characters and try to treat it like numbers. Normally this would throw the above error about not being numeric, but now we get a silent weird number-character. That's no good.
+
+An extension to this checks whether or not we have the number-as-a-character situation and falls back to the correct interpretation in that case
+
+```{r}
+`+` <- function(e1, e2) {
+  ## unary
+  if (missing(e2)) return(e1)
+  if (!is.na(suppressWarnings(as.numeric(e1))) & !is.na(suppressWarnings(as.numeric(e2)))) {
+    ## both arguments numeric-like but characters
+    return(base::`+`(as.numeric(e1), as.numeric(e2)))
+  } else if ((is.character(e1) & is.na(suppressWarnings(as.numeric(e1)))) | 
+             (is.character(e2) & is.na(suppressWarnings(as.numeric(e2))))) {
+    ## at least one true character 
+    return(paste0(e1, e2))
+  } else {
+    ## both numeric
+    return(base::`+`(e1, e2))
+  }
+}
+
+"a" + "b"
+
+"a" + 2
+
+2 + 2
+
+2 + "a"
+
+"2" + "2"
+
+2 + "edgy" + 4 + "me"
+```
+
+So, that's one option for string addition in R. Is it the right one? The idea of actually dispatching on a character class is inviting. Can we just add a `+.character` method (since there doesn't seem to already be one)? Normally when we have S3 dispatch we need a generic function, which calls `UseMethod("class")`, but we don't have that in this case. `+` is an internal generic, which is probably the first sign that we're going to have trouble. If we try to define the method
+
+```{r, error = TRUE}
+`+.character` <- function(e1, e2) {
+  paste0(e1, e2)
+}
+"a" + "b"
+```
+
+It seems to fail. What went wrong? Is dispatch not working? 
+
+<iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="480" height="261" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/richard-ayoade-it-crowd-maurice-moss-dbtDDSvWErdf2">via GIPHY</a></p>
+
+We want to dispatch on "character" -- is that what we have?
+
+```{r}
+class("a")
+```
+
+What if we explicitly create an object with that class?
+
+```{r}
+structure("a", class = "character") + 2
+
+2 + structure("a", class = "character")
+```
+
+What if we try to dispatch on some new class?
+
+```{r}
+`+.foo` <- function(e1, e2) {
+  paste0(e1, e2)
+}
+
+structure("a", class = "foo") + 2
+```
+
+but no dice for just a regular atomic character object. Time to revisit the help pages.
+
+In R, addition is limited to particular classes of objects, defined by the Ops group (there are also Math, Summary, and Complex groups). The methods for the Ops group members describe which classes can be involved in operations involving any of the Ops group members:
+
+```r
+"+", "-", "*", "/", "^", "%%", "%/%"
+"&", "|", "!"
+"==", "!=", "<", "<=", ">=", ">"
+```
+
+These methods are:
+
+```{r}
+.S3methods("Ops")
+```
+
+What's missing from this list, in order for us to be able to just use "string" + "string" is a character method. What's perhaps even more surprising is that there _is_ a `roman` method! Whaaaat?
+
+```{r, include = FALSE}
+`+` <- base::`+`
+```
+
+```{r}
+as.roman("1") + as.roman("5")
+
+as.roman("2000") + as.roman("18")
+```
+
+<img src=https://jcarroll.com.au/wp-content/uploads/2018/10/groove_small.gif" width="60%" />
+
+Since the operations need to be defined for all the members of the Ops group, we would also need to define what to do with, say, `*` between strings. When one side is a string and the other is a number, a reasonable approach might be that which was taken in the original post (using a new infix `%s*%`)
+
+```{r}
+"a" %s*% 3
+```
+
+There is, of course, a function to do this already
+
+```{r}
+strrep("a", 3)
+```
+
+but I could see creating `"a" * 3` as a shortcut to this. Note: this exists in python
+
+```{python}
+"a" * 3
+```
+
+I don't know what one would expect `"a" * "b"` to produce.
+
+The problem with where this is heading is that we aren't allowed to create the method for an atomic class, as [Joris Meys](https://twitter.com/JorisMeys) and [Brodie Gaslam](https://twitter.com/BrodieGaslam) point out on Twitter
+
+<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">Yes, you&#39;re right.  Below is what I remembered, which suggested that if it were not sealed, it could be defined, but that isn&#39;t true b/c `do_arith` only dispatches on objects (as you point out), although in theory it could dispatch on atomics, but probably doesn&#39;t for speed. <a href="https://t.co/UXk6Tdm3lW">pic.twitter.com/UXk6Tdm3lW</a></p>&mdash; BrodieG (@BrodieGaslam) <a href="https://twitter.com/BrodieGaslam/status/1047838113052155904?ref_src=twsrc%5Etfw">October 4, 2018</a></blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+```{r, error = TRUE}
+setMethod("+", c("character", "character"), function(e1, e2) paste0(e1, e2))
+```
+
+so no luck there. Brodie also links to [a Stack Overflow discussion](https://stackoverflow.com/questions/1319698/why-doesnt-operate-on-characters-in-r/1321491#1321491) on this very topic where it is pointed out by [Martin Mächler](https://twitter.com/MMaechler) that this has been discussed on [r-devel](https://stat.ethz.ch/pipermail/r-devel/2006-August/038991.html)q -- that makes for some interesting historical weigh-ins on why this isn't a thing in R. Incidentally, the small-world effect comes into play regarding that Stack Overflow post as one of the three answers happens to be a former work colleague of mine.
+
+So, in the end, it seems the best we can do is the rather long-winded overwrite of `+` which checks if the arguments really are characters. I don't mind this, and would probably use it if it was in base R or a package. The biggest issue that people seem to have with this is that it 'looks like' addition, but it's not commutative. If that word is new to you, it just means that `x + y` should give the same answer as `y + x`. For numbers, the regular `+` satisfies this:
+
+```{r}
+2 + 3
+3 + 2
+```
+
+but when we try to do this with strings... not so much
+
+```{r, echo = FALSE}
+`+` <- function(e1, e2) {
+  if (is.character(e1) | is.character(e2)) {
+    paste0(e1, e2)
+  } else {
+    base::`+`(e1, e2)
+  }
+}
+```
+
+```{r}
+"a" + "b"
+"b" + "a"
+```
+
+This doesn't particularly bother me, because I'm okay with this not actually being 'mathematical addition'. The fun turn this then took was the suggestion from [Joris Meys](https://twitter.com/JorisMeys) that [Julia's non-associative operators](https://docs.julialang.org/en/stable/manual/mathematical-operations/#Operator-Precedence-and-Associativity-1) is a strength of the language. There, the way that [you group values matters](https://docs.julialang.org/en/stable/manual/mathematical-operations/#footnote-2)
+
+<blockquote>a + b + c is parsed as +(a, b, c) not +(+(a, b), c).</blockquote>
+
+<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/wack.gif" width="250" height="188" />
+
+I'll eventually get around to learning more Julia, but this is already hurting my brain.
+
+That distinction may be of interest, however, to [Miles McBain](https://twitter.com/MilesMcBain/), whose concern was more about repeated applications of `+` being a bottleneck
+
+<blockquote class="twitter-tweet" data-lang="en"><p lang="en" dir="ltr">I hate + for string concatenation. &quot;a&quot; + &quot;b&quot; + &quot;c&quot; is paste(&quot;a&quot;, paste(&quot;b&quot;,&quot;c&quot;)). So you end up copying the data in &quot;b&quot; and &quot;c&quot; twice due to the data being immutable. That can really add up fast with more +&#39;s if you are careless. Like I was in my first programming job.</p>&mdash; Miles McBain (@MilesMcBain) <a href="https://twitter.com/MilesMcBain/status/1047743465562431489?ref_src=twsrc%5Etfw">October 4, 2018</a></blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+In that case, parsing as `+("a", "b", "c")` is exactly what would be desired.
+
+So, what's the conclusion of all of this? I've learned (and re-learned) a heap more about how the Ops group works, I've played a lot with dispatch, and I've thought deeply about edge-cases for adding strings. I've also been exposed to a bit more Julia. All in all, a worthwhile dive into something potentially silly, but a lot of fun. If you have some thoughts on the matter, leave a comment here or reply on Twitter -- I'd love to hear about another angle to this story.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

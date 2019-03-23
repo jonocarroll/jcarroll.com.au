@@ -18,17 +18,17 @@ library(tikzDevice)
 
 This is the last update to this strange saga... I hope.
 
-[caption align="center" width="680"]<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/labels.jpg" />Image labels... Photo: http://www.premierpaper.com/shop/custom-labels/[/caption]
+![Image labels… Photo: http://www.premierpaper.com/shop/custom-labels/](/post/2018-10-16-even-more-images-as-x-axis-labels_files/labels.jpg)
 
-Easily two of the most popular posts on my blog are <a href="https://jcarroll.com.au/2016/06/02/images-as-x-axis-labels/">this one</a> and <a href="https://jcarroll.com.au/2016/06/03/images-as-x-axis-labels-updated/">this one</a> describing a couple of ways in which I managed to hack together using an image as a category label in a ggplot. 
+Easily two of the most popular posts on my blog are [this one](https://jonocarroll.com.au/2016-06-02-images-as-x-axis-labels.html") and [this one](https://jonocarroll.com.au/2016-06-03-images-as-x-axis-labels-updated.html") describing a couple of ways in which I managed to hack together using an image as a category label in a ggplot. 
 
 There are likely many people who believe one should <em>never</em> do such a thing, but given the popularity, it seems a lot of people aren't listening to that. Good on you.
 
 <div style="width:100%;height:0;padding-bottom:54%;position:relative;"><iframe src="https://giphy.com/embed/bqalUGFYfyHzW" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/good-hang-breastfeeding-bqalUGFYfyHzW">via GIPHY</a></p>
 
-One of these posts was recently shared again by the amazing <a href="https://twitter.com/dataandme">#rstats amplifier Mara Averick</a> (if you're not following her on Twitter, you're missing out) and <a href="https://twitter.com/baptiste_auguie">@baptiste_auguie</a> (the saviour of the previous implementation) mentioned that he had written a 'hack' to get chemical symbols as a categorical axis label using `tikzDevice`. That package leverages $\LaTeX$ (of which I am <i>very</i> familiar, having written my PhD thesis entirely in $\LaTeX$ many moons ago) to treat all of the text in an image as potential $\LaTeX$ commands and produce a working source code which generates the required plot.
+One of these posts was recently shared again by the amazing [#rstats amplifier Mara Averick](https://twitter.com/dataandme") (if you're not following her on Twitter, you're missing out) and [@baptiste_auguie](https://twitter.com/baptiste_auguie") (the saviour of the previous implementation) mentioned that he had written a 'hack' to get chemical symbols as a categorical axis label using `tikzDevice`. That package leverages $\LaTeX$ (of which I am _very_ familiar, having written my PhD thesis entirely in $\LaTeX$ many moons ago) to treat all of the text in an image as potential $\LaTeX$ commands and produce a working source code which generates the required plot.
 
-The <a href="https://groups.google.com/forum/#!topic/ggplot2/OPhpWtVcwtY">example code</a> is straightforward enough
+The [example code](https://groups.google.com/forum/#!topic/ggplot2/OPhpWtVcwtY) is straightforward enough
 
 ```r
 options(tikzLatexPackages = c(getOption('tikzLatexPackages'),
@@ -48,7 +48,7 @@ print(p)
 
 and produces this
 
-<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/annotation.png" />annotation.png[/caption]
+![](/post/2018-10-16-even-more-images-as-x-axis-labels_files/annotation.png)
 
 This got me curious, though -- if it can process _arbitrary_ $\LaTeX$, could it process a `\\includegraphics` call?
 
@@ -62,7 +62,7 @@ Yes, as it turns out.
 
 A quick test showed that it was indeed possible, which only leaves re-implementing the previous posts' images using this method.
 
-<a href="https://gist.github.com/jonocarroll/08a1ccff36be628430d768e5b9426e54">I've done so</a>, and the code isn't particularly shorter than the other method.
+[I've done so](https://gist.github.com/jonocarroll/08a1ccff36be628430d768e5b9426e54), and the code isn't particularly shorter than the other method.
 
 ```{r, echo = FALSE, results = 'asis'}
 cat("{{% gist jonocarroll 08a1ccff36be628430d768e5b9426e54 %}}")
@@ -70,15 +70,15 @@ cat("{{% gist jonocarroll 08a1ccff36be628430d768e5b9426e54 %}}")
 
 Producing nearly the same end result.
 
-[caption  align="center" width="680"]<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/xaxis.png" />tikzDevice result[/caption]
+![tikzDevice result](/post/2018-10-16-even-more-images-as-x-axis-labels_files/annotation.png)
 
 There are a few differences compared to the previous version(s):
 
- - I had a request for rotating the additional text, which I actually <a href="https://gist.github.com/jonocarroll/2f9490f1f5e7c82ef8b791a4b91fc9ca#file-images_as_xaxis_labels_updated-r">also updated recently</a>, and it seemed to fit better, so I rotated the labels within the $\LaTeX$ command.
+ - I had a request for rotating the additional text, which I actually [also updated recently[(https://gist.github.com/jonocarroll/2f9490f1f5e7c82ef8b791a4b91fc9ca#file-images_as_xaxis_labels_updated-r), and it seemed to fit better, so I rotated the labels within the $\LaTeX$ command.
  - Since all of the text has been rendered via $\LaTeX$, the fonts are a bit different.
  - The rankings have since changed, so I've added an 11th to keep Australia in the list.
 
-The $\LaTeX$ component of this also meant that a few changes were necessary in the other labels, such as the dollar sign in the y-axis label, and the underscores throughout (these are considered special characters in $\LaTeX$). Lastly, the result of running the `tikz` command is that a `.tex` ($\LaTeX$ source code) file is produced. This isn't quite the plot image file we want. It <i>does</i> however have the commands to generate one. The last steps in the above gist are to process this `.tex` file with $\LaTeX$. Here I used the `tools::texi2dvi` function, but one <i>could</i> also use a `system` command to their $\LaTeX$ installation.
+The $\LaTeX$ component of this also meant that a few changes were necessary in the other labels, such as the dollar sign in the y-axis label, and the underscores throughout (these are considered special characters in $\LaTeX$). Lastly, the result of running the `tikz` command is that a `.tex` ($\LaTeX$ source code) file is produced. This isn't quite the plot image file we want. It _does_ however have the commands to generate one. The last steps in the above gist are to process this `.tex` file with $\LaTeX$. Here I used the `tools::texi2dvi` function, but one _could_ also use a `system` command to their $\LaTeX$ installation.
 
 That still only produced a PDF. The last step was to use the `magick` package to convert this into an image.
 

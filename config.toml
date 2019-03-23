@@ -8,8 +8,8 @@ pygmentsStyle = "trac"
 pygmentsUseClasses = true
 pygmentsCodeFences = true
 pygmentsCodefencesGuessSyntax = true
-#pygmentsUseClassic = true
-#pygmentOptions = "linenos=inline"
+pygmentsUseClassic = false
+pygmentOptions = "linenos=inline"
 disqusShortname = "jcarroll-com-au"
 googleAnalytics = "UA-135066967-1"
 enableGitInfo = true
@@ -28,7 +28,7 @@ rssLimit = 50
   comments = true
   readingTime = true
   wordCount = true
-  useHLJS = true
+  useHLJS = false
   socialShare = true
   delayDisqus = true
   showRelatedPosts = true
@@ -72,6 +72,9 @@ rssLimit = 50
   paypal = "jonocarroll"
   #telegram = "username"
   #500px = "username"
+
+[permalinks]
+    post = "/:year/:month/:day/:slug/"
 
 [[menu.main]]
     name = "Blog"
