@@ -17,6 +17,8 @@ editor_options:
 <p>This started out as a <em>“hey, I wonder…”</em> sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I’d write it up and share. Shoutout to <span class="citation">[@coolbutuseless]</span>(<a href="https://twitter.com/coolbutuseless" class="uri">https://twitter.com/coolbutuseless</a>) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.</p>
 <p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" /> This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
 <!--more-->
+<p>This started out as a <em>“hey, I wonder…”</em> sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I’d write it up and share. Shoutout to <span class="citation">[@coolbutuseless]</span>(<a href="https://twitter.com/coolbutuseless" class="uri">https://twitter.com/coolbutuseless</a>) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.</p>
+<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" /> This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
 <p><a href="http://www.happylittlescripts.com/2018/09/make-your-r-code-nicer-with-roperators.html">This post</a> came across my feed last week, referring to the <a href="https://cran.r-project.org/package=roperators">roperators package on CRAN</a>. In that post, the author introduces an infix operator from that package which ‘adds’ (concatenates/pastes) strings</p>
 <pre class="r"><code>&quot;using infix (%) operators &quot; %+% &quot;R can do simple string addition&quot;</code></pre>
 <pre class="bg-success"><code>## [1] &quot;using infix (%) operators R can do simple string addition&quot;</code></pre>
@@ -96,11 +98,12 @@ func main() {
 <pre class="r"><code>2 + &quot;edgy&quot; + 4 + &quot;me&quot;</code></pre>
 <pre class="bg-success"><code>## [1] &quot;2edgy4me&quot;</code></pre>
 <p>So, that’s one option for string addition in R. Is it the right one? The idea of actually dispatching on a character class is inviting. Can we just add a <code>+.character</code> method (since there doesn’t seem to already be one)? Normally when we have S3 dispatch we need a generic function, which calls <code>UseMethod(&quot;class&quot;)</code>, but we don’t have that in this case. <code>+</code> is an internal generic, which is probably the first sign that we’re going to have trouble. If we try to define the method</p>
-<pre class="r"><code>`+.character` &lt;- function(e1, e2) {
+<pre class="r"><code>`+` &lt;- base::`+`
+`+.character` &lt;- function(e1, e2) {
   paste0(e1, e2)
 }
 &quot;a&quot; + &quot;b&quot;</code></pre>
-<pre class="bg-success"><code>## [1] &quot;ab&quot;</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in &quot;a&quot; + &quot;b&quot;: non-numeric argument to binary operator</code></pre>
 <p>It seems to fail. What went wrong? Is dispatch not working?</p>
 <iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="480" height="261" frameBorder="0" class="giphy-embed" allowFullScreen>
 </iframe>
@@ -128,7 +131,7 @@ structure(&quot;a&quot;, class = &quot;foo&quot;) + 2</code></pre>
 &quot;&amp;&quot;, &quot;|&quot;, &quot;!&quot;
 &quot;==&quot;, &quot;!=&quot;, &quot;&lt;&quot;, &quot;&lt;=&quot;, &quot;&gt;=&quot;, &quot;&gt;&quot;</code></pre>
 <p>These methods are:</p>
-<pre class="r"><code>.S3methods(&quot;Ops&quot;)</code></pre>
+<pre class="r"><code>eval(.S3methods(&quot;Ops&quot;), envir = baseenv())</code></pre>
 <pre class="bg-success"><code>##  [1] Ops.data.frame      Ops.Date            Ops.difftime       
 ##  [4] Ops.factor          Ops.numeric_version Ops.ordered        
 ##  [7] Ops.POSIXt          Ops.quosure*        Ops.raster*        
@@ -195,15 +198,15 @@ I hate + for string concatenation. “a” + “b” + “c” is paste(“a”,
 </summary></p>
 <pre class="bg-success"><code>## ─ Session info ──────────────────────────────────────────────────────────
 ##  setting  value                       
-##  version  R version 3.5.1 (2018-07-02)
-##  os       Pop!_OS 18.10               
+##  version  R version 3.5.2 (2018-12-20)
+##  os       Pop!_OS 19.04               
 ##  system   x86_64, linux-gnu           
 ##  ui       X11                         
 ##  language en_AU:en                    
 ##  collate  en_AU.UTF-8                 
 ##  ctype    en_AU.UTF-8                 
 ##  tz       Australia/Adelaide          
-##  date     2019-03-23                  
+##  date     2019-05-19                  
 ## 
 ## ─ Packages ──────────────────────────────────────────────────────────────
 ##  package     * version date       lib source                      

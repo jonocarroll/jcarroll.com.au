@@ -8,6 +8,8 @@ tags: [rstats, ggplot2, tikzDevice]
 type: ''
 subtitle: ''
 image: ''
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, setup, include = FALSE}
@@ -22,6 +24,11 @@ knitr::opts_chunk$set(
   class.error   = "bg-danger text-danger"
 )
 ```
+
+This is the last update to this strange saga... I hope.
+
+![Image labels… Photo: http://www.premierpaper.com/shop/custom-labels/](/post/2018-10-16-even-more-images-as-x-axis-labels_files/labels.jpg)
+<!--more-->
 
 This is the last update to this strange saga... I hope.
 
