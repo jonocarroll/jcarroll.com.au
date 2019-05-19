@@ -26,6 +26,12 @@ This journey started almost exactly a year ago, but it's finally been sufficient
 
 ![I'm at least as useful as Zoidberg](/post/2019-02-22-forcatsfct_match_files/zoidberg_helping.jpeg){width=300px}
 
+<!--more-->
+
+This journey started almost exactly a year ago, but it's finally been sufficiently worked through and merged! Yay, I've officially contributed to the [tidyverse](https://www.tidyverse.org/) (minor as it may be).
+
+![I'm at least as useful as Zoidberg](/post/2019-02-22-forcatsfct_match_files/zoidberg_helping.jpeg){width=300px}
+
 It began with [a tweet](https://twitter.com/carroll_jono/status/971093803099541504?ref_src=twsrc%5Etfw), recalling a surprise I encountered that day during some routine data processing
 
 ```{r echo = FALSE}

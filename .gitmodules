@@ -1,3 +1,4 @@
 [submodule "themes/beautifulhugo"]
 	path = themes/beautifulhugo
 	url = https://github.com/jonocarroll/beautifulhugo.git
+	branch = "pr269"

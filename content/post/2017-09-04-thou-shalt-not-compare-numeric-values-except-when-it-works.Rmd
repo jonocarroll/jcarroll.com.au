@@ -28,6 +28,8 @@ This was just going to be a few Tweets but it ended up being a bit of a rollerco
 
 <!--more-->
 
+This was just going to be a few Tweets but it ended up being a bit of a rollercoaster of learning for me, and I haven’t blogged in far too long, so I’m writing it up quickly as a ‘hey look at that’ example for newcomers.
+
 I’ve been working on the ‘merging data’ part of [my book](https://www.manning.com/books/data-munging-with-r) and, as I do when I’m writing this stuff, I had a play around with some examples to see if there was anything funky going on if a reader was to try something slightly different. I’ve been using `dplyr` for the examples after being thoroughly convinced on Twitter to do so. It’s going well. Mostly.
 
 ```r

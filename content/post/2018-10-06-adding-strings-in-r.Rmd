@@ -31,6 +31,10 @@ This started out as a _"hey, I wonder..."_ sort of thing, but as usual, they ten
 
 <!--more-->
 
+This started out as a _"hey, I wonder..."_ sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I'd write it up and share. Shoutout to [@coolbutuseless](https://twitter.com/coolbutuseless) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.
+
+![This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/](https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg) This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/
+
 [This post](http://www.happylittlescripts.com/2018/09/make-your-r-code-nicer-with-roperators.html) came across my feed last week, referring to the [roperators package on CRAN](https://cran.r-project.org/package=roperators). In that post, the author introduces an infix operator from that package which 'adds' (concatenates/pastes) strings
 
 ```{r}
@@ -149,6 +153,7 @@ An extension to this checks whether or not we have the number-as-a-character sit
 So, that's one option for string addition in R. Is it the right one? The idea of actually dispatching on a character class is inviting. Can we just add a `+.character` method (since there doesn't seem to already be one)? Normally when we have S3 dispatch we need a generic function, which calls `UseMethod("class")`, but we don't have that in this case. `+` is an internal generic, which is probably the first sign that we're going to have trouble. If we try to define the method
 
 ```{r, error = TRUE}
+`+` <- base::`+`
 `+.character` <- function(e1, e2) {
   paste0(e1, e2)
 }
@@ -196,7 +201,7 @@ In R, addition is limited to particular classes of objects, defined by the Ops g
 These methods are:
 
 ```{r}
-.S3methods("Ops")
+eval(.S3methods("Ops"), envir = baseenv())
 ```
 
 What's missing from this list, in order for us to be able to just use "string" + "string" is a character method. What's perhaps even more surprising is that there _is_ a `roman` method! Whaaaat?
