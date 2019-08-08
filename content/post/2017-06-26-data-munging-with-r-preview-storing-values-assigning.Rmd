@@ -11,9 +11,6 @@ image: ''
 ---
 
 ```{r, setup, include = FALSE}
-library(dplyr)
-library(forcats)
-
 knitr::opts_chunk$set(
   class.output  = "bg-success",
   class.message = "bg-info text-info",
