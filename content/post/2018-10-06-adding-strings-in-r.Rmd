@@ -56,7 +56,7 @@ or javascript
 
 or perhaps even go
 
-```{go, cache = TRUE}
+```{r, eval = FALSE}
 package main
 
 import "fmt"
@@ -68,7 +68,7 @@ func main() {
 
 or Julia
 
-```{julia, cache = TRUE}
+```{r, eval = FALSE}
 "julia can " * "add strings"
 ```
 

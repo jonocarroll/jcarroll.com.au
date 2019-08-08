@@ -9,9 +9,24 @@ type: ''
 subtitle: ''
 image: ''
 ---
+
+```{r, setup, include = FALSE}
+library(ggplot2)
+library(magrittr)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
 Open-source software is awesome. If I found that a piece of closed-source software was missing a feature that I wanted, well, bad luck. I probably couldn't even tell if was actually missing or if I just didn't know about it. When the source is available, maintained, and documented however, things get fun. We can identify, and perhaps fill gaps.
 
 <!--more-->
+
+Open-source software is awesome. If I found that a piece of closed-source software was missing a feature that I wanted, well, bad luck. I probably couldn't even tell if was actually missing or if I just didn't know about it. When the source is available, maintained, and documented however, things get fun. We can identify, and perhaps fill gaps.
 
 I've thought for a couple of projects which had bar-graphs that it would be neat to have the categories labelled by an icon or a picture. Say, the logo for a company or an illustrative example. Sure, you could fire up GIMP/Inkscape and manually insert them over the top of the text labels (each and every time you re-produce the graph... no thanks) but that's not how I operate. 
 
@@ -21,7 +36,7 @@ The <a href="http://stackoverflow.com/questions/8905101/how-can-i-use-a-graphic-
 
 I decided that I perhaps had enough ammunition to hack something together myself (emphasis on hack), and sure enough it seems to have worked (for a limited definition of "worked" with no attached or implied guarantees whatsoever).
 
-[caption id="attachment_939" align="alignnone" width="680"]<a href="http://jcarroll.com.au/wp-content/uploads/2016/06/GDP.png"><img src="http://jcarroll.com.au/wp-content/uploads/2016/06/GDP-1024x731.png" alt="GDP per capita with flags for x-axis labels. This is harder to make than it seemed." width="680" height="485" class="size-large wp-image-939" /></a> GDP per capita with flags for x-axis labels. This was harder to make than it seemed, but I've since added a little more flexibility to it.[/caption]
+![GDP per capita with flags for x-axis labels. This was harder to make than it seemed, but I've since added a little more flexibility to it.](http://jcarroll.com.au/wp-content/uploads/2016/06/GDP.png)
 
 The way to go about making your own is as follows;
 <ol>
@@ -30,31 +45,35 @@ The way to go about making your own is as follows;
  <li> Build your bar graph with categorical x-axis as per normal, using <code>theme()</code> to remove the labels. Save as an object (e.g. <code>g</code>).</li>
  <li> Source the function <a href="https://gist.github.com/jonocarroll/1d1bdb00a7b3910d62bf3eec8a77b4a7" target="_blank">from this gist</a> (at your own risk... copy and paste if you prefer): </li>
 
-[code language="r" light="1"]
-devtools::source_gist(&quot;1d1bdb00a7b3910d62bf3eec8a77b4a7&quot;)
-[/code]
+```{r, eval = FALSE}
+devtools::source_gist("1d1bdb00a7b3910d62bf3eec8a77b4a7")
+```
 
-[gist id="1d1bdb00a7b3910d62bf3eec8a77b4a7"]
+```{r, echo = FALSE, results = 'asis'}
+cat("{{% gist jonocarroll 1d1bdb00a7b3910d62bf3eec8a77b4a7 %}}")
+```
 
  <li> Call (or pipe your <code>ggplot</code> object to) the function: </li>
 
-[code language="r" light="1"]
-g %&gt;% add_images_as_xlabels(pics)
+```{r,eval = FALSE}
+g %>% add_images_as_xlabels(pics)
 
 ## or
 
 add_images_as_xlabels(g, pics)
-[/code]
+```
 
  <li> Your image will be re-drawn with your pictures labelling the categories.</li>
 </ol>
 Here's an example of the code used to generate the GDP per capita image, featuring some fairly brief (for what it does) <code>rvest</code> scraping (to reiterate; I don't want to have to do any of this by hand, so let's code it up!).
 
-[gist id="96d1dd879b535c3c7ffe8f74065d4bc4"]
+```{r, echo = FALSE, results = 'asis'}
+cat("{{% gist jonocarroll 96d1dd879b535c3c7ffe8f74065d4bc4 %}}")
+```
 
 At least a few caveats surround what I did manage to get working, including but not limited to:
 <ul>
- <li> I'm not sure how to put the x-axis title back in at the right position without padding it with a lot of linebreaks (<code>"\n\n\n\nX-AXIS TITLE"</code>).</li>
+ <li> I'm not sure how to put the x-axis title back in at the right position without padding it with a lot of linebreaks (`"\n\n\n\nX-AXIS TITLE"`).</li>
  <li> I'm not sure how to move the <code>caption</code> line from <code>labs()</code> (assuming you're using the development version of <code>ggplot2</code> on GitHub with @hrbrmstr's excellent annotation additions) so it potentially gets drawn over.</li>
  <li> The spacing below the graph is currently arbitrarily set to a few lines more than necessary, but it's a compromise in having an arbitrary number of images loaded at their correct sizes.</li>
  <li> Similarly, I've just expanded the plot range of the original graph by a seemingly okay amount which has worked for the few examples I've tried.</li>
