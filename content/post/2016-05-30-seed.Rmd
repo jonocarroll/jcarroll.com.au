@@ -241,3 +241,14 @@ The data file of valid Scrabble words can be [downloaded here](https://github.co
 I'm not a data-security expert so any and all of my advice there is liable to be rubbish. Do you know a better way to generate this data, or an aspect I haven't considered? Hit the comments and let me know.
 
 Title image: [CC-BY U.S. Department of Agriculture](https://www.flickr.com/photos/usdagov/16024807396/)
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
