@@ -1,0 +1,97 @@
+---
+title: 'Project Euler Q4 :: Largest palindrome product'
+author: Jonathan Carroll
+date: 2015-01-08 22:24:09
+slug: project-euler-q4
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+
+<!--more-->
+
+[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+
+<blockquote>
+A palindromic number reads the same both ways. The largest palindrome made from the product of two 2-digit numbers is 9009 = 91 × 99. Find the largest palindrome made from the product of two 3-digit numbers.
+</blockquote>
+
+This seems like another brute-force question. There's not that many numbers to test.
+
+```{r}
+## check the worked solution
+91*99 
+```
+
+I'm not aware of an `is.palindrome` function, but it's easy enough to code.
+
+```{r}
+is.palindrome <- function(x) {
+   ## convert to character and explode
+   x <- unlist(strsplit(as.character(x), ""))
+   ## check if the vector is palindromic
+   return(identical(x, rev(x)))
+}
+is.palindrome(9009)
+is.palindrome(9001)
+```
+
+Let's try it out for the two digit example and make sure we're on the right track. Multiply all two digit numbers together and test them for palindrome-ness, then find the largest of those.
+
+```{r}
+twodigits <- 10:99
+prods <- expand.grid(twodigits, twodigits)
+prods$prod <- prods[ ,1]*prods[ ,2]
+prods.palindromes <- prods$prod[sapply(prods$prod, is.palindrome)]
+max(prods.palindromes)
+```
+
+Great! What about three digits?
+
+```{r}
+threedigits <- 100:999
+prods <- expand.grid(threedigits, threedigits)
+prods$prod <- prods[ ,1]*prods[ ,2]
+prods.palindromes <- prods$prod[sapply(prods$prod, is.palindrome)]
+largest <- max(prods.palindromes)
+largest
+
+### CORRECT
+```
+
+Takes a little longer, and generates a nice little 10MB, 810,000 element vector along the way.
+
+```{r}
+format(object.size(prods), units="Mb")
+```
+
+The two three digit numbers?
+
+```{r}
+prods[prods$prod==largest, ]
+```
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
+

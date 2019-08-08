@@ -1,0 +1,105 @@
+---
+title: Jackpot!
+author: Jonathan Carroll
+date: 2016-01-13 15:18:22
+slug: jackpot
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>The powerball lottery in the USA has jackpotted to a first prize of $1.3 billion, which is just a silly amount of money.</p>
+<!--more-->
+<p>The powerball lottery in the USA has jackpotted to a first prize of $1.3 billion, which is just a silly amount of money.</p>
+<p>The cost of an entry (if you happen to be in the USA) is just $2, which is very much a ‘take a gamble’ sort of amount. If you’re an Aussie (except from SA like me) you can still have a go, but it will cost you considerably more (<a href="http://www.news.com.au/finance/money/wealth/record-us15-billion-powerball-draw-now-open-to-australian-punters/news-story/721f7559c04f39ccd61787fcc80dc303">$10.50</a>) and you’ll still have to pay the relevant US taxes if you win.</p>
+<p>The following scenario has been raised a few times around the intertubes; if it costs $2 per ticket, the chances of winning (1/number of combinations of the drawn numbers) is 1/292,201,338, and the prize is over a billion dollars – why not buy one of every ticket and guarantee a win?</p>
+<p>First, let’s look at the game. There are 69 white balls from which 5 will be drawn. There is also a pool of 26 powerballs from which 1 will be drawn. You need 5/5 + 1 to win the jackpot.</p>
+<p>The odds of getting that right, <a href="http://jcarroll.com.au/2015/03/stats/what-are-the-odds/">if you recall your combinatorics</a>, is one in</p>
+<p><span class="math display">\[ \displaystyle{{69 \choose 5} \cdot {26 \choose 1} = 292,201,338}\ . \]</span></p>
+<p>Doubling that makes buying all the tickets a mere $600 million or so. I’ll get my wallet.</p>
+<p>This would be easy money if it weren’t for three important facts; first, the cash prize is actually $930 million if you take it right away, so we’re already out of pocket quite a bit. Second, you may need to split the jackpot with one or more people, meaning a significantly lower return, possibly less than you invested. Lastly, you also need to pay tax on the income, which is around 40% on that. Maybe it’s not such a good deal.</p>
+<p>If you have one of every ticket however, you win every prize. How much does that get you? Back to combinatorics. To figure out how many combinations there are of each division we need to calculate the number of ways to get the number of correct and incorrect balls comparing our ticket to the draw, and multiply by the value of that prize.</p>
+<p>So, for the next best prize (a mere $1 million) we need to have all 5 of the white balls but not the powerball on our ticket. There are 5 possibilities of white ball, and we need all 5 of them. We need to match one of the 25 non-winning powerballs too, so the number of matching combinations is</p>
+<p><span class="math display">\[ \displaystyle{{5 \choose 5} \cdot {25 \choose 1} = 25}\ . \]</span></p>
+<p>So, there are 25 ways in which we could do this (get all 5 of the white ball numbers on our ticket, but not the powerball). That means that if we have one of each ticket, 25 of them will be worth a million dollars each.</p>
+<p>Continuing this logic the total winnings would be</p>
+<p><span class="math display">\[ \begin{array}{lcl} {\rm WINNINGS} &amp;=&amp; 930,000,000\times{5 \choose 5} \cdot {1 \choose 1} \\ &amp;+&amp; 1,000,000\times{5 \choose 5} \cdot {25 \choose 1} \\ &amp;+&amp; 50,000\times{5 \choose 4} \cdot {64 \choose 1} \cdot {1 \choose 1} \\ &amp;+&amp; 100\times{5 \choose 4} \cdot {64 \choose 1} \cdot {25 \choose 1} \\ &amp;+&amp; 100\times{5 \choose 3} \cdot {64 \choose 2} \cdot {1 \choose 1} \\ &amp;+&amp; 7\times{5 \choose 3} \cdot {64 \choose 2} \cdot {25 \choose 1} \\ &amp;+&amp; 7\times{5 \choose 2} \cdot {64 \choose 3} \cdot {1 \choose 1} \\ &amp;+&amp; 4\times{5 \choose 1} \cdot {64 \choose 4} \cdot {1 \choose 1} \\ &amp;+&amp;  4\times{5 \choose 0} \cdot {64 \choose 5} \cdot {1 \choose 1}\end{array}\ . \]</span></p>
+<p>or programmed as</p>
+<pre class="r"><code>winnings &lt;- 930e6*1 +                                     ## cash prize for jackpot, 1 winner
+            1e6*choose(5,5)*choose(25,1)                + ## match 5 out of 5 white, don&#39;t match powerball
+            5e4*choose(5,4)*choose(69-5,1)*choose(1,1)  + ## match 4 out of 5 white, match powerball
+            1e2*choose(5,4)*choose(69-5,1)*choose(25,1) + ## match 4 out of 5 white, don&#39;t match powerball
+            1e2*choose(5,3)*choose(69-5,2)*choose(1,1)  + ## match 3 out of 5 white, match powerball
+            7*choose(5,3)*choose(69-5,2)*choose(25,1)   + ## match 3 out of 5 white, don&#39;t match powerball
+            7*choose(5,2)*choose(69-5,3)*choose(1,1)    + ## match 2 out of 5 white, match powerball
+            4*choose(5,1)*choose(69-5,4)*choose(1,1)    + ## match 1 out of 5 white, match powerball
+            4*choose(5,0)*choose(69-5,5)*choose(1,1)      ## match 0 out of 5 white, match powerball
+prettyNum(winnings, big.mark=&quot;,&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;1,023,466,048&quot;</code></pre>
+<p>So, winning all prizes all by yourself (everyone else who might have won the jackpot lost their tickets) nets you a little over a billion pre-tax dollars on its own. Not bad, but still pretty risky since you’re betting on not sharing.</p>
+<p>The big question will be how big does the lottery need to get before this starts to look like a plausible option? The cost of tickets and total number of combinations are constants, so there must be some jackpot prize for which it’s a good bet to buy all the tickets, given that the chances of sharing don’t go up considerably (if you trust the <a href="http://fivethirtyeight.com/features/powerball-jackpot-800-million-odds/">FiveThirtyEight analysis of historical entries</a>);</p>
+<br />
+<details>
+<p><summary>
+<tt>devtools::session_info()</tt>
+</summary></p>
+<pre class="bg-success"><code>## ─ Session info ──────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 3.5.2 (2018-12-20)
+##  os       Pop!_OS 19.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2019-08-08                  
+## 
+## ─ Packages ──────────────────────────────────────────────────────────────
+##  package     * version date       lib source                      
+##  assertthat    0.2.0   2017-04-11 [1] CRAN (R 3.5.1)              
+##  backports     1.1.3   2018-12-14 [1] CRAN (R 3.5.1)              
+##  blogdown      0.10    2019-01-09 [1] CRAN (R 3.5.1)              
+##  bookdown      0.9     2018-12-21 [1] CRAN (R 3.5.1)              
+##  callr         3.1.1   2018-12-21 [1] CRAN (R 3.5.1)              
+##  cli           1.0.1   2018-09-25 [1] CRAN (R 3.5.1)              
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)              
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)              
+##  devtools      2.0.1   2018-10-26 [1] CRAN (R 3.5.1)              
+##  digest        0.6.18  2018-10-10 [1] CRAN (R 3.5.1)              
+##  evaluate      0.13    2019-02-12 [1] CRAN (R 3.5.1)              
+##  fs            1.2.6   2018-08-23 [1] CRAN (R 3.5.1)              
+##  glue          1.3.0   2018-07-17 [1] CRAN (R 3.5.1)              
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)              
+##  knitr         1.22.5  2019-03-23 [1] Github (yihui/knitr@072253d)
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)              
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)              
+##  pkgbuild      1.0.2   2018-10-16 [1] CRAN (R 3.5.1)              
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)              
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)              
+##  processx      3.2.1   2018-12-05 [1] CRAN (R 3.5.1)              
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)              
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)              
+##  Rcpp          1.0.0   2018-11-07 [1] CRAN (R 3.5.1)              
+##  remotes       2.0.2   2018-10-30 [1] CRAN (R 3.5.1)              
+##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)              
+##  rmarkdown     1.11    2018-12-08 [1] CRAN (R 3.5.1)              
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)              
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)              
+##  stringi       1.3.1   2019-02-13 [1] CRAN (R 3.5.1)              
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)              
+##  usethis       1.4.0   2018-08-14 [1] CRAN (R 3.5.1)              
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)              
+##  xfun          0.5     2019-02-20 [1] CRAN (R 3.5.1)              
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)              
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>

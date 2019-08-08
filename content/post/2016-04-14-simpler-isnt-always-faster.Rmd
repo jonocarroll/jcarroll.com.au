@@ -1,0 +1,87 @@
+---
+title: "Simpler isn't always faster"
+author: Jonathan Carroll
+date: 2016-04-14 21:52:45
+slug: simpler-isnt-always-faster
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(magrittr)
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+My name is Jonathan, and I have a coding obsession.
+
+<!--more-->
+
+My name is Jonathan, and I have a coding obsession.
+
+I'll admit it, the [Hadleyverse](http://adolfoalvarez.cl/the-hitchhikers-guide-to-the-hadleyverse/) has ruined me. I can no longer read a blog post or [stackoverflow question](http://stackoverflow.com/users/4168169/jonathan-carroll) in base `R` and leave it be. There are improvements to make, and I'm somewhat sure that I know what they are. Most of them involve `dplyr`. Many involve `data.table`. Some involve `purrr`.
+
+[This one](http://www.r-bloggers.com/how-to-sort-a-list-of-dataframes/) came up on R-bloggers today (which leads back to [MilanoR](http://www.milanor.net/blog/how-to-sort-a-list-of-dataframes-in-r/)) and seemed like a good opportunity. The problem raised was; given a list of `data.frame`s, can you create a list of the variables sorted into those `data.frame`s? i.e. can you turn this
+
+```{r}
+df_list_in <- list (
+        df_1 = data.frame(x = 1:5, y = 5:1),
+        df_2 = data.frame(x = 6:10, y = 10:6),
+        df_3 = data.frame(x = 11:15, y = 15:11)
+    )
+```
+
+into this
+
+```{r}
+df_list_out <- list (
+        df_x = data.frame(x_1 = 1:5, x_2 = 6:10, x_3 = 11:15),
+        df_y = data.frame(y_1 = 5:1, y_2 = 10:6, y_3 = 15:11)
+)
+```
+
+That looks like a problem I came across recently. Let's see...
+
+<script src="https://gist.github.com/jonocarroll/119e9db260783d7b459fd8fe4636150d.js"></script>
+
+I managed to replace that function -- which, while fast, is a little obtuse and difficult to read -- with essentially a one-liner
+
+```{r}
+df_list_in %>% purrr::transpose() %>% lapply(as.data.frame)
+```
+
+You may now proceed to argue over which is easier/simpler/more accessible/requires less knowledge of additional packages/etc... If you ask me, it's damn-near perfect as long as you can place a cursor on `transpose` in `RStudio` and hit `F1` which will bring up the `purrr::transpose` help menu and explain exactly what is going on. Anyway, how does it compare? Here's Michy's graph (formatting updated and my function added)
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/04/violinplot.png)
+
+and then, just for fun (and because I wanted an excuse to try it out) here's a `yarrr::pirateplot` of the same data
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/04/pirateplot.png)
+
+My one-line function (without the `magrittr` syntactical sugar) does slightly better than the `arrange_col` function (on average), but has a lot less up-front code and is more readable (to me at least). The performance of any of these three doesn't seem like it would have trouble scaling for any practical use-case.
+
+Scaling up the problem to a list of 100 `data.frame`s each with 1000 observations of 50 variables, the same result pans out as shown in the above `microbenchmark` and `pirateplot` below
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/04/bigdf_pirateplot.png)
+
+On the giant example (100 `data.frame`s of 1000 observations of 50 variables) the difference is 20ms vs 380ms. Honestly, I don't know what I'd do with the additional 360ms, but chances are I'd just waste them. I'll take the efficient code on this one.
+
+Can you do even better than the one-liner? Spot a potential issue? Have I made a mistake? Got comments? You know what to do.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

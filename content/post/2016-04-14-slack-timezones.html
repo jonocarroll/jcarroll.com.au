@@ -1,0 +1,50 @@
+---
+title: "#auunconf slack users' timezone locations"
+author: Jonathan Carroll
+date: 2016-04-14 23:04:15
+slug: slack-timezones
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>I had never used <a href="https://slack.com/">slack</a> before, but had read a heap of <a href="http://www.gizmodo.com.au/2016/04/10-tips-to-make-you-a-slack-wizard/">tech articles</a> extolling its virtues. <a href="http://www.gizmodo.com.au/2015/10/malcolm-turnbull-wants-cabinet-ministers-to-use-slack/">Apparently this is what our current Prime Minister advocates within Cabinet</a>. The upcoming #auunconf organising team set up a channel and invited the participants, so I checked it out. Slack is pretty awesome as far as a unified workspace/messaging protocol can go. What makes it even more awesome, is that someone (<span class="citation">@hrbrmstr</span>, no surprise) has made an <a href="https://github.com/hrbrmstr/slackr">R package that talks to it</a>.</p>
+<!--more-->
+<p>I had never used <a href="https://slack.com/">slack</a> before, but had read a heap of <a href="http://www.gizmodo.com.au/2016/04/10-tips-to-make-you-a-slack-wizard/">tech articles</a> extolling its virtues. <a href="http://www.gizmodo.com.au/2015/10/malcolm-turnbull-wants-cabinet-ministers-to-use-slack/">Apparently this is what our current Prime Minister advocates within Cabinet</a>. The upcoming #auunconf organising team set up a channel and invited the participants, so I checked it out. Slack is pretty awesome as far as a unified workspace/messaging protocol can go. What makes it even more awesome, is that someone (<span class="citation">@hrbrmstr</span>, no surprise) has made an <a href="https://github.com/hrbrmstr/slackr">R package that talks to it</a>.</p>
+<p>After installing/loading the <code>slackr</code> package, <a href="https://api.slack.com/">obtaining an API key</a> (the usual drill; create an app, request key, save it somewhere and pray you don’t lose it or share it) and saving it in <code>~/.slackr</code> (so I don’t have to remember to delete it from shared code) it was as simple as calling <code>slackr_users()</code> to get a <code>data.frame</code> of the users and their relevant data. Neat!</p>
+<p>The only geographical information in there was the timezone, so I figured I would merge that with <a href="http://efele.net/maps/tz/world/">a shapefile of such</a> and plot it. Here’s the code I ended up creating</p>
+<script src="https://gist.github.com/jonocarroll/1ce3ba63171eca2de22731c2503a1f48.js"></script>
+<p>Once I had plotted the map I wished the projection was more Pacific-centered, and looked into making that happen. It appears to be trickier than I wanted to bother with for such a small project, so I ended up abandoning it. I did find a <a href="http://stackoverflow.com/questions/32591368/pacific-centric-robinson-projection-with-ggplot-in-r">stackoverflow answer that seemed to have all the right ingredients</a> (again, <span class="citation">@hrbrmstr</span> at work) but I couldn’t get it to plot in any sort of reasonable time.</p>
+<p><img src="http://jcarroll.com.au/wp-content/uploads/2016/04/auunconf_slackr_users_map.png" /></p>
+<p>The unique users so far claim to come from:</p>
+<ul>
+<li>
+Australia/Brisbane
+</li>
+<li>
+Australia/Canberra
+</li>
+<li>
+Asia/Ulaanbaatar
+</li>
+<li>
+America/Indiana/Indianapolis
+</li>
+<li>
+Australia/Adelaide
+</li>
+<li>
+Europe/Amsterdam
+</li>
+<li>
+Pacific/Auckland
+</li>
+</ul>
+<p>so quite the diverse crowd.</p>
+<p>Once all was done and plotted, uploading the image to the slack team was as easy as <code>dev_slackr(&quot;#general&quot;)</code> which sends the current graphic to the #general channel of the slack team that <code>slackr</code> was configured for. Sure enough, it worked!</p>
+<p><img src="http://jcarroll.com.au/wp-content/uploads/2016/04/Screenshot-from-2016-04-14-224623.png" /></p>
+<p>I’m not entirely sure what I’ll use this for, but it was certainly a fun exercise to get working. Perhaps I can generalise it enough to submit a pull-request to make it available in slackr?</p>

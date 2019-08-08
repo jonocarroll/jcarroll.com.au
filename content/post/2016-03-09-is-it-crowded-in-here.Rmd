@@ -9,11 +9,23 @@ type: ''
 subtitle: ''
 image: ''
 ---
-<a href="http://i.imgur.com/5sYruU9.jpg">This was a neat graphic that someone made</a>. It shows the population at a given latitude or longitude as a bar chart, overlayed on a map of the world itself. It shows where people live; the bigger the bar, the more people living at that latitude/longitude.
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+[This was a neat graphic that someone made](http://i.imgur.com/5sYruU9.jpg). It shows the population at a given latitude or longitude as a bar chart, overlayed on a map of the world itself. It shows where people live; the bigger the bar, the more people living at that latitude/longitude.
 
 <!--more-->
 
-"<i>I can do that.</i>" I said. In R of course. So here it is;
+[This was a neat graphic that someone made](http://i.imgur.com/5sYruU9.jpg). It shows the population at a given latitude or longitude as a bar chart, overlayed on a map of the world itself. It shows where people live; the bigger the bar, the more people living at that latitude/longitude.
+
+"_I can do that._" I said. In R of course. So here it is;
 
 <script src="https://gist.github.com/JonoCarroll/d7e23d8e4460acbcddd8.js"></script>
 

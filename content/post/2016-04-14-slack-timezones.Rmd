@@ -1,0 +1,56 @@
+---
+title: "#auunconf slack users' timezone locations"
+author: Jonathan Carroll
+date: 2016-04-14 23:04:15
+slug: slack-timezones
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+I had never used [slack](https://slack.com/) before, but had read a heap of [tech articles](http://www.gizmodo.com.au/2016/04/10-tips-to-make-you-a-slack-wizard/) extolling its virtues. [Apparently this is what our current Prime Minister advocates within Cabinet](http://www.gizmodo.com.au/2015/10/malcolm-turnbull-wants-cabinet-ministers-to-use-slack/). The upcoming #auunconf organising team set up a channel and invited the participants, so I checked it out. Slack is pretty awesome as far as a unified workspace/messaging protocol can go. What makes it even more awesome, is that someone (@hrbrmstr, no surprise) has made an [R package that talks to it](https://github.com/hrbrmstr/slackr).
+
+<!--more-->
+
+I had never used [slack](https://slack.com/) before, but had read a heap of [tech articles](http://www.gizmodo.com.au/2016/04/10-tips-to-make-you-a-slack-wizard/) extolling its virtues. [Apparently this is what our current Prime Minister advocates within Cabinet](http://www.gizmodo.com.au/2015/10/malcolm-turnbull-wants-cabinet-ministers-to-use-slack/). The upcoming #auunconf organising team set up a channel and invited the participants, so I checked it out. Slack is pretty awesome as far as a unified workspace/messaging protocol can go. What makes it even more awesome, is that someone (@hrbrmstr, no surprise) has made an [R package that talks to it](https://github.com/hrbrmstr/slackr).
+
+After installing/loading the `slackr` package, [obtaining an API key](https://api.slack.com/) (the usual drill; create an app, request key, save it somewhere and pray you don't lose it or share it) and saving it in `~/.slackr` (so I don't have to remember to delete it from shared code) it was as simple as calling `slackr_users()` to get a `data.frame` of the users and their relevant data. Neat!
+
+The only geographical information in there was the timezone, so I figured I would merge that with [a shapefile of such](http://efele.net/maps/tz/world/) and plot it. Here's the code I ended up creating
+
+<script src="https://gist.github.com/jonocarroll/1ce3ba63171eca2de22731c2503a1f48.js"></script>
+
+Once I had plotted the map I wished the projection was more Pacific-centered, and looked into making that happen. It appears to be trickier than I wanted to bother with for such a small project, so I ended up abandoning it. I did find a [stackoverflow answer that seemed to have all the right ingredients](http://stackoverflow.com/questions/32591368/pacific-centric-robinson-projection-with-ggplot-in-r) (again, @hrbrmstr at work) but I couldn't get it to plot in any sort of reasonable time. 
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/04/auunconf_slackr_users_map.png)
+
+The unique users so far claim to come from:
+
+<ul>
+<li>Australia/Brisbane</li>
+<li>Australia/Canberra</li>
+<li>Asia/Ulaanbaatar</li>
+<li>America/Indiana/Indianapolis</li>
+<li>Australia/Adelaide</li>
+<li>Europe/Amsterdam</li>
+<li>Pacific/Auckland</li>
+</ul>
+
+so quite the diverse crowd.
+
+Once all was done and plotted, uploading the image to the slack team was as easy as `dev_slackr("#general")` which sends the current graphic to the #general channel of the slack team that `slackr` was configured for. Sure enough, it worked! 
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/04/Screenshot-from-2016-04-14-224623.png)
+
+I'm not entirely sure what I'll use this for, but it was certainly a fun exercise to get working. Perhaps I can generalise it enough to submit a pull-request to make it available in slackr?

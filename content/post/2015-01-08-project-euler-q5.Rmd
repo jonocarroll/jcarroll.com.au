@@ -1,0 +1,71 @@
+---
+title: 'Project Euler Q5 :: Smallest multiple'
+author: Jonathan Carroll
+date: 2015-01-08 23:25:58
+slug: project-euler-q5
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+
+<!--more-->
+
+[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+
+<blockquote>
+2520 is the smallest number that can be divided by each of the numbers from 1 to 10 without any remainder. What is the smallest positive number that is _evenly divisible_ by all of the numbers from 1 to 20?
+</blockquote>
+
+I'm getting the feeling that brute-force is going to be quite the useful tool for these questions. Thankfully `R` can churn through numbers really fast.
+
+So, we're after a number divisible by `1, 2, 3, ..., 10`. Let's vectorise that and check the stated answer
+
+```{r}
+all(2520 %% 1:10 == 0)
+```
+
+Easy enough. The solution value must be divisible by 20, so we can just test multiples of 20 for the above property
+
+```{r}
+i <- 20
+y <- FALSE
+while(!y) {
+  i <- i + 20
+  y <- all(i %% 1:20 == 0)
+}
+i
+
+### CORRECT
+```
+
+Wrapping a `system.time()` call around that assures us that this is still done in under a minute, as per the guidelines
+
+```r
+   user  system elapsed 
+ 26.150   0.000  26.192 
+```
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
+

@@ -1,0 +1,142 @@
+---
+title: 'Project Euler Q3 :: Largest prime factor'
+author: Jonathan Carroll
+date: 2015-01-03 00:52:07
+slug: project-euler-q3
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p><a href="http://jcarroll.com.au/2015/01/code/project-euler/">Explanation</a>. Standard caveat: don’t look here if you are trying to do these yourself.</p>
+<!--more-->
+<p><a href="http://jcarroll.com.au/2015/01/code/project-euler/">Explanation</a>. Standard caveat: don’t look here if you are trying to do these yourself.</p>
+<blockquote>
+<p>The prime factors of 13195 are 5, 7, 13 and 29.</p>
+What is the largest prime factor of the number 600851475143?
+</blockquote>
+<p>It seems so simple at first glance, until of course you look at how big that last number is. I started off by making sure I understood the issue.</p>
+<pre class="r"><code>## check the worked solution
+5*7*13*29</code></pre>
+<pre class="bg-success"><code>## [1] 13195</code></pre>
+<p>so far so good. At this point I realised that there isn’t an inbuilt <code>is.prime</code> so I stole one from <a href="http://cran.r-project.org/web/packages/rlist/vignettes/Examples.html">this site.</a></p>
+<pre class="r"><code>is.prime &lt;- function(num) {
+ if (num == 2L) {
+ TRUE
+ } else if (any(num %% 2L:(num-1L) == 0L)) {
+ FALSE
+ } else {
+ TRUE
+ }
+}</code></pre>
+<p>Testing the example works pretty well…</p>
+<pre class="r"><code>## let&#39;s loop up to n and list the prime factors
+prime.factors &lt;- function(n) {
+ primes &lt;- c()
+ for(i in 1:n) {
+ ## take advantage of lazy logical evaluation
+ ## and short-cut to only the factors
+ if(n %% i == 0 &amp; is.prime(i)) primes &lt;- c(primes, i)
+ }
+ return(primes)
+}
+prime.factors(13195)</code></pre>
+<pre class="bg-success"><code>## [1]  5  7 13 29</code></pre>
+<p>but I hit a snag when I tried to do the same for the problem value.</p>
+<pre class="r"><code>w &lt;- as.integer(600851475143)</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: NAs introduced by coercion to integer range</code></pre>
+<pre class="r"><code>prime.factors(600851475143) ## Error: cannot allocate vector of size 4476.7 Gb</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in prime.factors(600851475143): long vectors not supported yet: eval.c:6387</code></pre>
+<p>Sure enough, that’s bigger than the machine precision integer allows</p>
+<pre class="r"><code>as.numeric(&quot;600851475143&quot;) &gt; .Machine$integer.max</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>so, I abandoned the pre-filled list of values and went again with the brute force. For the sake of speeding it up, I delayed testing for primes until later, as I can do that over the generated list with an <code>apply</code> and only bothered testing the values below <code>sqrt(n)</code> and <code>n/f</code> where <code>f</code> is the largest found prime so far.</p>
+<pre class="r"><code>## lists are too big. Find the primes by brute force
+## using floating point representations
+z &lt;- as.numeric(&quot;600851475143&quot;)
+i &lt;- 2
+factors &lt;- 1
+## loop through values of i that are
+## less than sqrt(z) and
+## less than z/the largest found factor
+while(i &lt; sqrt(z) &amp; i &lt; z/max(factors)) {
+ ## skip the prime test for now
+ if(z %% i == 0) factors &lt;- c(factors, i)
+ i &lt;- i + 1
+}
+factors</code></pre>
+<pre class="bg-success"><code>## [1]      1     71    839   1471   6857  59569 104441 486847</code></pre>
+<pre class="r"><code>factors.prime &lt;- sapply(factors, is.prime)
+primes &lt;- factors[factors.prime] 
+z == prod(primes)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>max(primes)</code></pre>
+<pre class="bg-success"><code>## [1] 6857</code></pre>
+<pre class="r"><code>### CORRECT</code></pre>
+<br />
+<details>
+<p><summary>
+<tt>devtools::session_info()</tt>
+</summary></p>
+<pre class="bg-success"><code>## ─ Session info ──────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 3.5.2 (2018-12-20)
+##  os       Pop!_OS 19.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2019-08-08                  
+## 
+## ─ Packages ──────────────────────────────────────────────────────────────
+##  package     * version date       lib source                      
+##  assertthat    0.2.0   2017-04-11 [1] CRAN (R 3.5.1)              
+##  backports     1.1.3   2018-12-14 [1] CRAN (R 3.5.1)              
+##  blogdown      0.10    2019-01-09 [1] CRAN (R 3.5.1)              
+##  bookdown      0.9     2018-12-21 [1] CRAN (R 3.5.1)              
+##  callr         3.1.1   2018-12-21 [1] CRAN (R 3.5.1)              
+##  cli           1.0.1   2018-09-25 [1] CRAN (R 3.5.1)              
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)              
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)              
+##  devtools      2.0.1   2018-10-26 [1] CRAN (R 3.5.1)              
+##  digest        0.6.18  2018-10-10 [1] CRAN (R 3.5.1)              
+##  evaluate      0.13    2019-02-12 [1] CRAN (R 3.5.1)              
+##  fs            1.2.6   2018-08-23 [1] CRAN (R 3.5.1)              
+##  glue          1.3.0   2018-07-17 [1] CRAN (R 3.5.1)              
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)              
+##  knitr         1.22.5  2019-03-23 [1] Github (yihui/knitr@072253d)
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)              
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)              
+##  pkgbuild      1.0.2   2018-10-16 [1] CRAN (R 3.5.1)              
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)              
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)              
+##  processx      3.2.1   2018-12-05 [1] CRAN (R 3.5.1)              
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)              
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)              
+##  Rcpp          1.0.0   2018-11-07 [1] CRAN (R 3.5.1)              
+##  remotes       2.0.2   2018-10-30 [1] CRAN (R 3.5.1)              
+##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)              
+##  rmarkdown     1.11    2018-12-08 [1] CRAN (R 3.5.1)              
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)              
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)              
+##  stringi       1.3.1   2019-02-13 [1] CRAN (R 3.5.1)              
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)              
+##  usethis       1.4.0   2018-08-14 [1] CRAN (R 3.5.1)              
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)              
+##  xfun          0.5     2019-02-20 [1] CRAN (R 3.5.1)              
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)              
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>

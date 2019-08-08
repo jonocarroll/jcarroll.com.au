@@ -1,0 +1,52 @@
+---
+title: Image marginal histograms
+author: Jonathan Carroll
+date: 2016-03-12 00:37:37
+slug: image-marginal-histograms
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+Another day, another interesting challenge. 
+
+<!--more-->
+
+Another day, another interesting challenge. 
+
+I follow [Bob Rudis' (a.k.a. hrbrmstr's) blog](http://rud.is/b/), typically via [R-bloggers](http://www.r-bloggers.com/), and [this post](http://rud.is/b/2016/03/10/some-light-image-processing-creation-with-r/) caught my eye. Partly because I thought I knew of an existing way to do this. As usual, actually getting that to work took a little longer than I might have hoped, but I think the end result is pretty neat.
+
+His post describes the process of writing an R function to take an image file, for example this one
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/03/file10a566a2b4dc3.png)
+
+and producing a histogram along the sides of the number of pixels on a given row/column. This is what he created (a different image to the example, I believe)
+
+![](http://i2.wp.com/rud.is/b/wp-content/uploads/2016/03/Rplot1.png?resize=940%2C512)
+
+Something funny is going on with the right-hand histogram; it doesn't line up with the image.
+
+Here's my approach. 
+
+<script src="https://gist.github.com/JonoCarroll/7960dff5bf42e47423db.js"></script>
+
+It leverages the `png` package to extract the channels into a matrix, converts those to `x,y,z data.frame`s, takes the median value, plots that with `ggplot2`, then leverages `ggExtra::ggMarginal` to add the marginal histograms. Note that the `ggExtra` package has some bugs (it hasn't been maintained in a while) in relation to more recent (possibly the dev branch) of `ggplot2`. I got it working on at least one of my machines. This is my result
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/03/file10a566a2b4dc3.png) 
+
+vs 
+
+![](http://jcarroll.com.au/wp-content/uploads/2016/03/marginal.png)
+
+I've had several uses for these types of marginal plots lately, so hopefully I can sort out the issues I've been getting in combination with `ggplot2`.

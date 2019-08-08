@@ -1,0 +1,122 @@
+---
+title: 'Project Euler Q3 :: Largest prime factor'
+author: Jonathan Carroll
+date: 2015-01-03 00:52:07
+slug: project-euler-q3
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+class.output= "bg-success",
+class.message = "bg-info text-info",
+class.warning = "bg-warning text-warning",
+class.error= "bg-danger text-danger"
+)
+```
+
+[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+
+<!--more-->
+
+[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+
+<blockquote>
+The prime factors of 13195 are 5, 7, 13 and 29.
+
+What is the largest prime factor of the number 600851475143?
+</blockquote>
+
+It seems so simple at first glance, until of course you look at how big that last number is. I started off by making sure I understood the issue.
+
+```{r}
+## check the worked solution
+5*7*13*29
+```
+
+so far so good. At this point I realised that there isn't an inbuilt `is.prime` so I stole one from [this site.](http://cran.r-project.org/web/packages/rlist/vignettes/Examples.html)
+
+```{r}
+is.prime <- function(num) {
+ if (num == 2L) {
+ TRUE
+ } else if (any(num %% 2L:(num-1L) == 0L)) {
+ FALSE
+ } else {
+ TRUE
+ }
+}
+```
+
+Testing the example works pretty well...
+
+```{r}
+## let's loop up to n and list the prime factors
+prime.factors <- function(n) {
+ primes <- c()
+ for(i in 1:n) {
+ ## take advantage of lazy logical evaluation
+ ## and short-cut to only the factors
+ if(n %% i == 0 & is.prime(i)) primes <- c(primes, i)
+ }
+ return(primes)
+}
+prime.factors(13195)
+```
+
+but I hit a snag when I tried to do the same for the problem value.
+
+```{r, error = TRUE}
+w <- as.integer(600851475143)
+prime.factors(600851475143) ## Error: cannot allocate vector of size 4476.7 Gb
+```
+
+Sure enough, that's bigger than the machine precision integer allows
+
+```{r}
+as.numeric("600851475143") > .Machine$integer.max
+```
+
+so, I abandoned the pre-filled list of values and went again with the brute force. For the sake of speeding it up, I delayed testing for primes until later, as I can do that over the generated list with an `apply` and only bothered testing the values below `sqrt(n)` and `n/f` where `f` is the largest found prime so far.
+
+```{r}
+## lists are too big. Find the primes by brute force
+## using floating point representations
+z <- as.numeric("600851475143")
+i <- 2
+factors <- 1
+## loop through values of i that are
+## less than sqrt(z) and
+## less than z/the largest found factor
+while(i < sqrt(z) & i < z/max(factors)) {
+ ## skip the prime test for now
+ if(z %% i == 0) factors <- c(factors, i)
+ i <- i + 1
+}
+factors
+factors.prime <- sapply(factors, is.prime)
+primes <- factors[factors.prime] 
+z == prod(primes)
+
+max(primes)
+
+### CORRECT
+```
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
+
