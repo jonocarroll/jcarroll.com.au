@@ -32,11 +32,9 @@ This journey started almost exactly a year ago, but it's finally been sufficient
 
 ![I'm at least as useful as Zoidberg](/post/2019-02-22-forcatsfct_match_files/zoidberg_helping.jpeg){width=300px}
 
-It began with [a tweet](https://twitter.com/carroll_jono/status/971093803099541504?ref_src=twsrc%5Etfw), recalling a surprise I encountered that day during some routine data processing
+It began with [a tweet](https://twitter.com/carroll_jono/status/971093803099541504), recalling a surprise I encountered that day during some routine data processing
 
-```{r echo = FALSE}
-blogdown::shortcode('tweet', '971093803099541504')
-```
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Source of today&#39;s mild heart-attack: I have categories W, X_Y, and Z in some data. Intending to keep only the second two:<br><br>data %&gt;% filter(g %in% c(&quot;X Y&quot;, &quot;Z&quot;)<br><br>Did you spot that I used a space instead of an underscore? I sure as heck didn&#39;t, and filtered excessively to just Z.</p>&mdash; Jonathan Carroll (@carroll_jono) <a href="https://twitter.com/carroll_jono/status/971093803099541504?ref_src=twsrc%5Etfw">March 6, 2018</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 For those of you not so comfortable with pipes and `dplyr`, I was trying to subset a `data.frame` '`data`' (with a column `g` having values `"W"`, `"X_Y"` and `"Z"`) to only those rows for which the column `g` had the value `"X_Y"` or `"Z"` (not the actual values, of course, but that's the idea). Without `dplyr` this might simply be
 

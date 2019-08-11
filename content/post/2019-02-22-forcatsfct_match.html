@@ -23,8 +23,14 @@ image: ''
 <img src="/post/2019-02-22-forcatsfct_match_files/zoidberg_helping.jpeg" alt="I’m at least as useful as Zoidberg" width="300" />
 <p class="caption">I’m at least as useful as Zoidberg</p>
 </div>
-<p>It began with <a href="https://twitter.com/carroll_jono/status/971093803099541504?ref_src=twsrc%5Etfw">a tweet</a>, recalling a surprise I encountered that day during some routine data processing</p>
-{{% tweet "971093803099541504" %}}
+<p>It began with <a href="https://twitter.com/carroll_jono/status/971093803099541504">a tweet</a>, recalling a surprise I encountered that day during some routine data processing</p>
+<blockquote class="twitter-tweet">
+<p lang="en" dir="ltr">
+Source of today's mild heart-attack: I have categories W, X_Y, and Z in some data. Intending to keep only the second two:<br><br>data %&gt;% filter(g %in% c(“X Y”, “Z”)<br><br>Did you spot that I used a space instead of an underscore? I sure as heck didn't, and filtered excessively to just Z.
+</p>
+— Jonathan Carroll (<span class="citation">@carroll_jono</span>) <a href="https://twitter.com/carroll_jono/status/971093803099541504?ref_src=twsrc%5Etfw">March 6, 2018</a>
+</blockquote>
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 <p>For those of you not so comfortable with pipes and <code>dplyr</code>, I was trying to subset a <code>data.frame</code> ‘<code>data</code>’ (with a column <code>g</code> having values <code>&quot;W&quot;</code>, <code>&quot;X_Y&quot;</code> and <code>&quot;Z&quot;</code>) to only those rows for which the column <code>g</code> had the value <code>&quot;X_Y&quot;</code> or <code>&quot;Z&quot;</code> (not the actual values, of course, but that’s the idea). Without <code>dplyr</code> this might simply be</p>
 <pre class="r"><code>data[data$g %in% c(&quot;X Y&quot;, &quot;Z&quot;), ]</code></pre>
 <p>To make that more concrete, let’s actually show it in action</p>

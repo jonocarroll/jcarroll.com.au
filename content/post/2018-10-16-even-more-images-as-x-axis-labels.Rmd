@@ -66,9 +66,7 @@ and produces this
 
 This got me curious, though -- if it can process _arbitrary_ $\LaTeX$, could it process a `\\includegraphics` call?
 
-```{r echo = FALSE}
-blogdown::shortcode('tweet', '1050535371241476096')
-```
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Efficient! If it&#39;s arbitrary LaTeX, could the labels just be \includegraphics calls?</p>&mdash; Jonathan Carroll (@carroll_jono) <a href="https://twitter.com/carroll_jono/status/1050535371241476096?ref_src=twsrc%5Etfw">October 11, 2018</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 Yes, as it turns out. 
 
