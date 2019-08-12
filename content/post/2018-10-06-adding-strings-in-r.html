@@ -15,10 +15,16 @@ editor_options:
 
 
 <p>This started out as a <em>“hey, I wonder…”</em> sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I’d write it up and share. Shoutout to <span class="citation">[@coolbutuseless]</span>(<a href="https://twitter.com/coolbutuseless" class="uri">https://twitter.com/coolbutuseless</a>) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.</p>
-<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" /> This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
+<div class="figure">
+<img src="/post/2018-10-06-adding-strings-in-r_files/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" />
+<p class="caption">This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
+</div>
 <!--more-->
 <p>This started out as a <em>“hey, I wonder…”</em> sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I’d write it up and share. Shoutout to <span class="citation">[@coolbutuseless]</span>(<a href="https://twitter.com/coolbutuseless" class="uri">https://twitter.com/coolbutuseless</a>) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.</p>
-<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" /> This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
+<div class="figure">
+<img src="/post/2018-10-06-adding-strings-in-r_files/stringeastereggs.jpg" alt="This is what you get if you “glue” “strings”. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/" />
+<p class="caption">This is what you get if you “glue” “strings”. Photo: <a href="https://craftwhack.com/cool-craft-string-easter-eggs/" class="uri">https://craftwhack.com/cool-craft-string-easter-eggs/</a></p>
+</div>
 <p><a href="http://www.happylittlescripts.com/2018/09/make-your-r-code-nicer-with-roperators.html">This post</a> came across my feed last week, referring to the <a href="https://cran.r-project.org/package=roperators">roperators package on CRAN</a>. In that post, the author introduces an infix operator from that package which ‘adds’ (concatenates/pastes) strings</p>
 <pre class="r"><code>&quot;using infix (%) operators &quot; %+% &quot;R can do simple string addition&quot;</code></pre>
 <pre class="bg-success"><code>## [1] &quot;using infix (%) operators R can do simple string addition&quot;</code></pre>
@@ -40,7 +46,7 @@ func main() {
 <p>but this is not something natively available in R</p>
 <pre class="r"><code>&quot;this doesn&#39;t&quot; + &quot;work&quot;</code></pre>
 <pre class="bg-danger text-danger"><code>## Error in &quot;this doesn&#39;t&quot; + &quot;work&quot;: non-numeric argument to binary operator</code></pre>
-<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/nazi-240x300.jpg" /></p>
+<p><img src="/post/2018-10-06-adding-strings-in-r_files/nazi.jpg" /></p>
 <p>Could we make it work, though? That got me wondering. My first guess was to just create a new <code>+</code> function which <em>does</em> allow for this. The normal addition operator is</p>
 <pre class="r"><code>`+`</code></pre>
 <pre class="bg-success"><code>## function (e1, e2)  .Primitive(&quot;+&quot;)</code></pre>
@@ -102,8 +108,10 @@ func main() {
 &quot;a&quot; + &quot;b&quot;</code></pre>
 <pre class="bg-danger text-danger"><code>## Error in &quot;a&quot; + &quot;b&quot;: non-numeric argument to binary operator</code></pre>
 <p>It seems to fail. What went wrong? Is dispatch not working?</p>
-<iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="480" height="261" frameBorder="0" class="giphy-embed" allowFullScreen>
+<div style="width:100%;height:0;padding-bottom:54%;position:relative;">
+<iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen>
 </iframe>
+</div>
 <p>
 <a href="https://giphy.com/gifs/richard-ayoade-it-crowd-maurice-moss-dbtDDSvWErdf2">via GIPHY</a>
 </p>
@@ -139,7 +147,7 @@ structure(&quot;a&quot;, class = &quot;foo&quot;) + 2</code></pre>
 <pre class="bg-success"><code>## [1] VI</code></pre>
 <pre class="r"><code>as.roman(&quot;2000&quot;) + as.roman(&quot;18&quot;)</code></pre>
 <pre class="bg-success"><code>## [1] MMXVIII</code></pre>
-<p><img src=https://jcarroll.com.au/wp-content/uploads/2018/10/groove_small.gif" width="60%" /></p>
+<p><img src="/post/2018-10-06-adding-strings-in-r_files/groove_small.gif" width="400" /></p>
 <p>Since the operations need to be defined for all the members of the Ops group, we would also need to define what to do with, say, <code>*</code> between strings. When one side is a string and the other is a number, a reasonable approach might be that which was taken in the original post (using a new infix <code>%s*%</code>)</p>
 <pre class="r"><code>&quot;a&quot; %s*% 3</code></pre>
 <pre class="bg-success"><code>##     a 
@@ -176,7 +184,7 @@ Yes, you're right. Below is what I remembered, which suggested that if it were n
 <blockquote>
 a + b + c is parsed as +(a, b, c) not +(+(a, b), c).
 </blockquote>
-<p><img src="https://jcarroll.com.au/wp-content/uploads/2018/10/wack.gif" width="250" height="188" /></p>
+<p><img src="/post/2018-10-06-adding-strings-in-r_files/wack.gif" width="250" /></p>
 <p>I’ll eventually get around to learning more Julia, but this is already hurting my brain.</p>
 <p>That distinction may be of interest, however, to <a href="https://twitter.com/MilesMcBain/">Miles McBain</a>, whose concern was more about repeated applications of <code>+</code> being a bottleneck</p>
 <blockquote class="twitter-tweet" data-lang="en">
@@ -203,58 +211,58 @@ I hate + for string concatenation. “a” + “b” + “c” is paste(“a”,
 ##  collate  en_AU.UTF-8                 
 ##  ctype    en_AU.UTF-8                 
 ##  tz       Australia/Adelaide          
-##  date     2019-08-11                  
+##  date     2019-08-12                  
 ## 
 ## ─ Packages ──────────────────────────────────────────────────────────────
-##  package     * version date       lib source        
-##  assertthat    0.2.1   2019-03-21 [1] CRAN (R 3.5.2)
-##  backports     1.1.4   2019-04-10 [1] CRAN (R 3.5.2)
-##  blogdown      0.14    2019-07-13 [1] CRAN (R 3.5.2)
-##  bookdown      0.12    2019-07-11 [1] CRAN (R 3.5.2)
-##  callr         3.3.1   2019-07-18 [1] CRAN (R 3.5.2)
-##  cli           1.1.0   2019-03-19 [1] CRAN (R 3.5.2)
-##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)
-##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)
-##  devtools      2.1.0   2019-07-06 [1] CRAN (R 3.5.2)
-##  digest        0.6.20  2019-07-04 [1] CRAN (R 3.5.2)
-##  dplyr       * 0.8.3   2019-07-04 [1] CRAN (R 3.5.2)
-##  evaluate      0.14    2019-05-28 [1] CRAN (R 3.5.2)
-##  forcats     * 0.4.0   2019-02-17 [1] CRAN (R 3.5.1)
-##  fs            1.3.1   2019-05-06 [1] CRAN (R 3.5.2)
-##  glue          1.3.1   2019-03-12 [1] CRAN (R 3.5.2)
-##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)
-##  jsonlite      1.6     2018-12-07 [1] CRAN (R 3.5.1)
-##  knitr         1.24    2019-08-08 [1] CRAN (R 3.5.2)
-##  lattice       0.20-38 2018-11-04 [1] CRAN (R 3.5.1)
-##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)
-##  Matrix        1.2-17  2019-03-22 [1] CRAN (R 3.5.2)
-##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)
-##  pillar        1.4.2   2019-06-29 [1] CRAN (R 3.5.2)
-##  pkgbuild      1.0.4   2019-08-05 [1] CRAN (R 3.5.2)
-##  pkgconfig     2.0.2   2018-08-16 [1] CRAN (R 3.5.1)
-##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)
-##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)
-##  processx      3.4.1   2019-07-18 [1] CRAN (R 3.5.2)
-##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)
-##  purrr         0.3.2   2019-03-15 [1] CRAN (R 3.5.2)
-##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)
-##  Rcpp          1.0.2   2019-07-25 [1] CRAN (R 3.5.2)
-##  remotes       2.1.0   2019-06-24 [1] CRAN (R 3.5.2)
-##  reticulate    1.13    2019-07-24 [1] CRAN (R 3.5.2)
-##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)
-##  rmarkdown     1.14    2019-07-12 [1] CRAN (R 3.5.2)
-##  roperators  * 1.1.0   2018-09-28 [1] CRAN (R 3.5.1)
-##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)
-##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)
-##  stringi       1.4.3   2019-03-12 [1] CRAN (R 3.5.2)
-##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)
-##  testthat      2.2.1   2019-07-25 [1] CRAN (R 3.5.2)
-##  tibble        2.1.3   2019-06-06 [1] CRAN (R 3.5.2)
-##  tidyselect    0.2.5   2018-10-11 [1] CRAN (R 3.5.1)
-##  usethis       1.5.1   2019-07-04 [1] CRAN (R 3.5.2)
-##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)
-##  xfun          0.8     2019-06-25 [1] CRAN (R 3.5.2)
-##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)
+##  package     * version date       lib source                           
+##  assertthat    0.2.1   2019-03-21 [1] CRAN (R 3.5.2)                   
+##  backports     1.1.4   2019-04-10 [1] CRAN (R 3.5.2)                   
+##  blogdown      0.14.1  2019-08-11 [1] Github (rstudio/blogdown@be4e91c)
+##  bookdown      0.12    2019-07-11 [1] CRAN (R 3.5.2)                   
+##  callr         3.3.1   2019-07-18 [1] CRAN (R 3.5.2)                   
+##  cli           1.1.0   2019-03-19 [1] CRAN (R 3.5.2)                   
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)                   
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)                   
+##  devtools      2.1.0   2019-07-06 [1] CRAN (R 3.5.2)                   
+##  digest        0.6.20  2019-07-04 [1] CRAN (R 3.5.2)                   
+##  dplyr       * 0.8.3   2019-07-04 [1] CRAN (R 3.5.2)                   
+##  evaluate      0.14    2019-05-28 [1] CRAN (R 3.5.2)                   
+##  forcats     * 0.4.0   2019-02-17 [1] CRAN (R 3.5.1)                   
+##  fs            1.3.1   2019-05-06 [1] CRAN (R 3.5.2)                   
+##  glue          1.3.1   2019-03-12 [1] CRAN (R 3.5.2)                   
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)                   
+##  jsonlite      1.6     2018-12-07 [1] CRAN (R 3.5.1)                   
+##  knitr         1.24    2019-08-08 [1] CRAN (R 3.5.2)                   
+##  lattice       0.20-38 2018-11-04 [1] CRAN (R 3.5.1)                   
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)                   
+##  Matrix        1.2-17  2019-03-22 [1] CRAN (R 3.5.2)                   
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)                   
+##  pillar        1.4.2   2019-06-29 [1] CRAN (R 3.5.2)                   
+##  pkgbuild      1.0.4   2019-08-05 [1] CRAN (R 3.5.2)                   
+##  pkgconfig     2.0.2   2018-08-16 [1] CRAN (R 3.5.1)                   
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)                   
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)                   
+##  processx      3.4.1   2019-07-18 [1] CRAN (R 3.5.2)                   
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)                   
+##  purrr         0.3.2   2019-03-15 [1] CRAN (R 3.5.2)                   
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)                   
+##  Rcpp          1.0.2   2019-07-25 [1] CRAN (R 3.5.2)                   
+##  remotes       2.1.0   2019-06-24 [1] CRAN (R 3.5.2)                   
+##  reticulate    1.13    2019-07-24 [1] CRAN (R 3.5.2)                   
+##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)                   
+##  rmarkdown     1.14    2019-07-12 [1] CRAN (R 3.5.2)                   
+##  roperators  * 1.1.0   2018-09-28 [1] CRAN (R 3.5.1)                   
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)                   
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)                   
+##  stringi       1.4.3   2019-03-12 [1] CRAN (R 3.5.2)                   
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)                   
+##  testthat      2.2.1   2019-07-25 [1] CRAN (R 3.5.2)                   
+##  tibble        2.1.3   2019-06-06 [1] CRAN (R 3.5.2)                   
+##  tidyselect    0.2.5   2018-10-11 [1] CRAN (R 3.5.1)                   
+##  usethis       1.5.1   2019-07-04 [1] CRAN (R 3.5.2)                   
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)                   
+##  xfun          0.8     2019-06-25 [1] CRAN (R 3.5.2)                   
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)                   
 ## 
 ## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
 ## [2] /usr/local/lib/R/site-library

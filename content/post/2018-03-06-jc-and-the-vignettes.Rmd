@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 
 If that's not a great 1960's band name then I don't know what is (hint: I don't know what is).
 
-<a href="https://www.billboard.com/music/the-marvelettes"><img src="https://jcarroll.com.au/wp-content/uploads/2018/03/marvelettes-300x199.jpg" width="300" height="199" alt="The Marvelettes: https://www.billboard.com/music/the-marvelettes" align="none"></img></a>
+[![](/post/2018-03-06-jc-and-the-vignettes_files/marvelettes.jpg){width=400}](https://www.billboard.com/music/the-marvelettes)
 
 <!--more-->
 
 If that's not a great 1960's band name then I don't know what is (hint: I don't know what is).
 
-<a href="https://www.billboard.com/music/the-marvelettes"><img src="https://jcarroll.com.au/wp-content/uploads/2018/03/marvelettes-300x199.jpg" width="300" height="199" alt="The Marvelettes: https://www.billboard.com/music/the-marvelettes" align="none"></img></a>
+[![](/post/2018-03-06-jc-and-the-vignettes_files/marvelettes.jpg){width=400}](https://www.billboard.com/music/the-marvelettes)
 
 At the start of the year I set out my 'goals for 2018' just like many of us do; an overly ambitious list of things we'd like to do to better ourselves. My list includes improving my French to better interact with a colleague I cohabitate and work with while onsite (my 48 day streak on Duolingo was interrupted by travel... _c'est un bon début_); reading more books (two a month, so far so good); writing more blog posts (one a month, this one included); interacting more with the R community; and using a bullet journal (all of these are currently tracked in said bullet journal). 
 

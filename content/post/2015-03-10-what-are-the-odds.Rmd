@@ -23,7 +23,7 @@ _[ Trigger warning: this post contains maths. Please don't be afraid, it probabl
 
 After posting this photo of our lottery ticket to Facebook
 
-![](http://jcarroll.com.au/wp-content/uploads/2015/03/soclose-300x166.jpg)
+![](/post/2015-03-10-what-are-the-odds_files/soclose.jpg){width=300}
 
 I thought more and more about random-event probabilities.
 
@@ -31,13 +31,13 @@ I thought more and more about random-event probabilities.
 
 After posting this photo of our lottery ticket to Facebook
 
-![](http://jcarroll.com.au/wp-content/uploads/2015/03/soclose-300x166.jpg)
+![](/post/2015-03-10-what-are-the-odds_files/soclose.jpg){width=300}
 
 I thought more and more about random-event probabilities.
 
 I know my way around numbers just fine, so I know that the odds of winning Division 1 in the South Australian Saturday Night X-Lotto is 1 in [8,145,060](https://tatts.com/salotteries/games/x-lotto) (yes, that's one of the semi-useless numbers I have memorised).
 
-![](http://www.dawgpoundnation.com/wp-content/uploads/2014/12/post-26236-Han-Solo-never-tell-me-the-odd-Xg7f.gif)
+![](/post/2015-03-10-what-are-the-odds_files/solo_odds.gif)
 
 That's fairly improbable at face value, sure, but it's me, so I'm going deeper. Calculating odds of events with limited outcomes can be as easy as multiplying out individual probabilities. For example, the odds of 8 women in a mum's group all having the opposite-sex for their second child is just the product of 1 option from 2 choices, 8 times (multiplied);
 
@@ -83,7 +83,7 @@ There is of course some advantage in having more games available (buying more ti
 
 Another way to think about this is that even 1 in 8 million isn't a terribly low probability in the grand scheme of things. Sure, things with that sort of probability aren't going to be showing up in your day-to-day life a lot, but there are interesting examples. There's apparently a [1 in 11 million chance that you'll die in an plane accident](http://theweek.com/articles/462449/odds-are-11-million-1-that-youll-die-plane-crash), which is hopefully reassuring. There's [this family](http://www.reddit.com/r/AskReddit/comments/2loor3/what_is_the_most_statistically_unlikely_thing/clxkdba) who rented a car and travelled around the U.S.A., eventually parking next to another car with a consecutive number plate. The fact that it's the same model of car isn't terribly surprising; the plates were probably given in sequence to a dealer. The fact that the identifiable vehicles have been brought back together is the surprising part.
 
-![](http://jcarroll.com.au/wp-content/uploads/2015/03/consecutive-300x224.jpg)
+![](/post/2015-03-10-what-are-the-odds_files/consecutive.jpg)
 
 They claim the other was rented from a completely different state to where theirs was. I've seen a licence plate consecutive to ours on the road, but here in Adelaide that's probably not nearly so unlikely. I actually have a similar story; one Easter we went up the coast to Port Broughton, which was, to be honest, quite boring, so we got in the car and drove around to various towns, eventually stopping in for a snorkel at Moonta Bay. We pulled into the car park and I recognised the person getting out of their car in the bay across the road from ours. It was a visiting German post-doc from my research group who had decided to drive up from Adelaide on a whim, and who just happened to arrive at the same place as us at the same time and park a few meters from us. I digress.
 

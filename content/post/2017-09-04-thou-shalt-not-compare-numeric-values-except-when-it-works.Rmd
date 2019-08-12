@@ -39,7 +39,7 @@ library(dplyr)
 
 My example involved joining together two `tibble`s containing text values. Nothing too surprising. I wondered though; do numbers behave the way I expect? Now, a big rule in programming is 'thou shalt not compare numbers', and it holds especially true [when numbers aren't exactly integers](http://0.30000000000000004.com/). This is because representing non-integers is hard, and what you see on the screen isn't always what the computer sees internally.
 
-[caption align="alignnone" width="680"]<a href="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg"><img src="https://jcarroll.com.au/wp-content/uploads/2017/09/AngryGod-300x188.jpg" alt="Thou shalt not compare numbers." width="680" height="485" class="size-large" /></a> Thou shalt not compare numbers.[/caption]
+![Thou shalt not compare numbers](/post/2017-09-04-thou-shalt-not-compare-numeric-values-except-when-it-works_files/AngryGod.jpg){width=600px}
 
 If I had a `tibble` where the column I would use to `join` had integers
 

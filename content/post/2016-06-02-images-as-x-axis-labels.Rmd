@@ -30,30 +30,28 @@ Open-source software is awesome. If I found that a piece of closed-source softwa
 
 I've thought for a couple of projects which had bar-graphs that it would be neat to have the categories labelled by an icon or a picture. Say, the logo for a company or an illustrative example. Sure, you could fire up GIMP/Inkscape and manually insert them over the top of the text labels (each and every time you re-produce the graph... no thanks) but that's not how I operate. 
 
-There are probably very few cases for which this is technically a good idea (trying to be a featured author on <a href="http://junkcharts.typepad.com/" target="_blank">JunkCharts</a> might very well be one of those reasons). Nonetheless, there are at least a couple of requests for this floating around on stackoverflow; <a href="http://stackoverflow.com/questions/29939447/icons-as-x-axis-labels-in-r-ggplot2" target="_blank">here</a> and <a href="http://stackoverflow.com/questions/8905101/how-can-i-use-a-graphic-imported-with-grimport-as-axis-tick-labels-in-ggplot2-u" target="_blank">here</a> for example. I struggled to find any satisfactory solutions that were in current working order (though perhaps my Google-fu has failed me).
+There are probably very few cases for which this is technically a good idea (trying to be a featured author on [JunkCharts](http://junkcharts.typepad.com/) might very well be one of those reasons). Nonetheless, there are at least a couple of requests for this floating around on stackoverflow; [here](http://stackoverflow.com/questions/29939447/icons-as-x-axis-labels-in-r-ggplot2) and [here](http://stackoverflow.com/questions/8905101/how-can-i-use-a-graphic-imported-with-grimport-as-axis-tick-labels-in-ggplot2-u) for example. I struggled to find any satisfactory solutions that were in current working order (though perhaps my Google-fu has failed me).
 
-The <a href="http://stackoverflow.com/questions/8905101/how-can-i-use-a-graphic-imported-with-grimport-as-axis-tick-labels-in-ggplot2-u" target="_blank">second link there</a> has a working example, but the big update to <code>ggplot2</code> breaks that pretty strongly; <code>opts</code> was deprecated and now <code>element_text()</code> has a gatekeeper validation routine that prevents any such messing around. The <a href="http://stackoverflow.com/questions/29939447/icons-as-x-axis-labels-in-r-ggplot2" target="_blank">first link</a> however takes a different route. I couldn't get that one to work either, but in any case the answer is a year out of date (updates in <code>ggplot2</code> can easily have broken the <code>gTree</code> relations), not particularly flexible, and relies on saving intermittent image files for <code>PostScriptTrace</code> to read back in which I'm not a fan of (and couldn't get to work anyway).
+The [second link there](http://stackoverflow.com/questions/8905101/how-can-i-use-a-graphic-imported-with-grimport-as-axis-tick-labels-in-ggplot2-u) has a working example, but the big update to `ggplot2` breaks that pretty strongly; `opts` was deprecated and now `element_text()` has a gatekeeper validation routine that prevents any such messing around. The [first link](http://stackoverflow.com/questions/29939447/icons-as-x-axis-labels-in-r-ggplot2) however takes a different route. I couldn't get that one to work either, but in any case the answer is a year out of date (updates in `ggplot2` can easily have broken the `gTree` relations), not particularly flexible, and relies on saving intermittent image files for `PostScriptTrace` to read back in which I'm not a fan of (and couldn't get to work anyway).
 
 I decided that I perhaps had enough ammunition to hack something together myself (emphasis on hack), and sure enough it seems to have worked (for a limited definition of "worked" with no attached or implied guarantees whatsoever).
 
-![GDP per capita with flags for x-axis labels. This was harder to make than it seemed, but I've since added a little more flexibility to it.](http://jcarroll.com.au/wp-content/uploads/2016/06/GDP.png)
+![GDP per capita with flags for x-axis labels. This was harder to make than it seemed, but I've since added a little more flexibility to it.](/post/2016-06-02-images-as-x-axis-labels_files/GDP.png)
 
 The way to go about making your own is as follows;
 <ol>
  <li> Stop and carefully re-evaluate the choices that you've made to bring you to this decision. Are you sure? Okay...</li>
- <li> Save the images (in the correct factor order) into a list (e.g. <code>pics</code>).</li>
- <li> Build your bar graph with categorical x-axis as per normal, using <code>theme()</code> to remove the labels. Save as an object (e.g. <code>g</code>).</li>
- <li> Source the function <a href="https://gist.github.com/jonocarroll/1d1bdb00a7b3910d62bf3eec8a77b4a7" target="_blank">from this gist</a> (at your own risk... copy and paste if you prefer): </li>
+ <li> Save the images (in the correct factor order) into a list (e.g. `pics`).</li>
+ <li> Build your bar graph with categorical x-axis as per normal, using `theme()` to remove the labels. Save as an object (e.g. `g`).</li>
+ <li> Source the function [from this gist](https://gist.github.com/jonocarroll/1d1bdb00a7b3910d62bf3eec8a77b4a7) (at your own risk... copy and paste if you prefer): </li>
 
 ```{r, eval = FALSE}
 devtools::source_gist("1d1bdb00a7b3910d62bf3eec8a77b4a7")
 ```
 
-```{r, echo = FALSE, results = 'asis'}
-cat("{{% gist jonocarroll 1d1bdb00a7b3910d62bf3eec8a77b4a7 %}}")
-```
+<script src="https://gist.github.com/jonocarroll/1d1bdb00a7b3910d62bf3eec8a77b4a7.js"></script>
 
- <li> Call (or pipe your <code>ggplot</code> object to) the function: </li>
+ <li> Call (or pipe your `ggplot` object to) the function: </li>
 
 ```{r,eval = FALSE}
 g %>% add_images_as_xlabels(pics)
@@ -65,18 +63,16 @@ add_images_as_xlabels(g, pics)
 
  <li> Your image will be re-drawn with your pictures labelling the categories.</li>
 </ol>
-Here's an example of the code used to generate the GDP per capita image, featuring some fairly brief (for what it does) <code>rvest</code> scraping (to reiterate; I don't want to have to do any of this by hand, so let's code it up!).
+Here's an example of the code used to generate the GDP per capita image, featuring some fairly brief (for what it does) `rvest` scraping (to reiterate; I don't want to have to do any of this by hand, so let's code it up!).
 
-```{r, echo = FALSE, results = 'asis'}
-cat("{{% gist jonocarroll 96d1dd879b535c3c7ffe8f74065d4bc4 %}}")
-```
+<script src="https://gist.github.com/jonocarroll/96d1dd879b535c3c7ffe8f74065d4bc4.js"></script>
 
 At least a few caveats surround what I did manage to get working, including but not limited to:
 <ul>
  <li> I'm not sure how to put the x-axis title back in at the right position without padding it with a lot of linebreaks (`"\n\n\n\nX-AXIS TITLE"`).</li>
- <li> I'm not sure how to move the <code>caption</code> line from <code>labs()</code> (assuming you're using the development version of <code>ggplot2</code> on GitHub with @hrbrmstr's excellent annotation additions) so it potentially gets drawn over.</li>
+ <li> I'm not sure how to move the `caption` line from `labs()` (assuming you're using the development version of `ggplot2` on GitHub with @hrbrmstr's excellent annotation additions) so it potentially gets drawn over.</li>
  <li> The spacing below the graph is currently arbitrarily set to a few lines more than necessary, but it's a compromise in having an arbitrary number of images loaded at their correct sizes.</li>
  <li> Similarly, I've just expanded the plot range of the original graph by a seemingly okay amount which has worked for the few examples I've tried.</li>
  <li> Using a graph like this places the onus of domain knowledge onto the reader; if you don't know what those flags refer to then this graph is less useful than one with the countries labelled with words. Prettier though.</li>
 </ul>
-I've no doubt that there must be a better way to do this, but it's beyond my understanding of how <code>ggproto</code> works, and I can't seem to bypass <code>element_text</code>'s requirements with what I do know. If you would like to help develop this into something more robust then I'm most interested. Given that it's a single function I wasn't going to create a package just for this, but I'm willing to help incorporate it into someone's existing package. Hit the comments or ping me on Twitter (<a href="https://twitter.com/carroll_jono" target="_blank">@carroll_jono</a>)!
+I've no doubt that there must be a better way to do this, but it's beyond my understanding of how `ggproto` works, and I can't seem to bypass `element_text`'s requirements with what I do know. If you would like to help develop this into something more robust then I'm most interested. Given that it's a single function I wasn't going to create a package just for this, but I'm willing to help incorporate it into someone's existing package. Hit the comments or ping me on Twitter ([@carroll_jono](https://twitter.com/carroll_jono))!

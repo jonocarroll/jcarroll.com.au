@@ -59,17 +59,17 @@ df_list_in %>% purrr::transpose() %>% lapply(as.data.frame)
 
 You may now proceed to argue over which is easier/simpler/more accessible/requires less knowledge of additional packages/etc... If you ask me, it's damn-near perfect as long as you can place a cursor on `transpose` in `RStudio` and hit `F1` which will bring up the `purrr::transpose` help menu and explain exactly what is going on. Anyway, how does it compare? Here's Michy's graph (formatting updated and my function added)
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/violinplot.png)
+![](/post/2016-04-14-simpler-isnt-always-faster_files/violinplot.png)
 
 and then, just for fun (and because I wanted an excuse to try it out) here's a `yarrr::pirateplot` of the same data
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/pirateplot.png)
+![](/post/2016-04-14-simpler-isnt-always-faster_files/pirateplot.png)
 
 My one-line function (without the `magrittr` syntactical sugar) does slightly better than the `arrange_col` function (on average), but has a lot less up-front code and is more readable (to me at least). The performance of any of these three doesn't seem like it would have trouble scaling for any practical use-case.
 
 Scaling up the problem to a list of 100 `data.frame`s each with 1000 observations of 50 variables, the same result pans out as shown in the above `microbenchmark` and `pirateplot` below
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/bigdf_pirateplot.png)
+![](/post/2016-04-14-simpler-isnt-always-faster_files/bigdf_pirateplot.png)
 
 On the giant example (100 `data.frame`s of 1000 observations of 50 variables) the difference is 20ms vs 380ms. Honestly, I don't know what I'd do with the additional 360ms, but chances are I'd just waste them. I'll take the efficient code on this one.
 

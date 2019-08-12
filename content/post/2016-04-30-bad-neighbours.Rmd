@@ -105,7 +105,7 @@ Unit: milliseconds
 
 That brings us up to 184ms/1000 iterations. 10 times as many iterations again takes 92 times longer. It's definitely slowing down.
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/log10log10.png) 
+![](/post/2016-04-30-bad-neighbours_files/log10log10.png)
 
 On a log-log plot of time against iterations with a slope of 2, it's clearer that the problem scales as $\mathcal{O}(n^2)$. That suggests that we should be able to complete the 1,000,000 iteration evaluation in about 20 minutes. 2,000,000 iterations in around 1 hour 20 minutes. 3,000,000 in 3 hours. Where am I going with this you ask? Xi'an requested help from [stackexchange](http://math.stackexchange.com/questions/1758065/limit-of-recursive-sequence-n2q-n-1n-12q-n-12n-2q-n-2) (a great move which paid off well) to get the analytical solution to the problem. If you check the timestamps, you'll notice 
 
@@ -153,7 +153,7 @@ So now we have an upper limit on precision. We'll be able to get at best within 
 
 If I repeatedly use the `xian_c` function with different numbers of iterations, we can see how well we should expect to do
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/pcerror-1.png) 
+![](/post/2016-04-30-bad-neighbours_files/pcerror-1.png)
 
 Is 2e-5% close enough for a couple of hours work?
 

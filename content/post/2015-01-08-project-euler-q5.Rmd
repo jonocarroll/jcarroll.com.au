@@ -19,11 +19,11 @@ class.error= "bg-danger text-danger"
 )
 ```
 
-[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+[Explanation](https://jcarroll.com.au/2015/01/02/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
 
 <!--more-->
 
-[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+[Explanation](https://jcarroll.com.au/2015/01/02/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
 
 <blockquote>
 2520 is the smallest number that can be divided by each of the numbers from 1 to 10 without any remainder. What is the smallest positive number that is _evenly divisible_ by all of the numbers from 1 to 20?

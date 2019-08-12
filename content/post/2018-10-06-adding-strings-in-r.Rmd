@@ -27,13 +27,13 @@ knitr::opts_chunk$set(
 
 This started out as a _"hey, I wonder..."_ sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I'd write it up and share. Shoutout to [@coolbutuseless](https://twitter.com/coolbutuseless) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.
 
-![This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/](https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg) This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/
+![This is what you get if you "glue" "strings". Photo: https://craftwhack.com/cool-craft-string-easter-eggs/](/post/2018-10-06-adding-strings-in-r_files/stringeastereggs.jpg)
 
 <!--more-->
 
 This started out as a _"hey, I wonder..."_ sort of thing, but as usual, they tend to end up as interesting voyages into the deepest depths of code, so I thought I'd write it up and share. Shoutout to [@coolbutuseless](https://twitter.com/coolbutuseless) for proving that a little curiosity can go a long way and inspiring me to keep digging into interesting topics.
 
-![This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/](https://jcarroll.com.au/wp-content/uploads/2018/10/stringeastereggs.jpg) This is what you get if you &quot;glue&quot; &quot;strings&quot;. Photo: https://craftwhack.com/cool-craft-string-easter-eggs/
+![This is what you get if you "glue" "strings". Photo: https://craftwhack.com/cool-craft-string-easter-eggs/](/post/2018-10-06-adding-strings-in-r_files/stringeastereggs.jpg)
 
 [This post](http://www.happylittlescripts.com/2018/09/make-your-r-code-nicer-with-roperators.html) came across my feed last week, referring to the [roperators package on CRAN](https://cran.r-project.org/package=roperators). In that post, the author introduces an infix operator from that package which 'adds' (concatenates/pastes) strings
 
@@ -78,7 +78,7 @@ but this is not something natively available in R
 "this doesn't" + "work"
 ```
 
-![](https://jcarroll.com.au/wp-content/uploads/2018/10/nazi-240x300.jpg)
+![](/post/2018-10-06-adding-strings-in-r_files/nazi.jpg)
 
 Could we make it work, though? That got me wondering. My first guess was to just create a new `+` function which _does_ allow for this. The normal addition operator is
 
@@ -162,7 +162,7 @@ So, that's one option for string addition in R. Is it the right one? The idea of
 
 It seems to fail. What went wrong? Is dispatch not working? 
 
-<iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="480" height="261" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/richard-ayoade-it-crowd-maurice-moss-dbtDDSvWErdf2">via GIPHY</a></p>
+<div style="width:100%;height:0;padding-bottom:54%;position:relative;"><iframe src="https://giphy.com/embed/dbtDDSvWErdf2" width="100%" height="100%" style="position:absolute" frameBorder="0" class="giphy-embed" allowFullScreen></iframe></div><p><a href="https://giphy.com/gifs/richard-ayoade-it-crowd-maurice-moss-dbtDDSvWErdf2">via GIPHY</a></p>
 
 We want to dispatch on "character" -- is that what we have?
 
@@ -216,7 +216,7 @@ as.roman("1") + as.roman("5")
 as.roman("2000") + as.roman("18")
 ```
 
-<img src=https://jcarroll.com.au/wp-content/uploads/2018/10/groove_small.gif" width="60%" />
+![](/post/2018-10-06-adding-strings-in-r_files/groove_small.gif){width=400px}
 
 Since the operations need to be defined for all the members of the Ops group, we would also need to define what to do with, say, `*` between strings. When one side is a string and the other is a number, a reasonable approach might be that which was taken in the original post (using a new infix `%s*%`)
 
@@ -277,7 +277,7 @@ This doesn't particularly bother me, because I'm okay with this not actually bei
 
 <blockquote>a + b + c is parsed as +(a, b, c) not +(+(a, b), c).</blockquote>
 
-<img src="https://jcarroll.com.au/wp-content/uploads/2018/10/wack.gif" width="250" height="188" />
+![](/post/2018-10-06-adding-strings-in-r_files/wack.gif){width=250px}
 
 I'll eventually get around to learning more Julia, but this is already hurting my brain.
 

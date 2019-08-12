@@ -33,7 +33,7 @@ The only geographical information in there was the timezone, so I figured I woul
 
 Once I had plotted the map I wished the projection was more Pacific-centered, and looked into making that happen. It appears to be trickier than I wanted to bother with for such a small project, so I ended up abandoning it. I did find a [stackoverflow answer that seemed to have all the right ingredients](http://stackoverflow.com/questions/32591368/pacific-centric-robinson-projection-with-ggplot-in-r) (again, @hrbrmstr at work) but I couldn't get it to plot in any sort of reasonable time. 
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/auunconf_slackr_users_map.png)
+![Map of #auunconf slack users](/post/2016-04-14-slack-timezones_files/auunconf_slackr_users_map.png)
 
 The unique users so far claim to come from:
 
@@ -51,6 +51,6 @@ so quite the diverse crowd.
 
 Once all was done and plotted, uploading the image to the slack team was as easy as `dev_slackr("#general")` which sends the current graphic to the #general channel of the slack team that `slackr` was configured for. Sure enough, it worked! 
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/Screenshot-from-2016-04-14-224623.png)
+![It works!](/post/2016-04-14-slack-timezones_files/Screenshot-from-2016-04-14-224623.png)
 
 I'm not entirely sure what I'll use this for, but it was certainly a fun exercise to get working. Perhaps I can generalise it enough to submit a pull-request to make it available in slackr?

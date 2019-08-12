@@ -31,7 +31,7 @@ The following scenario has been raised a few times around the intertubes; if it 
 
 First, let's look at the game. There are 69 white balls from which 5 will be drawn. There is also a pool of 26 powerballs from which 1 will be drawn. You need 5/5 + 1 to win the jackpot.
 
-The odds of getting that right, [if you recall your combinatorics](http://jcarroll.com.au/2015/03/stats/what-are-the-odds/), is one in 
+The odds of getting that right, [if you recall your combinatorics](http://jcarroll.com.au/2015/03/10/what-are-the-odds/), is one in 
 
 \[ \displaystyle{{69 \choose 5} \cdot {26 \choose 1} = 292,201,338}\ . \]
 

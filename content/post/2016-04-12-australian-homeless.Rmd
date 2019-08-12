@@ -19,11 +19,11 @@ class.error= "bg-danger text-danger"
 )
 ```
 
-I [mapped out the USA homelessness rate](http://jcarroll.com.au/2016/04/10/52vis-week-2-challenge/) in my last post as a challenge and noted at the end that it would be interesting to do the same for Australia. That was the first comment I received in person, too. "Let's do it!" I said. What I found may shock you (click-bait title; check).
+I [mapped out the USA homelessness rate](https://jcarroll.com.au/2016/04/10/challenge/) in my last post as a challenge and noted at the end that it would be interesting to do the same for Australia. That was the first comment I received in person, too. "Let's do it!" I said. What I found may shock you (click-bait title; check).
 
 <!--more-->
 
-I [mapped out the USA homelessness rate](http://jcarroll.com.au/2016/04/10/52vis-week-2-challenge/) in my last post as a challenge and noted at the end that it would be interesting to do the same for Australia. That was the first comment I received in person, too. "Let's do it!" I said. What I found may shock you (click-bait title; check).
+I [mapped out the USA homelessness rate](https://jcarroll.com.au/2016/04/10/challenge/) in my last post as a challenge and noted at the end that it would be interesting to do the same for Australia. That was the first comment I received in person, too. "Let's do it!" I said. What I found may shock you (click-bait title; check).
 
 Most of the code carried over. Of course, lacking [hrbrmstr's neat `albersusa`](https://github.com/hrbrmstr/albersusa) equivalent I had to obtain and process the shapefile myself. Thankfully, the [ABS have me covered](http://www.abs.gov.au/ausstats/abs@.nsf/mf/1259.0.30.001?OpenDocument). Here's the whole script;
 
@@ -31,11 +31,11 @@ Most of the code carried over. Of course, lacking [hrbrmstr's neat `albersusa`](
 
 For starters, I compared the Australian statistics on the same scale as the USA (median 1.63&permil;, capped at 3x that value) and was shocked
 
-![HomelessPopulation_optim_AUSversion_USscale](http://jcarroll.com.au/wp-content/uploads/2016/04/HomelessPopulation_optim_AUSversion_USscale.gif)
+![AUS homeless population, US scale](/post/2016-04-12-australian-homeless_files/HomelessPopulation_AUSversion_USscale.gif)
 
 Yep, it appears we're worse than the USA for homelessness. That sucks. What if we put it back on our own scale, how do our states do relatively? Well, for starters, the median goes up to 3.5&permil; (I've again capped at 3x that value) but a lot of that seems to be coming from NT. Looking at the data itself, our lowest value is indeed higher than the USA median, so we've nothing to be proud of. That said, some states are doing better than our own median. TAS looks to be nicely below, while SA seems to be sitting around the median.
 
-![](http://jcarroll.com.au/wp-content/uploads/2016/04/HomelessPopulation_optim_AUSversion_AUSscale.gif)
+![AUS homeless population, AUS scale](/post/2016-04-12-australian-homeless_files/HomelessPopulation_AUSversion_AUSscale.gif)
 
 If we drill down to the data itself, we can see what the actual figures look like. I've had a go at [hrbrmstr's `geom_lollipop`](https://rud.is/b/2016/04/07/geom_lollipop-by-the-chartettes/) (from the [dev version of `ggalt`](https://github.com/hrbrmstr/ggalt)) and it works nicely, as expected. I've left NT off this first graph so that the others stand a fighting chance at the scale.
 

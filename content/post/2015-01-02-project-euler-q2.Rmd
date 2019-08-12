@@ -21,11 +21,11 @@ class.error= "bg-danger text-danger"
 )
 ```
 
-[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+[Explanation](https://jcarroll.com.au/2015/01/02/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
 
 <!--more-->
 
-[Explanation](http://jcarroll.com.au/2015/01/code/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
+[Explanation](https://jcarroll.com.au/2015/01/02/project-euler/). Standard caveat: don't look here if you are trying to do these yourself.
 
 
 <blockquote>

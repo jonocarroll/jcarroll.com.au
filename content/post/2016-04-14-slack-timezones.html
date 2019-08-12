@@ -19,7 +19,10 @@ image: ''
 <p>The only geographical information in there was the timezone, so I figured I would merge that with <a href="http://efele.net/maps/tz/world/">a shapefile of such</a> and plot it. Here’s the code I ended up creating</p>
 <script src="https://gist.github.com/jonocarroll/1ce3ba63171eca2de22731c2503a1f48.js"></script>
 <p>Once I had plotted the map I wished the projection was more Pacific-centered, and looked into making that happen. It appears to be trickier than I wanted to bother with for such a small project, so I ended up abandoning it. I did find a <a href="http://stackoverflow.com/questions/32591368/pacific-centric-robinson-projection-with-ggplot-in-r">stackoverflow answer that seemed to have all the right ingredients</a> (again, <span class="citation">@hrbrmstr</span> at work) but I couldn’t get it to plot in any sort of reasonable time.</p>
-<p><img src="http://jcarroll.com.au/wp-content/uploads/2016/04/auunconf_slackr_users_map.png" /></p>
+<div class="figure">
+<img src="/post/2016-04-14-slack-timezones_files/auunconf_slackr_users_map.png" alt="Map of #auunconf slack users" />
+<p class="caption">Map of #auunconf slack users</p>
+</div>
 <p>The unique users so far claim to come from:</p>
 <ul>
 <li>
@@ -46,5 +49,8 @@ Pacific/Auckland
 </ul>
 <p>so quite the diverse crowd.</p>
 <p>Once all was done and plotted, uploading the image to the slack team was as easy as <code>dev_slackr(&quot;#general&quot;)</code> which sends the current graphic to the #general channel of the slack team that <code>slackr</code> was configured for. Sure enough, it worked!</p>
-<p><img src="http://jcarroll.com.au/wp-content/uploads/2016/04/Screenshot-from-2016-04-14-224623.png" /></p>
+<div class="figure">
+<img src="/post/2016-04-14-slack-timezones_files/Screenshot-from-2016-04-14-224623.png" alt="It works!" />
+<p class="caption">It works!</p>
+</div>
 <p>I’m not entirely sure what I’ll use this for, but it was certainly a fun exercise to get working. Perhaps I can generalise it enough to submit a pull-request to make it available in slackr?</p>

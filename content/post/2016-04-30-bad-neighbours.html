@@ -81,7 +81,7 @@ Unit: milliseconds
                      expr      min       lq    mean  median       uq      max neval
  misanthropist_c(100000L) 18260.85 18355.87 18422.4 18450.9 18503.18 18555.47     3</code></pre>
 <p>That brings us up to 184ms/1000 iterations. 10 times as many iterations again takes 92 times longer. It’s definitely slowing down.</p>
-<p><img src="http://jcarroll.com.au/wp-content/uploads/2016/04/log10log10.png" /></p>
+<p><img src="/post/2016-04-30-bad-neighbours_files/log10log10.png" /></p>
 <p>On a log-log plot of time against iterations with a slope of 2, it’s clearer that the problem scales as <span class="math inline">\(\mathcal{O}(n^2)\)</span>. That suggests that we should be able to complete the 1,000,000 iteration evaluation in about 20 minutes. 2,000,000 iterations in around 1 hour 20 minutes. 3,000,000 in 3 hours. Where am I going with this you ask? Xi’an requested help from <a href="http://math.stackexchange.com/questions/1758065/limit-of-recursive-sequence-n2q-n-1n-12q-n-12n-2q-n-2">stackexchange</a> (a great move which paid off well) to get the analytical solution to the problem. If you check the timestamps, you’ll notice</p>
 <pre class="r"><code># asked    Apr 25 at 14:04
 # answered Apr 25 at 16:25</code></pre>
@@ -95,7 +95,7 @@ Unit: milliseconds
 xian1e5 &lt;- xian(1e5L)
 mine1e5 &lt;- misanthropist_c(1e5L)
 format(2*100*(xian1e5 - mine1e5)/(xian1e5 + mine1e5), digits=3)</code></pre>
-<pre class="bg-success"><code>## [1] &quot;-0.0912&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;0.0151&quot;</code></pre>
 <p>so off by 0.07% at that stage, presumably getting closer with more iterations. Let’s use the recursive equation for this next bit then, knowing that in the above scenario we would be using the full iterative approach. The recursive expression itself can also be optimised. I did re-write it in C (<code>xian_c</code>) to see if that helped, but <code>compiler:cmpfun</code> (as <code>xian_c2</code>) does just as good a job (as one might expect)</p>
 <pre class="r"><code>&gt; microbenchmark(xian(1e7), xian_c(1e7), xian_c2(1e7), times=5, unit=&amp;quot;ms&amp;quot;)
 Unit: milliseconds
@@ -111,7 +111,7 @@ format(xian_c(.Machine$integer.max), digits=20)
 0.5*(1-exp(-2))   # 0.43233235838169364884</code></pre>
 <p>So now we have an upper limit on precision. We’ll be able to get at best within 0.0000000102% of the exact answer.</p>
 <p>If I repeatedly use the <code>xian_c</code> function with different numbers of iterations, we can see how well we should expect to do</p>
-<p><img src="http://jcarroll.com.au/wp-content/uploads/2016/04/pcerror-1.png" /></p>
+<p><img src="/post/2016-04-30-bad-neighbours_files/pcerror-1.png" /></p>
 <p>Is 2e-5% close enough for a couple of hours work?</p>
 <p>And there we have it. If we’d been stuck with the non-recursive method and needed to get as close to the right answer as possible in a comparable time to obtaining the analytic solution and coding/running it, we could get pretty darn close. I’d say the brute-force method lives to see another day! … provided you do a bit of optimising and don’t mind worrying about the <a href="https://en.wikipedia.org/wiki/Halting_problem">Halting problem</a>.</p>
 <p>Did I miss an important optimisation? Know a better approach? Hit the comments and let me know!</p>
@@ -131,46 +131,46 @@ format(xian_c(.Machine$integer.max), digits=20)
 ##  collate  en_AU.UTF-8                 
 ##  ctype    en_AU.UTF-8                 
 ##  tz       Australia/Adelaide          
-##  date     2019-08-11                  
+##  date     2019-08-12                  
 ## 
 ## ─ Packages ──────────────────────────────────────────────────────────────
-##  package     * version date       lib source        
-##  assertthat    0.2.1   2019-03-21 [1] CRAN (R 3.5.2)
-##  backports     1.1.4   2019-04-10 [1] CRAN (R 3.5.2)
-##  blogdown      0.14    2019-07-13 [1] CRAN (R 3.5.2)
-##  bookdown      0.12    2019-07-11 [1] CRAN (R 3.5.2)
-##  callr         3.3.1   2019-07-18 [1] CRAN (R 3.5.2)
-##  cli           1.1.0   2019-03-19 [1] CRAN (R 3.5.2)
-##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)
-##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)
-##  devtools      2.1.0   2019-07-06 [1] CRAN (R 3.5.2)
-##  digest        0.6.20  2019-07-04 [1] CRAN (R 3.5.2)
-##  evaluate      0.14    2019-05-28 [1] CRAN (R 3.5.2)
-##  fs            1.3.1   2019-05-06 [1] CRAN (R 3.5.2)
-##  glue          1.3.1   2019-03-12 [1] CRAN (R 3.5.2)
-##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)
-##  knitr         1.24    2019-08-08 [1] CRAN (R 3.5.2)
-##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)
-##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)
-##  pkgbuild      1.0.4   2019-08-05 [1] CRAN (R 3.5.2)
-##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)
-##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)
-##  processx      3.4.1   2019-07-18 [1] CRAN (R 3.5.2)
-##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)
-##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)
-##  Rcpp          1.0.2   2019-07-25 [1] CRAN (R 3.5.2)
-##  remotes       2.1.0   2019-06-24 [1] CRAN (R 3.5.2)
-##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)
-##  rmarkdown     1.14    2019-07-12 [1] CRAN (R 3.5.2)
-##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)
-##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)
-##  stringi       1.4.3   2019-03-12 [1] CRAN (R 3.5.2)
-##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)
-##  testthat      2.2.1   2019-07-25 [1] CRAN (R 3.5.2)
-##  usethis       1.5.1   2019-07-04 [1] CRAN (R 3.5.2)
-##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)
-##  xfun          0.8     2019-06-25 [1] CRAN (R 3.5.2)
-##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)
+##  package     * version date       lib source                           
+##  assertthat    0.2.1   2019-03-21 [1] CRAN (R 3.5.2)                   
+##  backports     1.1.4   2019-04-10 [1] CRAN (R 3.5.2)                   
+##  blogdown      0.14.1  2019-08-11 [1] Github (rstudio/blogdown@be4e91c)
+##  bookdown      0.12    2019-07-11 [1] CRAN (R 3.5.2)                   
+##  callr         3.3.1   2019-07-18 [1] CRAN (R 3.5.2)                   
+##  cli           1.1.0   2019-03-19 [1] CRAN (R 3.5.2)                   
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)                   
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)                   
+##  devtools      2.1.0   2019-07-06 [1] CRAN (R 3.5.2)                   
+##  digest        0.6.20  2019-07-04 [1] CRAN (R 3.5.2)                   
+##  evaluate      0.14    2019-05-28 [1] CRAN (R 3.5.2)                   
+##  fs            1.3.1   2019-05-06 [1] CRAN (R 3.5.2)                   
+##  glue          1.3.1   2019-03-12 [1] CRAN (R 3.5.2)                   
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)                   
+##  knitr         1.24    2019-08-08 [1] CRAN (R 3.5.2)                   
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)                   
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)                   
+##  pkgbuild      1.0.4   2019-08-05 [1] CRAN (R 3.5.2)                   
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)                   
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)                   
+##  processx      3.4.1   2019-07-18 [1] CRAN (R 3.5.2)                   
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)                   
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)                   
+##  Rcpp          1.0.2   2019-07-25 [1] CRAN (R 3.5.2)                   
+##  remotes       2.1.0   2019-06-24 [1] CRAN (R 3.5.2)                   
+##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)                   
+##  rmarkdown     1.14    2019-07-12 [1] CRAN (R 3.5.2)                   
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)                   
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)                   
+##  stringi       1.4.3   2019-03-12 [1] CRAN (R 3.5.2)                   
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)                   
+##  testthat      2.2.1   2019-07-25 [1] CRAN (R 3.5.2)                   
+##  usethis       1.5.1   2019-07-04 [1] CRAN (R 3.5.2)                   
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)                   
+##  xfun          0.8     2019-06-25 [1] CRAN (R 3.5.2)                   
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)                   
 ## 
 ## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
 ## [2] /usr/local/lib/R/site-library

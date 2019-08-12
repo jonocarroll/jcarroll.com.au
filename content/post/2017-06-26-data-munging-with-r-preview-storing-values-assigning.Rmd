@@ -99,7 +99,7 @@ The *assignment operator* `<-` can be thought of as storing the value/thing on
 the right hand side into the name/thing on the left hand side. For example, try
 typing `x <- 4` into the `R` `**Console**` then press <kbd>Enter</kbd>:
 
-![](https://jcarroll.com.au/wp-content/uploads/2017/06/variable_value.png)
+![](/post/2017-06-26-data-munging-with-r-preview-storing-values-assigning_files/variable_value.png){width=150}
 
 Figure 2. 1. The *variable* `x` has been assigned the *value* `4`.
 You could just as easily use the equals sign to achieve this; `x = 4` but I
@@ -107,7 +107,7 @@ recommend you use `<-` for this for reasons that will become clear later.
 You'll notice that the `**Environment**` tab of the `**Workspace**` pane now lists
 `x` under `**Values**` and shows the number 4 next to it, as shown in Fig 2. 2.
 
-![](https://jcarroll.com.au/wp-content/uploads/2017/06/fig-x_eq_4.png)
+![](/post/2017-06-26-data-munging-with-r-preview-storing-values-assigning_files/fig-x_eq_4.png)
 
 Figure 2. 2. The *variable* `x` has been assigned the *value* `4`.
 
@@ -120,7 +120,7 @@ this process is shown in Fig 2. 3. Nothing else appeared in the `**Console**`
 because the action of assigning a value doesn’t *return* anything (we’ll cover
 this more in our section on functions).
 
-![](https://jcarroll.com.au/wp-content/uploads/2017/06/assign.png)
+![](/post/2017-06-26-data-munging-with-r-preview-storing-values-assigning_files/assign.png)
 
 Figure 2. 3. Assigning a value to a variable. The value entered is converted to
 binary, then stored in memory, the reference to which is labelled by the

@@ -220,7 +220,7 @@ y="Seed")
 gv
 ```
 
-<a href="http://jcarroll.com.au/wp-content/uploads/2016/05/violinplot-1.png"><img src="http://jcarroll.com.au/wp-content/uploads/2016/05/violinplot-1.png" alt="violinplot" width="665" height="428" class="alignnone size-full wp-image-934" /></a>
+![](/post/2016-05-30-seed_files/violinplot-1.png)
 
 which looks pretty nicely vanishing as more duplicates are produced.
 
