@@ -95,7 +95,7 @@ Unit: milliseconds
 xian1e5 &lt;- xian(1e5L)
 mine1e5 &lt;- misanthropist_c(1e5L)
 format(2*100*(xian1e5 - mine1e5)/(xian1e5 + mine1e5), digits=3)</code></pre>
-<pre class="bg-success"><code>## [1] &quot;0.0151&quot;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;-0.0335&quot;</code></pre>
 <p>so off by 0.07% at that stage, presumably getting closer with more iterations. Let’s use the recursive equation for this next bit then, knowing that in the above scenario we would be using the full iterative approach. The recursive expression itself can also be optimised. I did re-write it in C (<code>xian_c</code>) to see if that helped, but <code>compiler:cmpfun</code> (as <code>xian_c2</code>) does just as good a job (as one might expect)</p>
 <pre class="r"><code>&gt; microbenchmark(xian(1e7), xian_c(1e7), xian_c2(1e7), times=5, unit=&amp;quot;ms&amp;quot;)
 Unit: milliseconds
@@ -131,7 +131,7 @@ format(xian_c(.Machine$integer.max), digits=20)
 ##  collate  en_AU.UTF-8                 
 ##  ctype    en_AU.UTF-8                 
 ##  tz       Australia/Adelaide          
-##  date     2019-08-12                  
+##  date     2019-08-13                  
 ## 
 ## ─ Packages ──────────────────────────────────────────────────────────────
 ##  package     * version date       lib source                           
