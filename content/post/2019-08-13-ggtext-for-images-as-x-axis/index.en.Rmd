@@ -1,8 +1,8 @@
 ---
-title: '{ggtext} for images as x-Axis'
+title: '{ggtext} for images as x-axis labels'
 author: Jonathan Carroll
 date: '2019-08-13'
-slug: ggtext-for-images-as-x-axis
+slug: ggtext-for-images-as-x-axis-labels
 categories:
   - R
 tags:
@@ -15,6 +15,8 @@ image: ''
 
 ```{r, setup, include = FALSE}
 library(ggplot2)
+library(ggtext)
+library(rvest)
 
 knitr::opts_chunk$set(
   class.output  = "bg-success",

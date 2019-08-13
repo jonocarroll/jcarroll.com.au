@@ -1,8 +1,8 @@
 ---
-title: '{ggtext} for images as x-Axis'
+title: '{ggtext} for images as x-axis labels'
 author: Jonathan Carroll
 date: '2019-08-13'
-slug: ggtext-for-images-as-x-axis
+slug: ggtext-for-images-as-x-axis-labels
 categories:
   - R
 tags:
@@ -32,9 +32,9 @@ neatly add images as x-axis labels!</p>
 <p>This makes the solution as simple as</p>
 <pre class="r"><code>library(ggplot2)
 library(ggtext)
-library(rvest)</code></pre>
-<pre class="bg-info text-info"><code>## Loading required package: xml2</code></pre>
-<pre class="r"><code>## GDP per capita, top 11 countries
+library(rvest)
+
+## GDP per capita, top 11 countries
 url      &lt;- &quot;https://en.wikipedia.org/wiki/List_of_countries_by_GDP_(nominal)_per_capita&quot;
 html     &lt;- xml2::read_html(url)
 gdppc    &lt;- html_table(html_nodes(html, &quot;table&quot;)[3])[[1]][1:11,]
