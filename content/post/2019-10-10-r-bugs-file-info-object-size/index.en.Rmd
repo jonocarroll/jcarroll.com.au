@@ -1,0 +1,34 @@
+---
+title: 'r-Bugs :: File.info Object_size'
+author: Jonathan Carroll
+date: '2019-10-10'
+slug: r-bugs-file-info-object-size
+categories:
+  - R
+tags:
+  - r-bugs
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
