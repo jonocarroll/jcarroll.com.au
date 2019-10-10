@@ -1,0 +1,375 @@
+---
+title: 'r-bugs :: object_size'
+author: Jonathan Carroll
+date: '2019-10-10'
+slug: r-bugs-file-info-object-size
+categories:
+  - R
+tags:
+  - r-bugs
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>As soon as the <a href="https://developer.r-project.org/Blog/public/2019/10/09/r-can-use-your-help-reviewing-bug-reports/index.html">R-Foundation posted that they’re inviting cleanup of old bugs</a>,
+I knew it would be an opportunity to learn more about the way R works on the inside.</p>
+<!--more-->
+<p>I started looking through the list of open bugs for somewhere I could help out. I barely know
+anything about the actual <a href="https://colinfay.me/r-internals/r-internal-structures.html">C internals of the language</a>
+(I’m hoping to learn) so I figured it would be best to start with some parts of the code I’m familiar with.</p>
+<p>I had an <a href="https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16877">open bug report</a> for the
+internals of <code>glm</code> which I extended with a reproducible example. I had another look through the
+open bug reports for “glm” in case there was another report of this that I had overlooked (not that I can find)
+and found another which seemed fairly straightforward - <a href="https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16522">some out of date documentation</a>.</p>
+<div class="figure">
+<img src="/2019-10-10-r-bugs-file-info-object-size/index.en_files/glm_bug.png" alt="Bug 16522" />
+<p class="caption">Bug 16522</p>
+</div>
+<p>That seems approachable. I tested that the documentation was still in that state (it was) and
+that the example did what it said (it did). Lastly, I read through the source of that function to
+double-check that the return value would indeed be more general. In fact, the <code>method</code> return value
+could be either the name of the fitting function as a character string, e.g.</p>
+<pre class="r"><code>glm.fit2 &lt;- glm.fit
+glm(1:4 ~ rnorm(4), method = &quot;glm.fit2&quot;)$method</code></pre>
+<pre class="bg-success"><code>## [1] &quot;glm.fit2&quot;</code></pre>
+<p>or the actual function definition, if it was provided that way</p>
+<pre class="r"><code>head(glm(1:4 ~ rnorm(4), method = glm.fit)$method)</code></pre>
+<pre class="bg-success"><code>##                                                                          
+## 1 function (x, y, weights = rep(1, nobs), start = NULL, etastart = NULL, 
+## 2     mustart = NULL, offset = rep(0, nobs), family = gaussian(),        
+## 3     control = list(), intercept = TRUE, singular.ok = TRUE)            
+## 4 {                                                                      
+## 5     control &lt;- do.call(&quot;glm.control&quot;, control)                         
+## 6     x &lt;- as.matrix(x)</code></pre>
+<p>(truncated for simplicity).</p>
+<p>This made for a small, -2/+3-line <a href="https://bugs.r-project.org/bugzilla/attachment.cgi?id=2463&amp;action=diff">patch</a>
+which was accepted and is now part of the source of R.</p>
+<p>Sidenote: I made this patch using git, but I should really be doing this via SVN.
+<a href="https://twitter.com/michael_chirico/status/1181930491575848961">This thread</a>
+by <a href="https://twitter.com/michael_chirico">Michael Chirico</a> is what I’ll be following.</p>
+<p>Now, on to the next bug.</p>
+<p>I had a browse through the sections and found <a href="https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15389">this one</a>
+from 2013</p>
+<div class="figure">
+<img src="/2019-10-10-r-bugs-file-info-object-size/index.en_files/file.info.png" alt="Bug 15389" />
+<p class="caption">Bug 15389</p>
+</div>
+<p>That seems innocent enough, right? My experience with <code>object.size</code> is when I look at how much
+memory a given object is taking up (incorrectly, I now understand after reading <a href="http://adv-r.had.co.nz/memory.html#object-size">Advanced R</a>). What I always liked about this function was that it
+has a <code>format</code> method so I could easily convert the standard output</p>
+<pre class="r"><code>object.size(mtcars)</code></pre>
+<pre class="bg-success"><code>## 7208 bytes</code></pre>
+<p>into a different unit very easily</p>
+<pre class="r"><code>format(object.size(mtcars), &quot;KB&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;7 Kb&quot;</code></pre>
+<p>Of course, in order to do this (to know to convert from bytes to Kb) the object needs to be classed
+appropriately. That’s the case, here</p>
+<pre class="r"><code>class(object.size(mtcars))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;object_size&quot;</code></pre>
+<p>That isn’t the case for the <code>size</code> element of <code>file.info</code>, though</p>
+<pre class="r"><code>example_file &lt;- file.path(.Library, &quot;base&quot;, &quot;R&quot;, &quot;base.rdb&quot;)
+file.info(example_file, extra_cols = FALSE)[, c(&quot;size&quot;, &quot;isdir&quot;, &quot;mode&quot;)]</code></pre>
+<pre class="bg-success"><code>##                                      size isdir mode
+## /usr/lib/R/library/base/R/base.rdb 973156 FALSE  644</code></pre>
+<p>which is just a number</p>
+<pre class="r"><code>class(file.info(example_file)$size)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;numeric&quot;</code></pre>
+<p>The suggestion is to make this of class <code>object_size</code>, which would enable the
+nice formatting of the unit (even though a ‘file’ is not an ‘object’). Seems fair, let’s
+have a look at what needs to happen to make that work - hopefully it’s as simple as
+adding a class to the <code>size</code> element. I use RStudio, and I have a copy of the r-source
+in a project, so I can simply <kbd>CTRL</kbd>+<kbd>SHIFT</kbd>+<kbd>F</kbd> to search all
+files in this project for “file.info”. Sure enough, it’s in <a href="https://github.com/wch/r-source/blob/a5504314e6164e88953ed5bc10cd8b23e6a9685e/src/library/base/R/files.R#L164-L173"><code>/src/library/base/R/files.R</code></a></p>
+<pre class="r"><code>file.info &lt;- function(..., extra_cols = TRUE)
+{
+    res &lt;- .Internal(file.info(fn &lt;- c(...), extra_cols))
+    res$mtime &lt;- .POSIXct(res$mtime)
+    res$ctime &lt;- .POSIXct(res$ctime)
+    res$atime &lt;- .POSIXct(res$atime)
+    class(res) &lt;- &quot;data.frame&quot;
+    attr(res, &quot;row.names&quot;) &lt;- fn # not row.names&lt;- as that does a length check
+    res
+}</code></pre>
+<p>Not much to it, but some surprises for sure. What immediately jumps out to me is that
+the fact that the result is a <code>data.frame</code> is achieved through the very hacky “slap a
+class on it” method rather than <code>as.data.frame()</code>. The call to <code>.Internal</code> means the
+actual work is done at the C level, so there may not be much hope changing the class of the
+size there.</p>
+<p>The simplest thing would appear to be to convert <code>res$size</code> to class <code>object_size</code> as soon
+as it’s created. There’s sometimes a converting funtion, e.g. <code>as.object_size</code>, but I don’t see
+one here. Looking at the internals of the <code>object.size</code> function</p>
+<pre class="r"><code>object.size</code></pre>
+<pre class="bg-success"><code>## function (x) 
+## structure(.Call(C_objectSize, x), class = &quot;object_size&quot;)
+## &lt;bytecode: 0x563e6c6b6dd0&gt;
+## &lt;environment: namespace:utils&gt;</code></pre>
+<p>suggests it’s safe enough to slap the class on an object, so let’s try that. I’ll rename
+this function for now so we can see if it’s working</p>
+<pre class="r"><code>file.info2 &lt;- function(..., extra_cols = TRUE)
+{
+    res &lt;- .Internal(file.info(fn &lt;- c(...), extra_cols))
+    class(res$size) &lt;- &quot;object_size&quot;
+    res$mtime &lt;- .POSIXct(res$mtime)
+    res$ctime &lt;- .POSIXct(res$ctime)
+    res$atime &lt;- .POSIXct(res$atime)
+    class(res) &lt;- &quot;data.frame&quot;
+    attr(res, &quot;row.names&quot;) &lt;- fn # not row.names&lt;- as that does a length check
+    res
+}
+file.info2(example_file)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in round(x/base^power, digits = digits): invalid second argument of length 0</code></pre>
+<p>Well, that didn’t work. Huh. Did we do something wrong?</p>
+<pre class="r"><code>file.info2(example_file)$size</code></pre>
+<pre class="bg-success"><code>## 973156 bytes</code></pre>
+<p>No, that actually works. Did it actually fail to return an object?</p>
+<pre class="r"><code>fi &lt;- file.info2(example_file)</code></pre>
+<p>Huh, that works, too. Can we see what’s inside?</p>
+<pre class="r"><code>str(fi)</code></pre>
+<pre class="bg-success"><code>## &#39;data.frame&#39;:    1 obs. of  10 variables:
+##  $ size  : &#39;object_size&#39; num 973156
+##  $ isdir : logi FALSE
+##  $ mode  : &#39;octmode&#39; int 644
+##  $ mtime : POSIXct, format: &quot;2019-01-15 06:33:43&quot;
+##  $ ctime : POSIXct, format: &quot;2019-08-10 20:44:16&quot;
+##  $ atime : POSIXct, format: &quot;2019-08-10 20:44:13&quot;
+##  $ uid   : int 0
+##  $ gid   : int 0
+##  $ uname : chr &quot;root&quot;
+##  $ grname: chr &quot;root&quot;</code></pre>
+<p>Well, that looks to be what we wanted - the <code>size</code> element has the right class. If we print this, however</p>
+<pre class="r"><code>print(fi)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in round(x/base^power, digits = digits): invalid second argument of length 0</code></pre>
+<p>So, the issue seems to be in the print method somewhere. using <code>traceback()</code> we can see
+that the error comes from this line in <code>utils:::format.object_size</code> which seems to be having
+trouble finding the <code>digits</code> value</p>
+<pre class="r"><code>paste(round(x/base^power, digits = digits), unit)</code></pre>
+<p>The formals for this function have a default of <code>digits = 1L</code> so why is it not being found? Tracing back
+further we see that the <code>format.object_size</code> method was called from <code>format.data.frame</code> which loops through
+the columns of the <code>data.frame</code> and formats according to each class there</p>
+<pre class="r"><code>format.data.frame &lt;- function(x, ..., justify = &quot;none&quot;)
+{
+    nc &lt;- length(x)
+    &lt;...&gt;
+    rval &lt;- vector(&quot;list&quot;, nc)
+    for(i in seq_len(nc))
+       rval[[i]] &lt;- format(x[[i]], ..., justify = justify)
+    &lt;...&gt;</code></pre>
+<p>but there’s no mention of <code>digits</code> here. Tracing further back, this is called from <code>print.data.frame</code> and
+passes its <code>digits</code> argument. That function has the signature</p>
+<pre class="r"><code>print.data.frame &lt;-
+    function(x, ..., digits = NULL, quote = FALSE, right = TRUE,
+         row.names = TRUE, max = NULL)</code></pre>
+<p>and now we can see where the problem comes from - we try to print our <code>data.frame</code> which has an <code>object_size</code>
+column, but that print method sets <code>digits = NULL</code> which is passed to <code>format.data.frame</code> which is passed to
+<code>format.object_size</code> which has no way to deal with <code>digits = NULL</code>.</p>
+<p>Can we test that? Sure, let’s create a simple <code>data.frame</code> and then make a column be <code>object_size</code></p>
+<pre class="r"><code>df &lt;- data.frame(x = 1, y = 2048)
+df</code></pre>
+<pre class="bg-success"><code>##   x    y
+## 1 1 2048</code></pre>
+<pre class="r"><code>class(df$y) &lt;- &quot;object_size&quot;
+df</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in round(x/base^power, digits = digits): invalid second argument of length 0</code></pre>
+<p>SOLVED! But what to do about it? I see three options:</p>
+<p><strong>OPTION 1</strong>: Don’t default to <code>digits = NULL</code> in <code>print.data.frame</code>. I’m not sure what the
+consequence of this would be across all existing functions, but I can’t imagine there’s much
+use for that default. A better default would seem to be</p>
+<pre class="r"><code>getOption(&quot;digits&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] 7</code></pre>
+<p>Looking at <code>?options</code> we can see how this is intended to be used</p>
+<blockquote>
+<p>digits:
+controls the number of significant digits to print when printing numeric values.
+It is a suggestion only. Valid values are 1…22 with default 7. See the note
+in print.default about values greater than 15.</p>
+</blockquote>
+<p><strong>OPTION 2</strong>: Make <code>round</code> deal with <code>NULL</code> values. I worry that is already handled in that an
+error message appropriate to that function is generated</p>
+<pre class="r"><code>round(3.14159, digits = NULL)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in round(3.14159, digits = NULL): invalid second argument of length 0</code></pre>
+<p><strong>OPTION 3</strong>: Make <code>format.object_size</code> capable of dealing with <code>digits = NULL</code>. The fact that it
+has no way of dealing with this value seems like an oversight, since it <em>must</em> be a valid value
+in order to pass it to <code>round</code>. Again, the option of using a more sensible default comes to mind,
+but there already <em>is</em> a default in place here (<code>digits = 1L</code>) it’s just being overridden.</p>
+<p>Instead, we would need some sort of handling in this situation, such as</p>
+<pre><code>digits &lt;- ifelse(is.null(digits), getOption(&quot;digits&quot;), digits)</code></pre>
+<p>I <em>think</em> this last option is the most satisfactory (though perhaps the first should
+also be addressed) so let’s see if that’s sufficient. Unfortunately, since the issue
+is deeply nested within another function’s namespace, we can’t just write a new
+<code>format.object_size</code> and call <code>print.data.frame</code> and expect it to work. What we can do,
+though, is to write a <code>format.object_size2</code>, class our new column as <code>object_size2</code>, and
+test <em>that</em>. With this new function written, we get</p>
+<pre class="r"><code>format.object_size2 &lt;- function(x, units = &quot;b&quot;, standard = &quot;auto&quot;, digits = 1L, ...)
+{
+  known_bases &lt;- c(legacy = 1024, IEC = 1024, SI = 1000)
+  known_units &lt;- list(
+    SI     = c(&quot;B&quot;, &quot;kB&quot;,  &quot;MB&quot;,  &quot;GB&quot;, &quot;TB&quot;, &quot;PB&quot;,  &quot;EB&quot;,  &quot;ZB&quot;,  &quot;YB&quot;),
+    IEC    = c(&quot;B&quot;, &quot;KiB&quot;, &quot;MiB&quot;, &quot;GiB&quot;,&quot;TiB&quot;,&quot;PiB&quot;, &quot;EiB&quot;, &quot;ZiB&quot;, &quot;YiB&quot;),
+    legacy = c(&quot;b&quot;, &quot;Kb&quot;,  &quot;Mb&quot;,  &quot;Gb&quot;, &quot;Tb&quot;, &quot;Pb&quot;),
+    LEGACY = c(&quot;B&quot;, &quot;KB&quot;,  &quot;MB&quot;,  &quot;GB&quot;, &quot;TB&quot;, &quot;PB&quot;) # &lt;- only for &quot;KB&quot;
+  )
+  
+  units &lt;- match.arg(units,
+                     c(&quot;auto&quot;, unique(unlist(known_units), use.names = FALSE)))
+  standard &lt;- match.arg(standard, c(&quot;auto&quot;, names(known_bases)))
+  digits &lt;- ifelse(is.null(digits), getOption(&quot;digits&quot;), digits) # added
+  
+  if (standard == &quot;auto&quot;) { ## infer &#39;standard&#39; from &#39;units&#39;:
+    standard &lt;- &quot;legacy&quot; # default; may become &quot;SI&quot;
+    if (units != &quot;auto&quot;) {
+      if (endsWith(units, &quot;iB&quot;))
+        standard &lt;- &quot;IEC&quot;
+      else if (endsWith(units, &quot;b&quot;))
+        standard &lt;- &quot;legacy&quot;   ## keep when &quot;SI&quot; is the default
+      else if (units == &quot;kB&quot;)
+        ## SPECIAL: Drop when &quot;SI&quot; becomes the default
+        stop(&quot;For SI units, specify &#39;standard = \&quot;SI\&quot;&#39;&quot;)
+    }
+  }
+  base      &lt;- known_bases[[standard]]
+  units_map &lt;- known_units[[standard]]
+  
+  if (units == &quot;auto&quot;) {
+    power &lt;- if (x &lt;= 0) 0L else min(as.integer(log(x, base = base)),
+                                     length(units_map) - 1L)
+  } else {
+    power &lt;- match(toupper(units), toupper(units_map)) - 1L
+    if (is.na(power))
+      stop(gettextf(&quot;Unit \&quot;%s\&quot; is not part of standard \&quot;%s\&quot;&quot;,
+                    sQuote(units), sQuote(standard)), domain = NA)
+  }
+  unit &lt;- units_map[power + 1L]
+  ## SPECIAL: Use suffix &#39;bytes&#39; instead of &#39;b&#39; for &#39;legacy&#39; (or always) ?
+  if (power == 0 &amp;&amp; standard == &quot;legacy&quot;) unit &lt;- &quot;bytes&quot;
+  
+  paste(round(x / base^power, digits=digits), unit)
+}
+
+file.info2 &lt;- function(..., extra_cols = TRUE)
+{
+    res &lt;- .Internal(file.info(fn &lt;- c(...), extra_cols))
+    class(res$size) &lt;- &quot;object_size2&quot;
+    res$mtime &lt;- .POSIXct(res$mtime)
+    res$ctime &lt;- .POSIXct(res$ctime)
+    res$atime &lt;- .POSIXct(res$atime)
+    class(res) &lt;- &quot;data.frame&quot;
+    attr(res, &quot;row.names&quot;) &lt;- fn # not row.names&lt;- as that does a length check
+    res
+}
+
+file.info2(example_file, extra_cols = FALSE)[, c(&quot;size&quot;, &quot;isdir&quot;, &quot;mode&quot;)]</code></pre>
+<pre class="bg-success"><code>##                                            size isdir mode
+## /usr/lib/R/library/base/R/base.rdb 973156 bytes FALSE  644</code></pre>
+<p>It works! Are we done? What about another look at that <code>class(res) &lt;- &quot;data.frame&quot;</code> business?</p>
+<p>Would it make more sense for that to use <code>res &lt;- as.data.frame(res)</code>? Let’s try</p>
+<pre class="r"><code>file.info3 &lt;- function(..., extra_cols = TRUE)
+{
+    res &lt;- .Internal(file.info(fn &lt;- c(...), extra_cols))
+    class(res$size) &lt;- &quot;object_size2&quot;
+    res$mtime &lt;- .POSIXct(res$mtime)
+    res$ctime &lt;- .POSIXct(res$ctime)
+    res$atime &lt;- .POSIXct(res$atime)
+    res &lt;- as.data.frame(res)
+    attr(res, &quot;row.names&quot;) &lt;- fn # not row.names&lt;- as that does a length check
+    res
+}
+
+file.info3(example_file)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in as.data.frame.default(x[[i]], optional = TRUE): cannot coerce class &#39;&quot;object_size2&quot;&#39; to a data.frame</code></pre>
+<p>Fair enough, there’s probably no <code>as.data.frame.object_size2</code> method (the 2 is for our convenience, but
+there’s no <code>as.data.frame.object_size</code> either). It’s simple enough to add</p>
+<pre class="r"><code>as.data.frame.object_size2 &lt;- as.data.frame.vector
+
+file.info3(example_file)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in as.data.frame.default(x[[i]], optional = TRUE): cannot coerce class &#39;&quot;octmode&quot;&#39; to a data.frame</code></pre>
+<p>The “mode” element has the file permissions as <code>octmode</code>. I feel we’re getting a bit
+off track if we need to add a lot of other <code>as.data.frame</code> methods, but
+here we go</p>
+<pre class="r"><code>as.data.frame.octmode &lt;- as.data.frame.vector
+
+file.info3(example_file)</code></pre>
+<pre class="bg-success"><code>##                                            size isdir mode
+## /usr/lib/R/library/base/R/base.rdb 973156 bytes FALSE  644
+##                                                  mtime               ctime
+## /usr/lib/R/library/base/R/base.rdb 2019-01-15 06:33:43 2019-08-10 20:44:16
+##                                                  atime uid gid uname
+## /usr/lib/R/library/base/R/base.rdb 2019-08-10 20:44:13   0   0  root
+##                                    grname
+## /usr/lib/R/library/base/R/base.rdb   root</code></pre>
+<p>Right, that’s working. I’ll raise the question of whether or not it’s worth the
+effort to support the <code>as.data.frame</code> conversion or whether the forcing of the class is
+better - I’m honestly not sure which.</p>
+<p>I wrote a patch that adds the new test for <code>NULL</code> line to the definition of
+<code>format.object_size</code> (and the corresponding bug report) and submitted that.
+I’ve then written another patch to the bug report this started with which
+implements this (now minor) change to the size element of <code>file.info</code>. It may be the
+case that neither is welcome in the core source, and that’s fine. The bug can be closed
+as WONTFIX.</p>
+<p>I’ve learned a lot about how the components of these work, and either way a bug
+should get closed. I’m off to find the next one.</p>
+<br />
+<details>
+<p><summary>
+<tt>devtools::session_info()</tt>
+</summary></p>
+<pre class="bg-success"><code>## ─ Session info ──────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 3.5.2 (2018-12-20)
+##  os       Pop!_OS 19.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2019-10-10                  
+## 
+## ─ Packages ──────────────────────────────────────────────────────────────
+##  package     * version date       lib source                           
+##  assertthat    0.2.1   2019-03-21 [1] CRAN (R 3.5.2)                   
+##  backports     1.1.4   2019-04-10 [1] CRAN (R 3.5.2)                   
+##  blogdown      0.14.1  2019-08-11 [1] Github (rstudio/blogdown@be4e91c)
+##  bookdown      0.12    2019-07-11 [1] CRAN (R 3.5.2)                   
+##  callr         3.3.1   2019-07-18 [1] CRAN (R 3.5.2)                   
+##  cli           1.1.0   2019-03-19 [1] CRAN (R 3.5.2)                   
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.5.1)                   
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.5.1)                   
+##  devtools      2.2.1   2019-09-24 [1] CRAN (R 3.5.2)                   
+##  digest        0.6.20  2019-07-04 [1] CRAN (R 3.5.2)                   
+##  ellipsis      0.3.0   2019-09-20 [1] CRAN (R 3.5.2)                   
+##  evaluate      0.14    2019-05-28 [1] CRAN (R 3.5.2)                   
+##  fs            1.3.1   2019-05-06 [1] CRAN (R 3.5.2)                   
+##  glue          1.3.1   2019-03-12 [1] CRAN (R 3.5.2)                   
+##  htmltools     0.3.6   2017-04-28 [1] CRAN (R 3.5.1)                   
+##  knitr         1.25    2019-09-18 [1] CRAN (R 3.5.2)                   
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.5.1)                   
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.5.1)                   
+##  pkgbuild      1.0.4   2019-08-05 [1] CRAN (R 3.5.2)                   
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.5.1)                   
+##  prettyunits   1.0.2   2015-07-13 [1] CRAN (R 3.5.1)                   
+##  processx      3.4.1   2019-07-18 [1] CRAN (R 3.5.2)                   
+##  ps            1.3.0   2018-12-21 [1] CRAN (R 3.5.1)                   
+##  R6            2.4.0   2019-02-14 [1] CRAN (R 3.5.1)                   
+##  Rcpp          1.0.2   2019-07-25 [1] CRAN (R 3.5.2)                   
+##  remotes       2.1.0   2019-06-24 [1] CRAN (R 3.5.2)                   
+##  rlang         0.4.0   2019-06-25 [1] CRAN (R 3.5.2)                   
+##  rmarkdown     1.14    2019-07-12 [1] CRAN (R 3.5.2)                   
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.5.1)                   
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.5.1)                   
+##  stringi       1.4.3   2019-03-12 [1] CRAN (R 3.5.2)                   
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.5.1)                   
+##  testthat      2.2.1   2019-07-25 [1] CRAN (R 3.5.2)                   
+##  usethis       1.5.1   2019-07-04 [1] CRAN (R 3.5.2)                   
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.5.1)                   
+##  xfun          0.8     2019-06-25 [1] CRAN (R 3.5.2)                   
+##  yaml          2.2.0   2018-07-25 [1] CRAN (R 3.5.1)                   
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.5
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>
