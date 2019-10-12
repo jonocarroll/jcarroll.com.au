@@ -1,15 +1,12 @@
 ---
 title: 'r-bugs :: object_size'
 author: Jonathan Carroll
-date: '2019-10-10'
-slug: r-bugs-file-info-object-size
+date: '2019-10-12'
 categories:
   - R
 tags:
   - r-bugs
-type: ''
-subtitle: ''
-image: ''
+slug: r-bugs-file-info-object-size
 ---
 
 
@@ -107,7 +104,7 @@ one here. Looking at the internals of the <code>object.size</code> function</p>
 <pre class="r"><code>object.size</code></pre>
 <pre class="bg-success"><code>## function (x) 
 ## structure(.Call(C_objectSize, x), class = &quot;object_size&quot;)
-## &lt;bytecode: 0x56038735f5b0&gt;
+## &lt;bytecode: 0x5651b1333e30&gt;
 ## &lt;environment: namespace:utils&gt;</code></pre>
 <p>suggests it’s safe enough to slap the class on an object, so let’s try that. I’ll rename
 this function for now so we can see if it’s working</p>

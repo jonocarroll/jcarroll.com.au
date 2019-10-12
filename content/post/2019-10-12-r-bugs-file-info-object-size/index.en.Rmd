@@ -1,15 +1,12 @@
 ---
 title: 'r-bugs :: object_size'
 author: Jonathan Carroll
-date: '2019-10-10'
-slug: r-bugs-file-info-object-size
+date: '2019-10-12'
 categories:
   - R
 tags:
   - r-bugs
-type: ''
-subtitle: ''
-image: ''
+slug: r-bugs-file-info-object-size
 ---
 
 ```{r, setup, include = FALSE}
