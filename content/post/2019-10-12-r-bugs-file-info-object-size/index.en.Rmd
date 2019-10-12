@@ -35,7 +35,7 @@ internals of `glm` which I extended with a reproducible example. I had another l
 open bug reports for "glm" in case there was another report of this that I had overlooked (not that I can find) 
 and found another which seemed fairly straightforward - [some out of date documentation](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16522).
 
-![Bug 16522](/2019-10-12-r-bugs-file-info-object-size/index.en_files/glm_bug.png)
+![Bug 16522](/post/2019-10-12-r-bugs-file-info-object-size/index.en_files/glm_bug.png)
 
 That seems approachable. I tested that the documentation was still in that state (it was) and 
 that the example did what it said (it did). Lastly, I read through the source of that function to 
@@ -68,7 +68,7 @@ Now, on to the next bug.
 I had a browse through the sections and found [this one](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15389)
 from 2013
 
-![Bug 15389](/2019-10-12-r-bugs-file-info-object-size/index.en_files/file.info.png)
+![Bug 15389](/post//2019-10-12-r-bugs-file-info-object-size/index.en_files/file.info.png)
 
 That seems innocent enough, right? My experience with `object.size` is when I look at how much 
 memory a given object is taking up (incorrectly, I now understand after reading [Advanced R](http://adv-r.had.co.nz/memory.html#object-size)). What I always liked about this function was that it 

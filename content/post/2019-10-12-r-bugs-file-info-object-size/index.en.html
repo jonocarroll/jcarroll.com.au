@@ -24,7 +24,7 @@ internals of <code>glm</code> which I extended with a reproducible example. I ha
 open bug reports for “glm” in case there was another report of this that I had overlooked (not that I can find)
 and found another which seemed fairly straightforward - <a href="https://bugs.r-project.org/bugzilla/show_bug.cgi?id=16522">some out of date documentation</a>.</p>
 <div class="figure">
-<img src="/2019-10-12-r-bugs-file-info-object-size/index.en_files/glm_bug.png" alt="Bug 16522" />
+<img src="/post/2019-10-12-r-bugs-file-info-object-size/index.en_files/glm_bug.png" alt="Bug 16522" />
 <p class="caption">Bug 16522</p>
 </div>
 <p>That seems approachable. I tested that the documentation was still in that state (it was) and
@@ -54,7 +54,7 @@ from here on.</p>
 <p>I had a browse through the sections and found <a href="https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15389">this one</a>
 from 2013</p>
 <div class="figure">
-<img src="/2019-10-12-r-bugs-file-info-object-size/index.en_files/file.info.png" alt="Bug 15389" />
+<img src="/post//2019-10-12-r-bugs-file-info-object-size/index.en_files/file.info.png" alt="Bug 15389" />
 <p class="caption">Bug 15389</p>
 </div>
 <p>That seems innocent enough, right? My experience with <code>object.size</code> is when I look at how much
@@ -104,7 +104,7 @@ one here. Looking at the internals of the <code>object.size</code> function</p>
 <pre class="r"><code>object.size</code></pre>
 <pre class="bg-success"><code>## function (x) 
 ## structure(.Call(C_objectSize, x), class = &quot;object_size&quot;)
-## &lt;bytecode: 0x5613ab509e30&gt;
+## &lt;bytecode: 0x564bd0b58e30&gt;
 ## &lt;environment: namespace:utils&gt;</code></pre>
 <p>suggests it’s safe enough to slap the class on an object, so let’s try that. I’ll rename
 this function for now so we can see if it’s working</p>
