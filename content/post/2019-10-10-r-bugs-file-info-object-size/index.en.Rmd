@@ -26,6 +26,9 @@ I knew it would be an opportunity to learn more about the way R works on the ins
 
 <!--more-->
 
+As soon as the [R-Foundation posted that they're inviting cleanup of old bugs](https://developer.r-project.org/Blog/public/2019/10/09/r-can-use-your-help-reviewing-bug-reports/index.html), 
+I knew it would be an opportunity to learn more about the way R works on the inside.
+
 I started looking through the list of open bugs for somewhere I could help out. I barely know
 anything about the actual [C internals of the language](https://colinfay.me/r-internals/r-internal-structures.html) 
 (I'm hoping to learn) so I figured it would be best to start with some parts of the code I'm familiar with.
@@ -55,12 +58,13 @@ head(glm(1:4 ~ rnorm(4), method = glm.fit)$method)
 
 (truncated for simplicity).
 
-This made for a small, -2/+3-line [patch](https://bugs.r-project.org/bugzilla/attachment.cgi?id=2463&action=diff) 
+This made for a small, (-2/+3)-line [patch](https://bugs.r-project.org/bugzilla/attachment.cgi?id=2463&action=diff) 
 which was accepted and is now part of the source of R.
 
 Sidenote: I made this patch using git, but I should really be doing this via SVN. 
 [This thread](https://twitter.com/michael_chirico/status/1181930491575848961) 
-by [Michael Chirico](https://twitter.com/michael_chirico) is what I'll be following.
+by [Michael Chirico](https://twitter.com/michael_chirico) is what I'll be following 
+from here on.
 
 Now, on to the next bug.
 
@@ -94,7 +98,7 @@ That isn't the case for the `size` element of `file.info`, though
 
 ```{r file.info.size}
 example_file <- file.path(.Library, "base", "R", "base.rdb")
-file.info(example_file, extra_cols = FALSE)[, c("size", "isdir", "mode")]
+file.info(example_file)[, c("size", "isdir", "mode")]
 ```
 
 which is just a number
@@ -130,7 +134,7 @@ actual work is done at the C level, so there may not be much hope changing the c
 size there.
 
 The simplest thing would appear to be to convert `res$size` to class `object_size` as soon 
-as it's created. There's sometimes a converting funtion, e.g. `as.object_size`, but I don't see 
+as it's created. There's sometimes a converting function, e.g. `as.object_size`, but I don't see 
 one here. Looking at the internals of the `object.size` function 
 
 ```{r object.size function}
@@ -152,6 +156,7 @@ file.info2 <- function(..., extra_cols = TRUE)
     attr(res, "row.names") <- fn # not row.names<- as that does a length check
     res
 }
+
 file.info2(example_file)
 ```
 
@@ -187,9 +192,9 @@ trouble finding the `digits` value
 paste(round(x/base^power, digits = digits), unit)
 ```
 
-The formals for this function have a default of `digits = 1L` so why is it not being found? Tracing back 
+The formal arguments for `utils:::format.object_size` has a default of `digits = 1L` so why is it not being found? Tracing back 
 further we see that the `format.object_size` method was called from `format.data.frame` which loops through 
-the columns of the `data.frame` and formats according to each class there
+the columns of the `data.frame` and formats them according to each class there
 
 ```r
 format.data.frame <- function(x, ..., justify = "none")
@@ -202,7 +207,7 @@ format.data.frame <- function(x, ..., justify = "none")
     <...>
 ```
 
-but there's no mention of `digits` here. Tracing further back, this is called from `print.data.frame` and 
+but there's no mention of `digits` here. Tracing even further back, this is called from `print.data.frame` and 
 passes its `digits` argument. That function has the signature
 
 ```r
@@ -213,22 +218,35 @@ print.data.frame <-
 
 and now we can see where the problem comes from - we try to print our `data.frame` which has an `object_size` 
 column, but that print method sets `digits = NULL` which is passed to `format.data.frame` which is passed to 
-`format.object_size` which has no way to deal with `digits = NULL`. 
+`format.object_size` which has no way to deal with `digits = NULL`. Ugh.
 
-Can we test that? Sure, let's create a simple `data.frame` and then make a column be `object_size`
+Can we test that? Sure, let's create a simple `data.frame`, make a column be `object_size`, and try to 
+print it
 
 ```{r test theory, error = TRUE}
 df <- data.frame(x = 1, y = 2048)
-df
+print(df)
 
 class(df$y) <- "object_size"
+print(df)
+```
+
+This is the behaviour if we auto-print an object by just referencing it by name
+
+```{r test print, error = TRUE}
 df
+```
+
+but what if we *do* provide the `digits` argument to an actual call?
+
+```{r print with digits}
+print(df, digits = 1L)
 ```
 
 SOLVED! But what to do about it? I see three options:
 
 **OPTION 1**: Don't default to `digits = NULL` in `print.data.frame`. I'm not sure what the 
-consequence of this would be across all existing functions, but I can't imagine there's much 
+consequence of this would be across all calls to this function, but I can't imagine there's much 
 use for that default. A better default would seem to be 
 
 ```{r options digits}
@@ -257,18 +275,23 @@ but there already *is* a default in place here (`digits = 1L`) it's just being o
 Instead, we would need some sort of handling in this situation, such as
 
 ```
+digits <- ifelse(is.null(digits), 1L, digits)
+
+## or 
+
 digits <- ifelse(is.null(digits), getOption("digits"), digits)
 ```
 
 I *think* this last option is the most satisfactory (though perhaps the first should 
 also be addressed) so let's see if that's sufficient. Unfortunately, since the issue 
 is deeply nested within another function's namespace, we can't just write a new 
-`format.object_size` and call `print.data.frame` and expect it to work. What we can do, 
-though, is to write a `format.object_size2`, class our new column as `object_size2`, and 
+`format.object_size` and call `print.data.frame` and expect it to work (without 
+rebuilding R itself -- learning how to do that is on my TODO list). What we can do, 
+though, is to write a `format.object_size3`, class our new column as `object_size3`, and 
 test *that*. With this new function written, we get
 
 ```{r format2}
-format.object_size2 <- function(x, units = "b", standard = "auto", digits = 1L, ...)
+format.object_size3 <- function(x, units = "b", standard = "auto", digits = 1L, ...)
 {
   known_bases <- c(legacy = 1024, IEC = 1024, SI = 1000)
   known_units <- list(
@@ -281,7 +304,7 @@ format.object_size2 <- function(x, units = "b", standard = "auto", digits = 1L, 
   units <- match.arg(units,
                      c("auto", unique(unlist(known_units), use.names = FALSE)))
   standard <- match.arg(standard, c("auto", names(known_bases)))
-  digits <- ifelse(is.null(digits), getOption("digits"), digits) # added
+  digits <- ifelse(is.null(digits), 1L, digits) # added
   
   if (standard == "auto") { ## infer 'standard' from 'units':
     standard <- "legacy" # default; may become "SI"
@@ -314,10 +337,10 @@ format.object_size2 <- function(x, units = "b", standard = "auto", digits = 1L, 
   paste(round(x / base^power, digits=digits), unit)
 }
 
-file.info2 <- function(..., extra_cols = TRUE)
+file.info3 <- function(..., extra_cols = TRUE)
 {
     res <- .Internal(file.info(fn <- c(...), extra_cols))
-    class(res$size) <- "object_size2"
+    class(res$size) <- "object_size3"
     res$mtime <- .POSIXct(res$mtime)
     res$ctime <- .POSIXct(res$ctime)
     res$atime <- .POSIXct(res$atime)
@@ -326,18 +349,43 @@ file.info2 <- function(..., extra_cols = TRUE)
     res
 }
 
-file.info2(example_file, extra_cols = FALSE)[, c("size", "isdir", "mode")]
+file.info3(example_file)[, c("size", "isdir", "mode")]
 ```
 
-It works! Are we done? What about another look at that `class(res) <- "data.frame"` business?
+It works! 
+
+As of R 3.2.0 there are also some helper extractors of these elements (mode, mtime, size) 
+so our improvement extends to `file.size`. We can test this if we update the helper to 
+use our version
+
+```{r file.size}
+file.size3 <- function(...) file.info3(..., extra_cols = FALSE)$size
+file.size3(example_file)
+```
+
+We can format that specifically
+
+```{r file.size format}
+format(file.size3(example_file), "KB")
+```
+
+but it doesn't print nicely on its own here. This is because we've artificially changed 
+the class to `object_size3` so we're no longer plugging in to all the methods for `object_size`. I 
+could go through and redefine all of those, but for testing, it's easier to just reset everything 
+to `object_size`, define `file.size` to use my custom version, and test that, and that works.
+
+I've seen others create a package containing the modified code so that all of the namespacing 
+works out, but in this case it would be a large chunk of the print, subset, and format methods.
+
+Are we done? What about another look at that `class(res) <- "data.frame"` business?
 
 Would it make more sense for that to use `res <- as.data.frame(res)`? Let's try
 
 ```{r as.data.frame, error = TRUE}
-file.info3 <- function(..., extra_cols = TRUE)
+file.info4 <- function(..., extra_cols = TRUE)
 {
     res <- .Internal(file.info(fn <- c(...), extra_cols))
-    class(res$size) <- "object_size2"
+    class(res$size) <- "object_size3"
     res$mtime <- .POSIXct(res$mtime)
     res$ctime <- .POSIXct(res$ctime)
     res$atime <- .POSIXct(res$atime)
@@ -346,16 +394,16 @@ file.info3 <- function(..., extra_cols = TRUE)
     res
 }
 
-file.info3(example_file)
+file.info4(example_file)
 ```
 
-Fair enough, there's probably no `as.data.frame.object_size2` method (the 2 is for our convenience, but 
+Fair enough, there's probably no `as.data.frame.object_size3` method (the 3 is for our convenience, but 
 there's no `as.data.frame.object_size` either). It's simple enough to add
 
 ```{r as.data.frame.object_size, error = TRUE}
-as.data.frame.object_size2 <- as.data.frame.vector
+as.data.frame.object_size3 <- as.data.frame.vector
 
-file.info3(example_file)
+file.info4(example_file)
 ```
 
 The "mode" element has the file permissions as `octmode`. I feel we're getting a bit 
@@ -365,22 +413,92 @@ here we go
 ```{r as.data.frame.octmode}
 as.data.frame.octmode <- as.data.frame.vector
 
-file.info3(example_file)
+file.info4(example_file)
 ```
 
 Right, that's working. I'll raise the question of whether or not it's worth the 
 effort to support the `as.data.frame` conversion or whether the forcing of the class is 
 better - I'm honestly not sure which.
 
-I wrote a patch that adds the new test for `NULL` line to the definition of 
-`format.object_size` (and the corresponding bug report) and submitted that. 
-I've then written another patch to the bug report this started with which 
+I wrote a [bug report and corresponding patch](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=17628) that adds the new test for `NULL` line to the definition of 
+`format.object_size` and submitted that. 
+
+I then wrote [another patch](https://bugs.r-project.org/bugzilla/attachment.cgi?id=2470&action=diff) to [the bug report this started with](https://bugs.r-project.org/bugzilla/show_bug.cgi?id=15389) which 
 implements this (now minor) change to the size element of `file.info`. It may be the 
 case that neither is welcome in the core source, and that's fine. The bug can be closed 
 as WONTFIX.
 
 I've learned a lot about how the components of these work, and either way a bug 
 should get closed. I'm off to find the next one.
+
+***
+
+*Addendum*: I wanted to test this out properly, so I rebuilt my modified version of R 
+(with these two patches in place) from source using docker. Assuming you have docker set up, this seems to do the trick
+
+```bash
+## pull the r-base docker image
+## this has most of the requirements to build R
+docker pull r-base
+
+## run the image with a command-line
+## with your local svn repository mounted
+## your path to your svn directory will vary
+docker run -ti -v /home/USER/svn/:/svn/ r-base /bin/bash 
+
+## update whatever is necessary to build R from the svn source
+apt update
+apt-get install libcurl4-openssl-dev 
+apt-get install texinfo ## needed to build manuals
+apt-get install texlive-latex-base ## needed to build vignettes
+apt-get install texlive-latex-extra ## sty files
+apt-get install subversion ## to work with svn
+
+## ensure svn is up to date
+cd /svn/r-devel/
+svn update
+
+## build R and check that it works
+## we're just using the command line, so X11 is not needed
+## we're just building the source, so we don't need e.g. MASS
+## we don't need to be using java, so don't include that
+./configure --with-x=no --without-recommended-packages --disable-byte-compiled-packages --disable-java
+## make in parallel
+make -j4
+make check
+make check-all
+make install
+
+bin/R
+## R Under development (unstable) (2019-10-10 r77275) -- "Unsuffered Consequences"
+```
+
+Woohoo!
+
+Note that this is ephemeral - the changes won't persist after you stop the image. To prevent 
+that, we can save the image for re-use (from outside the image)
+
+```bash
+## your image ID will be different
+docker commit -m "build env" 8f42f23123dd r-build-env
+```
+
+With that built, we can try out our patched functions (not run locally here)
+
+```r
+example_file <- file.path(.Library, "base", "R", "base.rdb")
+file.info(example_file)[, c("size", "isdir", "mode")]
+#>                                              size isdir mode
+#> /svn/r-devel/library/base/R/base.rdb 357435 bytes FALSE  644
+
+file.size(example_file)
+#> 357435 bytes
+
+format(file.size(example_file), "KB")
+#> [1] "349.1 Kb"
+```
+
+Success!
 
 <br />
 <details>
