@@ -1,0 +1,323 @@
+---
+title: isEven without modulo
+author: Jonathan Carroll
+date: '2020-03-09'
+slug: iseven-without-modulo
+categories:
+  - R
+tags:
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>You may have seen the memes going around about fun ways to program the
+straightforward function <code>isEven()</code> which returns <code>TRUE</code> if the input is even,
+and <code>FALSE</code> otherwise. I had a play with this and it turned into enough for a
+blog post, and a nice walk through some features of R.</p>
+<!--more-->
+<p>You may have seen the memes going around about fun ways to program the
+straightforward function <code>isEven()</code> which returns <code>TRUE</code> if the input is even,
+and <code>FALSE</code> otherwise. I had a play with this and it turned into enough for a
+blog post, and a nice walk through some features of R.</p>
+<p>The ‘traditional’ way to check if an integer is even is to check if it is
+divisible by 2. This can be achieved with the modulo operator <code>%%</code> which
+gives the remainder after dividing by another number. For example, <code>5 modulo 2</code>
+or <code>5 %% 2</code> gives 1 because 2 goes into 5 twice with 1 leftover. If a number <code>x</code> is
+even, it is an exact multiple of 2, and so <code>x %% 2 == 0</code>.</p>
+<pre class="r"><code>5 %% 2</code></pre>
+<pre class="bg-success"><code>## [1] 1</code></pre>
+<pre class="r"><code>6 %% 2</code></pre>
+<pre class="bg-success"><code>## [1] 0</code></pre>
+<p>A function which tests values of <code>x</code> for this property could be written as</p>
+<pre class="r"><code>## 1
+isEven &lt;- function(x) {
+    ## traditional modulo check
+    x %% 2 == 0
+}</code></pre>
+<p>The <code>==</code> operation checks that the left side is equal to the right side (but not
+necessarily identical, e.g. the classes can be different) and returns either <code>TRUE</code>
+or <code>FALSE</code> (or <code>NA</code>, but that’s not an issue for the cases we’re looking at here).
+I’ve also relied on the fact that the result of the last statement in a function
+body is used as the return value if no explicit <code>return()</code> is used.</p>
+<p>Confirming that this works is as easy as trying some values. It’s always good to
+check that your function produces results you expect. It’s also a good idea to try
+some odd values to ensure you don’t hit edge-cases.</p>
+<pre class="r"><code>isEven(0)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>isEven(3)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>isEven(4)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>isEven(-1)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>isEven(-6)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>In the process of playing with this function I refined how I tested my code. I started
+with a set of confirming evaluations like above. Then I wanted to confirm that they
+actually gave the results I expect, so I refined it to</p>
+<pre class="r"><code>test_isEven &lt;- function() {
+    all(
+        isEven(0) == TRUE,
+        isEven(3) == FALSE,
+        isEven(4) == TRUE,
+        isEven(-1) == FALSE,
+        isEven(-6) == TRUE
+    )
+}</code></pre>
+<p>Now I just had one function to call which confirmed that all these tests gave
+the expected results. Once I had explained this layout to myself with the word
+‘expected’, I realised what I actually wanted was a test suite, and <code>testthat</code>
+is a great candidate for that. Refactoring the above into a series of expectations
+might look like</p>
+<pre class="r"><code>library(testthat)
+test_isEven &lt;- function() {
+    test_that(&quot;isEven peforms as expected&quot;, {
+        expect_true(isEven(0))
+        expect_false(isEven(3))
+        expect_true(isEven(4))
+        expect_false(isEven(-1))
+        expect_true(isEven(-6))
+    })
+}</code></pre>
+<p>Now I can test any implementation of <code>isEven()</code> with just one function call, and if
+one of the expectations fails I’ll know which it is. Running this with the above
+<code>isEven()</code> produces no output, so the tests succeeded</p>
+<pre class="r"><code>test_isEven()</code></pre>
+<p>The ‘no output’ might be concerning, so we can also run a negative control to make
+sure it breaks when things are broken. Let’s break the <code>isEven()</code> by reversing the
+test</p>
+<pre class="r"><code>## 1a
+isEven &lt;- function(x) {
+    ## (broken) traditional modulo check
+    x %% 2 == 1
+}
+test_isEven()</code></pre>
+<pre class="bg-danger text-danger"><code>## Error: Test failed: &#39;isEven peforms as expected&#39;
+## * &lt;text&gt;:4: isEven(0) isn&#39;t true.
+## * &lt;text&gt;:5: isEven(3) isn&#39;t false.
+## * &lt;text&gt;:6: isEven(4) isn&#39;t true.
+## * &lt;text&gt;:7: isEven(-1) isn&#39;t false.
+## * &lt;text&gt;:8: isEven(-6) isn&#39;t true.</code></pre>
+<p>So, we can trust that if we make a mistake or don’t implement this properly,
+we’ll know. Typically a function you write would have a lot more safety checking,
+such as ensuring that we actually passed a value, and that it’s an integer, but for
+the sake of this post I’m going to assume that these are both guaranteed to be true.</p>
+<p>This version of <code>isEven()</code> is simple and it works, but that’s not what the internet
+wants - a common challenge is to make a version of <code>isEven()</code> which <em>doesn’t</em> use
+modulo. Now we need to think a little more, but we can at least check any
+implementation with our tests.</p>
+<p>I came up with a few, both from borrowing from other solutions and on my own. Let’s see…</p>
+<p>If the last digit is any of 0, 2, 4, 6, or 8, then it’s an even number</p>
+<pre class="r"><code>## 2
+isEven &lt;- function(x) {
+    ## ends with an even digit
+    grepl(&quot;[02468]$&quot;, x)
+}
+test_isEven()</code></pre>
+<p>With that same idea, if the least significant bit (binary) is unset then it’s even</p>
+<pre class="r"><code>## 3
+isEven &lt;- function(x) {
+    ## least significant bit is unset
+    x == 0 || !bitwAnd(x, 1)
+}
+test_isEven()</code></pre>
+<p>Continuing down the bitwise path, if we can shift left and right and get back to
+the original number, then it’s even</p>
+<pre class="r"><code>## 4
+isEven &lt;- function(x) {
+    ## bitwise shift right then left
+    !(x-(bitwShiftL(bitwShiftR(x, 1), 1)))
+}
+test_isEven()</code></pre>
+<p>If we alternate <code>FALSE</code> and <code>TRUE</code> counting from 0 to <code>x</code> then we get our answer</p>
+<pre class="r"><code>## 5
+isEven &lt;- function(x) {
+    ## alternate TRUE/FALSE
+    y &lt;- FALSE
+    for (i in 0:x) {
+        y &lt;- !y
+    }
+    return(y)
+}
+test_isEven()</code></pre>
+<p>We could do the same thing with recursion</p>
+<pre class="r"><code>## 6
+isEven &lt;- function(x) {
+    ## recursion, n-1 is odd if n is even
+    if (x == 0) return(TRUE)
+    !isEven(abs(x) - 1)
+}
+test_isEven()</code></pre>
+<p>Not quite using modulo, integer division by 2, doubled, should
+return the original value</p>
+<pre class="r"><code>## 7
+isEven &lt;- function(x) {
+    ## integer division, doubled
+    2*(x %/% 2) == x
+}
+test_isEven()</code></pre>
+<p>Similarly, the result of regular division cast to integer, doubled, should
+return the original value</p>
+<pre class="r"><code>## 7a
+isEven &lt;- function(x) {
+    ## normal division, doubled
+    2*as.integer(x/2) == x
+}
+test_isEven()</code></pre>
+<p>If we start from a number and count towards 0 by twos then we will hit 0
+if the number is even</p>
+<pre class="r"><code>## 8
+isEven &lt;- function(x) {
+    ## moving by 2s towards 0 ends at 0
+    y &lt;- x
+    repeat({
+        if (y == 0) return(TRUE)
+        if (sign(x) != sign(y)) return(FALSE)
+        y &lt;- y - sign(x)*2
+    })
+}
+test_isEven()</code></pre>
+<p>We can write that a bit simpler if we only use the absolute value of <code>x</code></p>
+<pre class="r"><code>## 8a (abs version)
+isEven &lt;- function(x) {
+    ## moving by 2s towards 0 ends at 0
+    y &lt;- abs(x)
+    repeat({
+        if (y == 0) return(TRUE)
+        if (y &lt; 0) return(FALSE)
+        y &lt;- y - 2
+    })
+}
+test_isEven()</code></pre>
+<p>Exploiting mathematical properties, we know that -1 to any even power returns 1</p>
+<pre class="r"><code>## 9
+isEven &lt;- function(x) {
+    ## -1 to an even power is 1
+    (-1)**x == 1
+}
+test_isEven()</code></pre>
+<p>The relationship <span class="math display">\[\cos(2x) = -\cos(x)\]</span> can also be exploited</p>
+<pre class="r"><code>## 10
+isEven &lt;- function(x) {
+    ## cos(2x) == -cos(x)
+    cos(x*pi) == -cos(pi)
+}
+test_isEven()</code></pre>
+<p>Now for some more R-specific solutions… R rounds towards even integers, and
+we can exploit that</p>
+<pre class="r"><code>## 11
+isEven &lt;- function(x) {
+    ## R rounds even real numbers down
+    round(x + 0.5) == x
+}
+test_isEven()</code></pre>
+<p>We can create a vector of ‘every other integer’ and check whether a value is in
+there</p>
+<pre class="r"><code>## 12
+isEven &lt;- function(x) {
+    ## is x in set of &#39;every other integer&#39;?
+    abs(x) %in% (0:abs(x))[c(TRUE, FALSE)]
+}
+test_isEven()</code></pre>
+<p>Creating a vector of <code>TRUE</code> and <code>FALSE</code> we can extract the element corresponding to
+a value</p>
+<pre class="r"><code>## 13
+isEven &lt;- function(x) {
+    ## even/odd sequence
+    if (x == 0) return(TRUE)
+    rep(c(FALSE, TRUE), (abs(x)/2) + 1)[abs(x)]
+}
+test_isEven()</code></pre>
+<p>Then, starting to get really absurd, we could solve the equation <span class="math display">\[2n = x\]</span> which
+will have an integer <code>n</code> if <code>x</code> is even</p>
+<pre class="r"><code>## 14
+isEven &lt;- function(x) {
+    ## integer solution to 2n = x?
+    n &lt;- solve(2, x)
+    as.integer(n) == n
+}
+test_isEven()</code></pre>
+<p>And, lastly, for the truly absurd, we can use the fact that “zero” and “eight” are
+the only single digits written as English words with an “e”. This requires a
+couple of extra packages, but can be done.</p>
+<pre class="r"><code>## 15
+isEven &lt;- function(x) {
+    ## zero and eight are the only odd 
+    ## last digit as words with an e
+    last &lt;- english::words(as.integer(stringr::str_sub(x, -1, -1)))
+    last == &quot;zero&quot; || last == &quot;eight&quot; || !grepl(&quot;e&quot;, last)
+}
+test_isEven()</code></pre>
+<p>This isn’t an exhaustive list, but it seemed like a good place to stop looking.
+If you can think of more then <a href="https://twitter.com/carroll_jono/status/1236813430188691456?s=20">add them to this thread on Twitter</a>.</p>
+<p>I hope this demonstrates the usefulness of writing functions and testing them with
+<code>testthat</code>. Plus, if the <code>%%</code> operator ever breaks, you have plenty of alternatives.</p>
+<br />
+<details>
+<p><summary>
+<tt>devtools::session_info()</tt>
+</summary></p>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 3.6.2 (2019-12-12)
+##  os       Pop!_OS 19.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2020-03-09                  
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date       lib source        
+##  assertthat    0.2.1   2019-03-21 [1] CRAN (R 3.6.2)
+##  backports     1.1.5   2019-10-02 [1] CRAN (R 3.6.2)
+##  blogdown      0.18    2020-03-04 [1] CRAN (R 3.6.2)
+##  bookdown      0.17    2020-01-11 [1] CRAN (R 3.6.2)
+##  callr         3.4.2   2020-02-12 [1] CRAN (R 3.6.2)
+##  cli           2.0.1   2020-01-08 [1] CRAN (R 3.6.2)
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 3.6.2)
+##  desc          1.2.0   2018-05-01 [1] CRAN (R 3.6.2)
+##  devtools      2.2.2   2020-02-17 [1] CRAN (R 3.6.2)
+##  digest        0.6.24  2020-02-12 [1] CRAN (R 3.6.2)
+##  ellipsis      0.3.0   2019-09-20 [1] CRAN (R 3.6.2)
+##  english       1.2-5   2020-01-26 [1] CRAN (R 3.6.2)
+##  evaluate      0.14    2019-05-28 [1] CRAN (R 3.6.2)
+##  fansi         0.4.1   2020-01-08 [1] CRAN (R 3.6.2)
+##  fs            1.3.1   2019-05-06 [1] CRAN (R 3.6.2)
+##  glue          1.3.1   2019-03-12 [1] CRAN (R 3.6.2)
+##  htmltools     0.4.0   2019-10-04 [1] CRAN (R 3.6.2)
+##  knitr         1.28    2020-02-06 [1] CRAN (R 3.6.2)
+##  magrittr      1.5     2014-11-22 [1] CRAN (R 3.6.2)
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 3.6.2)
+##  pkgbuild      1.0.6   2019-10-09 [1] CRAN (R 3.6.2)
+##  pkgload       1.0.2   2018-10-29 [1] CRAN (R 3.6.2)
+##  prettyunits   1.1.1   2020-01-24 [1] CRAN (R 3.6.2)
+##  processx      3.4.2   2020-02-09 [1] CRAN (R 3.6.2)
+##  ps            1.3.2   2020-02-13 [1] CRAN (R 3.6.2)
+##  R6            2.4.1   2019-11-12 [1] CRAN (R 3.6.2)
+##  Rcpp          1.0.3   2019-11-08 [1] CRAN (R 3.6.2)
+##  remotes       2.1.1   2020-02-15 [1] CRAN (R 3.6.2)
+##  rlang         0.4.5   2020-03-01 [1] CRAN (R 3.6.2)
+##  rmarkdown     2.1     2020-01-20 [1] CRAN (R 3.6.2)
+##  rprojroot     1.3-2   2018-01-03 [1] CRAN (R 3.6.2)
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 3.6.2)
+##  stringi       1.4.5   2020-01-11 [1] CRAN (R 3.6.2)
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 3.6.2)
+##  testthat    * 2.3.1   2019-12-01 [1] CRAN (R 3.6.2)
+##  usethis       1.5.1   2019-07-04 [1] CRAN (R 3.6.2)
+##  withr         2.1.2   2018-03-15 [1] CRAN (R 3.6.2)
+##  xfun          0.12    2020-01-13 [1] CRAN (R 3.6.2)
+##  yaml          2.2.1   2020-02-01 [1] CRAN (R 3.6.2)
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/3.6
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>
