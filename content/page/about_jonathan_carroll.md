@@ -60,7 +60,7 @@ more details.</p>
 </td></tr>
 <tr valign="top"><td><code class="help">output</code></td><td></td>
 <td>
-<p class="help">Regardless of the often tricial appearance of the processing, the output is almost always new knowledge, or at least is intended to be.</p>
+<p class="help">Regardless of the often trivial appearance of the processing, the output is almost always new knowledge, or at least is intended to be.</p>
 </td></tr>
 </table>
 
