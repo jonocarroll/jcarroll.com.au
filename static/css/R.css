@@ -1,0 +1,102 @@
+table.help tr td {
+    background: white;
+    border: none !important;
+    border-color: white;
+    border-style : hidden!important;
+    border-collapse: collapse;
+    padding: 0;
+    font-size: medium;
+}
+
+table.help {
+    background: white;
+    border: none !important;
+    border-color: white;
+    border-style : hidden!important;
+    border-collapse: collapse;
+    padding: 0;
+    font-size: medium;
+}
+
+p.help {
+    font-size: medium;
+    padding: 0;
+    margin: 0;
+    border-spacing: 0;
+}
+
+h1.help {
+    background: white;
+    color: black;
+    font-size: xx-large;
+    font-family: serif;
+    text-align: left;
+    font-weight: bold;
+}
+
+h2.help {
+    background: white;
+    color: black;
+    font-size: x-large;
+    font-family: serif;
+    text-align: center;
+    font-weight: bold;
+}
+
+h3.help {
+    background: white;
+    color: black;
+    font-size: 20px;
+    font-weight: bold;
+    font-family: serif;
+}
+
+h4.help {
+    background: white;
+    color: rgb(40%, 40%, 40%);
+    font-style: italic;
+    font-size: large;
+    font-weight: bold;
+}
+
+h5.help {
+    background: white;
+    color: rgb(40%, 40%, 40%);
+    font-family: monospace;
+    font-weight: bold;
+}
+
+h6.help {
+    background: white;
+    color: rgb(40%, 40%, 40%);
+    font-family: monospace;
+    font-style: italic;
+}
+		
+img.toplogo {
+    width: 4em;
+    vertical-align: middle;
+}
+
+img.arrow {
+    width: 30px;
+    height: 30px;
+    border: 0;
+}
+
+pre.help {
+    background: white;
+    font-family: monospace;
+    border: none;
+    padding: 0;
+    margin: 0;
+    border-spacing: 0;
+    font-size: medium;
+}
+
+code.help {
+    background: white;
+    font-family: monospace;
+    font-size: medium;
+}
+
