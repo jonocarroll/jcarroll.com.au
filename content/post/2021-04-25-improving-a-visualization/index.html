@@ -67,7 +67,7 @@ That’s fairly close. For the logos I’ll use the versions on Wikipedia</p>
   &quot;paramount&quot;, &quot;https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Paramount_Plus.svg/440px-Paramount_Plus.svg.png&quot;,
   &quot;other&quot;, &quot;other&quot;
 )
-labels &lt;- setNames(paste0(&quot;&lt;img src=&#39;&quot;, logos$logo, &quot;&#39; width=&#39;30&#39; /&gt;&quot;), logos$service)
+labels &lt;- setNames(paste0(&quot;&lt;img src=&#39;&quot;, logos$logo, &quot;&#39; width=&#39;40&#39; /&gt;&quot;), logos$service)
 labels[[&quot;other&quot;]] &lt;- &quot;other&lt;br /&gt;streaming&lt;br /&gt;services&quot;</code></pre>
 <p>and leverage <code>{ggtext}</code> to set these as the axis labels</p>
 <pre class="r"><code>p &lt;- p + scale_x_discrete(labels = labels) + theme(axis.text.x = ggtext::element_markdown())
@@ -103,8 +103,16 @@ p &lt;- ggplot(streaming_delta) +
 p</code></pre>
 <p><img src="staticunnamed-chunk-7-1.png" width="100%" />
 Each comparison in the original required two bars, and the separation between the services didn’t make that easy to read. In this version,
-the absolute scale is lost (services starting high and decreasing aren’t distinct from those starting low and gaining slightly) so what about
-using a barbell plot to show the separation between the two values rather than relying on comparing two bars?</p>
+the absolute scale is lost (services starting high and decreasing aren’t so distinct from those starting low and gaining slightly)
+so what about using a barbell plot to show the separation between the two values rather than relying on comparing two bars?</p>
+<pre class="r"><code>suppressWarnings(library(ggalt, include.only = &quot;geom_dumbbell&quot;, quietly = TRUE))</code></pre>
+<pre class="bg-info text-info"><code>## Registered S3 methods overwritten by &#39;ggalt&#39;:
+##   method                  from   
+##   grid.draw.absoluteGrob  ggplot2
+##   grobHeight.absoluteGrob ggplot2
+##   grobWidth.absoluteGrob  ggplot2
+##   grobX.absoluteGrob      ggplot2
+##   grobY.absoluteGrob      ggplot2</code></pre>
 <pre class="r"><code>p &lt;- ggplot(streaming) + 
   ggalt::geom_dumbbell(aes(factor(service, levels = rev(streaming$service)), 
                            x = share2020, xend = share2021), 
@@ -116,19 +124,13 @@ using a barbell plot to show the separation between the two values rather than r
   labs(subtitle = &quot;&lt;span style = &#39;color: red3;&#39;&gt;2020&lt;/span&gt; vs 2021&quot;) + 
   theme_minimal() +
   theme(plot.title = element_text(size = 26), plot.subtitle = element_text(size = 26)) +
-  theme(axis.text.y = ggtext::element_markdown(), plot.subtitle = ggtext::element_markdown(), legend.position = &quot;none&quot;) </code></pre>
-<pre class="bg-info text-info"><code>## Registered S3 methods overwritten by &#39;ggalt&#39;:
-##   method                  from   
-##   grid.draw.absoluteGrob  ggplot2
-##   grobHeight.absoluteGrob ggplot2
-##   grobWidth.absoluteGrob  ggplot2
-##   grobX.absoluteGrob      ggplot2
-##   grobY.absoluteGrob      ggplot2</code></pre>
-<pre class="r"><code>p</code></pre>
+  theme(axis.text.y = ggtext::element_markdown(), plot.subtitle = ggtext::element_markdown(), legend.position = &quot;none&quot;) 
+p</code></pre>
 <pre class="bg-warning text-warning"><code>## Warning: Use of `streaming$service` is discouraged. Use `service` instead.</code></pre>
 <p><img src="staticunnamed-chunk-8-1.png" width="100%" />
 I think these last two communicate more than the original. It’s always amazing how easy it is to bring this data into R and
 start playing with different presentations.</p>
+Do you have a better way to present this data? Let me know in the comments or on <a href="https://twitter.com/carroll_jono">Twitter</a>.
 <br />
 <details>
 <summary>
@@ -169,7 +171,7 @@ start playing with different presentations.</p>
 ##  farver         2.0.3    2020-01-16 [1] CRAN (R 4.0.3)
 ##  fs             1.5.0    2020-07-31 [1] CRAN (R 4.0.3)
 ##  generics       0.1.0    2020-10-31 [1] CRAN (R 4.0.3)
-##  ggalt          0.4.0    2017-02-15 [1] CRAN (R 4.0.3)
+##  ggalt        * 0.4.0    2017-02-15 [1] CRAN (R 4.0.3)
 ##  ggplot2      * 3.3.3    2020-12-30 [1] CRAN (R 4.0.3)
 ##  ggtext         0.1.1    2020-12-17 [1] CRAN (R 4.0.3)
 ##  glue           1.4.2    2020-08-27 [1] CRAN (R 4.0.3)

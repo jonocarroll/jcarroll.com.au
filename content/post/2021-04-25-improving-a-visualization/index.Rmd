@@ -82,7 +82,7 @@ logos <- tibble::tribble(
   "paramount", "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Paramount_Plus.svg/440px-Paramount_Plus.svg.png",
   "other", "other"
 )
-labels <- setNames(paste0("<img src='", logos$logo, "' width='30' />"), logos$service)
+labels <- setNames(paste0("<img src='", logos$logo, "' width='40' />"), logos$service)
 labels[["other"]] <- "other<br />streaming<br />services"
 ```
 and leverage `{ggtext}` to set these as the axis labels
@@ -121,9 +121,11 @@ p <- ggplot(streaming_delta) +
 p
 ```
 Each comparison in the original required two bars, and the separation between the services didn't make that easy to read. In this version,
-the absolute scale is lost (services starting high and decreasing aren't distinct from those starting low and gaining slightly) so what about 
-using a barbell plot to show the separation between the two values rather than relying on comparing two bars?
+the absolute scale is lost (services starting high and decreasing aren't so distinct from those starting low and gaining slightly) 
+so what about using a barbell plot to show the separation between the two values rather than relying on comparing two bars?
 ```{r}
+suppressWarnings(library(ggalt, include.only = "geom_dumbbell", quietly = TRUE))
+
 p <- ggplot(streaming) + 
   ggalt::geom_dumbbell(aes(factor(service, levels = rev(streaming$service)), 
                            x = share2020, xend = share2021), 
@@ -141,6 +143,7 @@ p
 I think these last two communicate more than the original. It's always amazing how easy it is to bring this data into R and 
 start playing with different presentations.
 
+Do you have a better way to present this data? Let me know in the comments or on [Twitter](https://twitter.com/carroll_jono).
 <br />
 <details>
   <summary>
