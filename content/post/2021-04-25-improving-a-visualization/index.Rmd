@@ -17,7 +17,9 @@ knitr::opts_chunk$set(
   class.output  = "bg-success",
   class.message = "bg-info text-info",
   class.warning = "bg-warning text-warning",
-  class.error   = "bg-danger text-danger"
+  class.error   = "bg-danger text-danger",
+  fig.path = "static",
+  out.width = "100%"
 )
 ```
 
@@ -48,7 +50,7 @@ streaming <- tibble::tribble(
 ```
 I can build a simple barplot from this data with `ggplot2`. First we'll need it in long format, with the services ordered as 
 they are in the original, and build a basic bar plot with dodged bars
-```{r, fig.path = "static"}
+```{r}
 library(ggplot2)
 
 ## pivot to long format with the year and share as their own columns
@@ -80,24 +82,24 @@ logos <- tibble::tribble(
   "paramount", "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Paramount_Plus.svg/440px-Paramount_Plus.svg.png",
   "other", "other"
 )
-labels <- setNames(paste0("<img src='", logos$logo, "' width='50' />"), logos$service)
+labels <- setNames(paste0("<img src='", logos$logo, "' width='30' />"), logos$service)
 labels[["other"]] <- "other<br />streaming<br />services"
 ```
 and leverage `{ggtext}` to set these as the axis labels
-```{r, fig.path = "static"}
+```{r}
 p <- p + scale_x_discrete(labels = labels) + theme(axis.text.x = ggtext::element_markdown())
 p
 ```
 My first thought on seeing this plot with the legend was that `{ggtext}` makes this a lot easier to read by using the 
 title _as_ the legend
-```{r, fig.path = "static"}
+```{r}
 p <- p + 
   labs(subtitle = "<span style = 'color: red3;'>2020</span> vs 2021") + 
   theme(plot.subtitle = ggtext::element_markdown(), legend.position = "none")
 p
 ```
 Next, this should possibly be a horizontal bar plot so that the labels read nicely
-```{r, fig.path = "static"}
+```{r}
 p + 
   coord_flip() + 
   scale_x_discrete(labels = labels, limits = rev(streaming$service)) + 
@@ -106,7 +108,7 @@ p +
 The 'insight' which this is trying to display is how each service's share has grown 
 or shrunk. It wasn't obvious to me that the original was ordered by that - decreases shown first, then increases (in some order, I'm still
 not sure what). What might make for a better plot to center it on the 2020 share and show the growth (positive or negative)
-```{r, fig.path = "static"}
+```{r}
 streaming_delta <- dplyr::mutate(streaming, growth = share2021 - share2020)
 
 p <- ggplot(streaming_delta) + 
@@ -121,7 +123,7 @@ p
 Each comparison in the original required two bars, and the separation between the services didn't make that easy to read. In this version,
 the absolute scale is lost (services starting high and decreasing aren't distinct from those starting low and gaining slightly) so what about 
 using a barbell plot to show the separation between the two values rather than relying on comparing two bars?
-```{r, fig.path = "static"}
+```{r}
 p <- ggplot(streaming) + 
   ggalt::geom_dumbbell(aes(factor(service, levels = rev(streaming$service)), 
                            x = share2020, xend = share2021), 
@@ -136,7 +138,8 @@ p <- ggplot(streaming) +
   theme(axis.text.y = ggtext::element_markdown(), plot.subtitle = ggtext::element_markdown(), legend.position = "none") 
 p
 ```
-
+I think these last two communicate more than the original. It's always amazing how easy it is to bring this data into R and 
+start playing with different presentations.
 
 <br />
 <details>
