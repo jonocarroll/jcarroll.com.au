@@ -25,7 +25,7 @@ Another day, another interesting challenge.
 
 Another day, another interesting challenge. 
 
-I follow [Bob Rudis' (a.k.a. hrbrmstr's) blog](http://rud.is/b/), typically via [R-bloggers](http://www.r-bloggers.com/), and [this post](http://rud.is/b/2016/03/10/some-light-image-processing-creation-with-r/) caught my eye. Partly because I thought I knew of an existing way to do this. As usual, actually getting that to work took a little longer than I might have hoped, but I think the end result is pretty neat.
+I follow [Bob Rudis' (a.k.a. hrbrmstr's) blog](https://rud.is/b/), typically via [R-bloggers](https://www.r-bloggers.com/), and [this post](https://rud.is/b/2016/03/10/some-light-image-processing-creation-with-r/) caught my eye. Partly because I thought I knew of an existing way to do this. As usual, actually getting that to work took a little longer than I might have hoped, but I think the end result is pretty neat.
 
 His post describes the process of writing an R function to take an image file, for example this one
 
@@ -33,7 +33,7 @@ His post describes the process of writing an R function to take an image file, f
 
 and producing a histogram along the sides of the number of pixels on a given row/column. This is what he created (a different image to the example, I believe)
 
-![](http://i2.wp.com/rud.is/b/wp-content/uploads/2016/03/Rplot1.png?resize=940%2C512)
+![](https://i2.wp.com/rud.is/b/wp-content/uploads/2016/03/Rplot1.png?resize=940%2C512)
 
 Something funny is going on with the right-hand histogram; it doesn't line up with the image.
 

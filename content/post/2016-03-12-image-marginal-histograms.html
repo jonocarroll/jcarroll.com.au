@@ -10,16 +10,17 @@ subtitle: ''
 image: ''
 ---
 
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
 
 
 <p>Another day, another interesting challenge.</p>
 <!--more-->
 <p>Another day, another interesting challenge.</p>
-<p>I follow <a href="http://rud.is/b/">Bob Rudis’ (a.k.a. hrbrmstr’s) blog</a>, typically via <a href="http://www.r-bloggers.com/">R-bloggers</a>, and <a href="http://rud.is/b/2016/03/10/some-light-image-processing-creation-with-r/">this post</a> caught my eye. Partly because I thought I knew of an existing way to do this. As usual, actually getting that to work took a little longer than I might have hoped, but I think the end result is pretty neat.</p>
+<p>I follow <a href="https://rud.is/b/">Bob Rudis’ (a.k.a. hrbrmstr’s) blog</a>, typically via <a href="https://www.r-bloggers.com/">R-bloggers</a>, and <a href="https://rud.is/b/2016/03/10/some-light-image-processing-creation-with-r/">this post</a> caught my eye. Partly because I thought I knew of an existing way to do this. As usual, actually getting that to work took a little longer than I might have hoped, but I think the end result is pretty neat.</p>
 <p>His post describes the process of writing an R function to take an image file, for example this one</p>
 <p><img src="/post/2016-03-12-image-marginal-histograms_files/file10a566a2b4dc3.png" /></p>
 <p>and producing a histogram along the sides of the number of pixels on a given row/column. This is what he created (a different image to the example, I believe)</p>
-<p><img src="http://i2.wp.com/rud.is/b/wp-content/uploads/2016/03/Rplot1.png?resize=940%2C512" /></p>
+<p><img src="https://i2.wp.com/rud.is/b/wp-content/uploads/2016/03/Rplot1.png?resize=940%2C512" /></p>
 <p>Something funny is going on with the right-hand histogram; it doesn’t line up with the image.</p>
 <p>Here’s my approach.</p>
 <script src="https://gist.github.com/JonoCarroll/7960dff5bf42e47423db.js"></script>
