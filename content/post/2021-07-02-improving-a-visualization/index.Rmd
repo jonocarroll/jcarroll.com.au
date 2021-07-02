@@ -33,7 +33,7 @@ I saw [this post](https://www.reddit.com/r/dataisbeautiful/comments/mtld5f/oc_us
 on Reddit's r/dataisbeautiful showing this plot of streaming services market
 share, comparing 2020 to 2021
 
-![US Streaming Services Market Share, 2020 vs 2021](images/streaming.png)
+![US Streaming Services Market Share, 2020 vs 2021](/post/2021-07-02-improving-a-visualization/images/streaming.png)
 
 and thought it looked like a good candidate for trying out some plot improvement techniques. 
 
