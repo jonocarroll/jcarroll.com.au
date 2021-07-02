@@ -1,0 +1,435 @@
+---
+title: Improving a Visualization
+author: Jonathan Carroll
+date: '2021-07-02'
+slug: improving-a-visualization
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<p>I saw <a href="https://www.reddit.com/r/dataisbeautiful/comments/mtld5f/oc_us_streaming_services_market_share_2020_vs_2021/">this post</a>
+on Reddit’s r/dataisbeautiful showing this plot of streaming services market
+share, comparing 2020 to 2021</p>
+<div class="figure">
+<img src="2021/07/02/improving-a-visualization/images/streaming.png" alt="" />
+<p class="caption">US Streaming Services Market Share, 2020 vs 2021</p>
+</div>
+<p>and thought it looked like a good candidate for trying out some plot improvement techniques.</p>
+<!--more-->
+<p>I saw <a href="https://www.reddit.com/r/dataisbeautiful/comments/mtld5f/oc_us_streaming_services_market_share_2020_vs_2021/">this post</a>
+on Reddit’s r/dataisbeautiful showing this plot of streaming services market
+share, comparing 2020 to 2021</p>
+<div class="figure">
+<img src="images/streaming.png" alt="" />
+<p class="caption">US Streaming Services Market Share, 2020 vs 2021</p>
+</div>
+<p>and thought it looked like a good candidate for trying out some plot improvement techniques.</p>
+<p>Yes, that was a reasonably long while ago, this post has taken quite some time to put together. Life.</p>
+<p>I’ve played with <a href="https://jcarroll.com.au/2019/08/13/ggtext-for-images-as-x-axis-labels/">adding images to plot axes</a>
+several times (also <a href="https://jcarroll.com.au/2016/06/02/images-as-x-axis-labels/">here</a>, <a href="https://jcarroll.com.au/2016/06/03/images-as-x-axis-labels-updated/">here</a>, <a href="https://jcarroll.com.au/2018/10/16/even-more-images-as-x-axis-labels/">here</a>) so that part shouldn’t pose
+too much of a challenge. First, I’ll try to rebuild the original. The <a href="https://www.reddit.com/r/dataisbeautiful/comments/mtld5f/oc_us_streaming_services_market_share_2020_vs_2021/gv0bv4j?utm_source=share&amp;utm_medium=web2x&amp;context=3">original was built in powerpoint</a> but I’ll be reproducing it with R (surprise, surprise).</p>
+<p>The data itself appears to be captured from something like <a href="https://www.thewrap.com/netflix-streaming-us-market-share-chart/">this page</a> (paywalled) but the precise values aren’t important; I’ll just take them directly from the original plot manually</p>
+<pre class="r"><code>streaming &lt;- tibble::tribble(
+  ~service, ~`2020`, ~`2021`,
+  &quot;netflix&quot;,    29, 20,
+  &quot;prime&quot;,      21, 16,
+  &quot;hulu&quot;,       16, 13,
+  &quot;disney&quot;,     12, 11,
+  &quot;apple&quot;,       4,  5,
+  &quot;peacock&quot;,     0,  5,
+  &quot;hbo&quot;,         3, 12,
+  &quot;paramount&quot;,   2,  3,
+  &quot;other&quot;,      13, 15,
+)</code></pre>
+<p>I can build a simple barplot from this data with <code>{ggplot2}</code>. First we’ll need it in long format, with the services ordered as
+they are in the original. From that I can build a basic bar plot with dodged bars. There’s a few fiddly bits to work out, which I’ll try to
+go through with code comments.</p>
+<pre class="r"><code>library(ggplot2)
+
+## pivot to long format with the 
+## year and share as their own columns
+streaming_long &lt;- tidyr::pivot_longer(streaming, 
+                                      cols = -service, 
+                                      names_to = &quot;year&quot;, 
+                                      values_to = &quot;share&quot;)
+
+## plot the years side-by-side in the original order
+p &lt;- ggplot(streaming_long) + 
+  geom_col(aes(factor(service, levels = streaming$service), 
+               share, fill = year), position = position_dodge(width = 0.9)) + 
+  ## add a hidden set of points to make the legend circles easily
+  geom_point(aes(x = service, y = -10, color = year, fill = year), size = 4) + 
+  ## add the percentages just above each bar
+  geom_text(aes(service, share + 1, label = paste0(share, &quot;%&quot;), group = year),
+            position = position_dodge(width = 0.9), size = 3) +
+  ## use similar colours to the original
+  scale_fill_manual(values = c(`2020` = &quot;red3&quot;, `2021` = &quot;black&quot;)) +
+  scale_color_manual(values = c(`2020` = &quot;red3&quot;, `2021` = &quot;black&quot;)) + 
+  ## hide the fill legend and make the color legend horizontal
+  guides(fill = &quot;none&quot;, color = guide_legend(direction = &quot;horizontal&quot;)) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1), 
+                     limits = c(0, 35)) +
+  labs(title = &quot;US Streaming Market Share&quot;, 
+       subtitle = &quot;2020 vs 2021&quot;, 
+       caption = &quot;Source: Ampere Analytics via The Wrap
+       
+       Other Streatming Services include ESPN+, Showtime,
+       Sling TV, Youtube TV, and Starz&quot;,
+       x = &quot;&quot;, y = &quot;&quot;) +
+  theme_minimal() + 
+  theme(axis.text = element_text(size = 10),
+        plot.title = element_text(size = 28, hjust= 0.5), 
+        plot.subtitle = element_text(size = 28, hjust = 0.5),
+        plot.caption = element_text(size = 7, color = &quot;grey60&quot;),
+        plot.background = element_rect(fill = &quot;#f4f7fc&quot;, size = 0),
+        legend.title = element_blank(),
+        legend.text= element_text(size = 12),
+        panel.grid = element_blank(),
+        ## move the color legend to an inset 
+        legend.position = c(0.85, 0.8)) 
+p</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: Removed 18 rows containing missing values (geom_point).</code></pre>
+<p><img src="staticunnamed-chunk-2-1.png" width="100%" />
+Not bad. Let’s get some of the other elements looking right. I used a font identifying site to pick a similar font
+which seems to be <a href="https://www.ffonts.net/Josefin-Slab-SemiBold-Italic.font.download">Josefin Slab SemiBold</a>.</p>
+<pre class="r"><code>library(extrafont)
+fontfamily &lt;- &quot;Josefin Slab SemiBold&quot;
+
+p &lt;- p + theme(plot.title = element_text(family = fontfamily),
+               plot.subtitle = element_text(family = fontfamily))
+p</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: Removed 18 rows containing missing values (geom_point).</code></pre>
+<p><img src="staticunnamed-chunk-3-1.png" width="100%" />
+That’s fairly close. For the logos I’ll use the versions on Wikipedia</p>
+<pre class="r"><code>wiki &lt;- &quot;https://upload.wikimedia.org/wikipedia/commons/thumb/&quot;
+logos &lt;- tibble::tribble(
+  ~service, ~logo,
+  &quot;netflix&quot;, paste0(wiki, &quot;0/08/Netflix_2015_logo.svg/340px-Netflix_2015_logo.svg.png&quot;),
+  &quot;prime&quot;, paste0(wiki, &quot;1/11/Amazon_Prime_Video_logo.svg/450px-Amazon_Prime_Video_logo.svg.png&quot;),
+  &quot;hulu&quot;, paste0(wiki, &quot;e/e4/Hulu_Logo.svg/440px-Hulu_Logo.svg.png&quot;),
+  &quot;disney&quot;, paste0(wiki, &quot;3/3e/Disney%2B_logo.svg/320px-Disney%2B_logo.svg.png&quot;),
+  &quot;apple&quot;,  paste0(wiki, &quot;2/28/Apple_TV_Plus_Logo.svg/500px-Apple_TV_Plus_Logo.svg.png&quot;),
+  &quot;peacock&quot;, paste0(wiki, &quot;d/d3/NBCUniversal_Peacock_Logo.svg/440px-NBCUniversal_Peacock_Logo.svg.png&quot;),
+  &quot;hbo&quot;, paste0(wiki, &quot;d/de/HBO_logo.svg/440px-HBO_logo.svg.png&quot;),
+  &quot;paramount&quot;, paste0(wiki, &quot;a/a5/Paramount_Plus.svg/440px-Paramount_Plus.svg.png&quot;),
+  &quot;other&quot;, &quot;other.png&quot;
+) %&gt;% 
+  mutate(path = file.path(&quot;images&quot;, paste(service, tools::file_ext(logo), sep = &quot;.&quot;)))
+labels &lt;- setNames(paste0(&quot;&lt;img src=&#39;&quot;, logos$path, &quot;&#39; width=&#39;35&#39; /&gt;&quot;), logos$service)
+labels[[&quot;other&quot;]] &lt;- &quot;other&lt;br /&gt;streaming&lt;br /&gt;services&quot;</code></pre>
+<p>and save a local copy for faster loading/just in case</p>
+<pre class="r"><code>for (r in 1:8) {
+  download.file(logos$logo[r], logos$path[r])
+}</code></pre>
+<p>I can leverage <code>{ggtext}</code> to set these as the axis labels</p>
+<pre class="r"><code>p &lt;- p + 
+  scale_x_discrete(labels = labels) + 
+  theme(axis.text.x = ggtext::element_markdown())
+p</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: Removed 18 rows containing missing values (geom_point).</code></pre>
+<p><img src="staticunnamed-chunk-6-1.png" width="100%" />
+That’s not too bad - for the sake of scrolling, here’s the original again</p>
+<div class="figure">
+<img src="images/streaming.png" alt="" />
+<p class="caption">US Streaming Services Market Share, 2020 vs 2021</p>
+</div>
+<p>Now to try to improve it.</p>
+<p>My first thought on seeing this plot with the legend was that <code>{ggtext}</code> makes this a lot easier to read by using the
+title <em>as</em> the legend. For the sake of the ‘removed rows containing missing values’ warning I’ll also drop the points layer</p>
+<pre class="r"><code>p$layers[[2]] &lt;- NULL ## drop the geom_points layer
+p &lt;- p + 
+  labs(subtitle = &quot;&lt;span style = &#39;color: red3;&#39;&gt;2020&lt;/span&gt; vs 2021&quot;) + 
+  theme(plot.subtitle = ggtext::element_markdown(), legend.position = &quot;none&quot;)
+p</code></pre>
+<p><img src="staticunnamed-chunk-7-1.png" width="100%" />
+To help make the black bars more distinct from the text, we could make these a different colour</p>
+<pre class="r"><code>p &lt;- p + 
+  scale_fill_manual(values = c(`2020` = &quot;red3&quot;, `2021` = &quot;darkcyan&quot;)) + 
+  labs(subtitle = paste0(&quot;&lt;span style = &#39;color: red3;&#39;&gt;2020&lt;/span&gt; &quot;,
+                         &quot;vs &lt;span style = &#39;color: darkcyan;&#39;&gt;2021&lt;/span&gt;&quot;)) + 
+  theme(plot.subtitle = ggtext::element_markdown(), legend.position = &quot;none&quot;)</code></pre>
+<pre class="bg-info text-info"><code>## Scale for &#39;fill&#39; is already present. Adding another scale for &#39;fill&#39;, which
+## will replace the existing scale.</code></pre>
+<pre class="r"><code>p</code></pre>
+<p><img src="staticunnamed-chunk-8-1.png" width="100%" />
+Now to see if there’s a better way to represent this data. These are fractions of the total share… would a pie chart be a candidate?</p>
+<pre class="r"><code>streaming_pie &lt;- left_join(streaming_long, logos, by = &quot;service&quot;)
+
+p_pie &lt;- ggplot(streaming_pie, aes(1, share, fill = service, image = path)) + 
+  geom_col() + 
+  coord_polar(&quot;y&quot;) +
+  ggimage::geom_image(size = 0.12, position = position_stack(vjust = 0.5)) +
+  facet_wrap(~year, strip.position = &quot;bottom&quot;) +
+  guides(fill = &quot;none&quot;, color = guide_legend(direction = &quot;horizontal&quot;)) +
+  labs(title = &quot;US Streaming Market Share&quot;, subtitle = &quot;2020 vs 2021&quot;, x = &quot;&quot;, y = &quot;&quot;) +
+  theme_void() + 
+  theme(text = element_text(size = 32),
+        plot.title = element_text(family = fontfamily, size = 26, hjust = 0.5), 
+        plot.subtitle = element_text(family = fontfamily, size = 26, hjust = 0.5),
+        plot.background = element_rect(fill = &quot;#f4f7fc&quot;, size = 0),
+        legend.title = element_blank())
+p_pie</code></pre>
+<p><img src="staticunnamed-chunk-9-1.png" width="100%" />
+No, that’s harder for making comparisons. Forget that idea.</p>
+<p>This should possibly be a horizontal bar plot so that the labels read nicely</p>
+<pre class="r"><code>p + 
+  coord_flip() + 
+  scale_x_discrete(labels = labels, limits = rev(streaming$service)) + 
+  theme(axis.text.y = ggtext::element_markdown())</code></pre>
+<pre class="bg-info text-info"><code>## Scale for &#39;x&#39; is already present. Adding another scale for &#39;x&#39;, which will
+## replace the existing scale.</code></pre>
+<p><img src="staticunnamed-chunk-10-1.png" width="100%" />
+The ‘insight’ this is trying to display is how each service’s share has grown
+or shrunk. It wasn’t obvious to me that the original was ordered by that - decreases shown first, then increases (in some order, I’m still
+not sure what). What might make for a better plot to center it on the 2020 share and show the growth (positive or negative)</p>
+<pre class="r"><code>streaming_delta &lt;- dplyr::mutate(streaming, growth = `2021` - `2020`)
+
+p &lt;- ggplot(streaming_delta) + 
+  geom_col(aes(factor(service, levels = streaming$service), growth, fill = growth &gt; 0)) + 
+  labs(title = &quot;US Streaming Market Share Growth&quot;, x = &quot;&quot;, y = &quot;&quot;) +
+  theme_minimal() + 
+  theme(text = element_text(family = fontfamily),
+        plot.title = element_text(size = 26), 
+        plot.subtitle = element_text(size = 26)) + 
+  scale_x_discrete(labels = labels) + 
+  coord_flip() +
+  theme(axis.text.y = ggtext::element_markdown()) +
+  scale_fill_manual(values = c(`TRUE` = &quot;darkcyan&quot;, `FALSE` = &quot;red3&quot;)) + 
+  labs(subtitle = paste0(&quot;&lt;span style = &#39;color: darkcyan;&#39;&gt;Growth&lt;/span&gt; &quot;,
+                         &quot;vs &lt;span style = &#39;color: red3;&#39;&gt;Loss&lt;/span&gt; (% of 2020)&quot;)) + 
+  theme(plot.subtitle = ggtext::element_markdown(),
+        plot.background = element_rect(fill = &quot;#f4f7fc&quot;, size = 0))
+p</code></pre>
+<p><img src="staticunnamed-chunk-11-1.png" width="100%" />
+Each comparison in the original required two bars, and the separation between the services didn’t make that easy to read. In this version,
+the absolute scale is lost (services starting high and decreasing aren’t so distinct from those starting low and gaining slightly)
+so what about using a dumbbell plot to show the separation between the two values while retaining their overall scales, rather than relying on comparing two bars?</p>
+<pre class="r"><code>library(ggalt, include.only = &quot;geom_dumbbell&quot;)
+
+p &lt;- ggplot(streaming) + 
+  ggalt::geom_dumbbell(aes(factor(service, levels = rev(streaming$service)), 
+                           x = `2020`, xend = `2021`), 
+                       colour_x = &quot;red3&quot;, size_x = 6,
+                       colour_xend = &quot;darkcyan&quot;, size_xend = 6,
+                       size = 1, dot_guide = TRUE, 
+                       dot_guide_size = 0.5, 
+                       dot_guide_colour = &quot;grey25&quot;) + 
+  scale_x_continuous(labels = scales::percent_format(scale = 1), 
+                   limits = c(0, 35)) +
+  scale_y_discrete(labels = labels) + 
+  labs(title = &quot;US Streaming Market Share&quot;, x = &quot;&quot;, y = &quot;&quot;) +
+  labs(subtitle = paste0(&quot;&lt;span style = &#39;color: red3;&#39;&gt;2020&lt;/span&gt; &quot;,
+                         &quot;vs &lt;span style = &#39;color: darkcyan;&#39;&gt;2021&lt;/span&gt;&quot;)) + 
+  theme_minimal() +
+  theme(plot.title = element_text(family = fontfamily, size = 26), 
+        plot.subtitle = element_text(family = fontfamily, size = 26)) +
+  theme(axis.text.y = ggtext::element_markdown(), 
+        plot.subtitle = ggtext::element_markdown(), 
+        plot.background = element_rect(fill = &quot;#f4f7fc&quot;, size = 0),
+        legend.position = &quot;none&quot;) 
+p</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: Use of `streaming$service` is discouraged. Use `service` instead.</code></pre>
+<p><img src="staticunnamed-chunk-12-1.png" width="100%" />
+One last option to bring this data to life would be to animate between the two states…</p>
+<pre class="r"><code>library(gganimate)
+
+p &lt;- ggplot(streaming_long) + 
+  geom_point(aes(share, 
+                 factor(service, levels = streaming$service)), 
+             size = 5, color = &quot;darkcyan&quot;) + 
+  scale_y_discrete(labels = labels) +
+  labs(title = &quot;US Streaming Market Share&quot;, x = &quot;&quot;, y = &quot;&quot;) +
+  labs(subtitle = &quot;{closest_state}&quot;) + 
+  scale_x_continuous(labels = scales::percent_format(scale = 1), 
+                     limits = c(0, 35)) +
+  theme_minimal() +
+  theme(text = element_text(family = fontfamily), 
+        plot.title = element_text(size = 26), 
+        plot.subtitle = element_text(size = 26),
+        legend.position = &quot;none&quot;) +
+  theme(axis.text.y = ggtext::element_markdown(),
+        plot.background = element_rect(fill = &quot;#f4f7fc&quot;, size = 0))
+  
+anim &lt;- p + 
+  transition_states(year, transition_length = 4) +
+  ease_aes() +
+  enter_fade() +
+  exit_fade()
+animate(anim, renderer = gifski_renderer())
+anim_save(filename = &quot;images/streaming.gif&quot;)</code></pre>
+<p><img src="images/streaming.gif" style="width:100.0%" />
+I think these last few communicate more than the original. It’s always amazing how easy it is to bring this data into R and
+start playing with different presentations. Sure, perfecting the plots can take a little while, but
+the data is there to be played with.</p>
+<p>One visualization which might have been interesting would be if we had the data on the transitions between services. Then
+an <a href="https://en.wikipedia.org/wiki/Alluvial_diagram">alluvial plot</a> would be very informative. Simulating that…</p>
+<pre class="r"><code>streaming_flow &lt;- tibble::tribble(
+    ~`2020`, ~Freq, ~`2021`,
+  &quot;netflix&quot;,    12, &quot;netflix&quot;,
+  &quot;netflix&quot;,     4, &quot;prime&quot;,
+  &quot;netflix&quot;,     6, &quot;disney&quot;,
+  &quot;netflix&quot;,     3, &quot;apple&quot;,
+  &quot;netflix&quot;,     4, &quot;hbo&quot;,
+  &quot;prime&quot;,      16, &quot;prime&quot;,
+  &quot;prime&quot;,       5, &quot;netflix&quot;,
+  &quot;prime&quot;,       2, &quot;hulu&quot;,
+  &quot;prime&quot;,       1, &quot;disney&quot;,
+  &quot;prime&quot;,       3, &quot;peacock&quot;,
+  &quot;prime&quot;,       4, &quot;hbo&quot;,
+  &quot;hulu&quot;,       13, &quot;hulu&quot;,
+  &quot;hulu&quot;,        1, &quot;netflix&quot;,
+  &quot;hulu&quot;,        2, &quot;prime&quot;,
+  &quot;hulu&quot;,        1, &quot;disney&quot;,
+  &quot;disney&quot;,     11, &quot;disney&quot;,
+  &quot;disney&quot;,      1, &quot;netflix&quot;,
+  &quot;disney&quot;,      3, &quot;prime&quot;,
+  &quot;disney&quot;,      1, &quot;hulu&quot;,
+  &quot;apple&quot;,       4, &quot;apple&quot;,
+  &quot;apple&quot;,       2, &quot;netflix&quot;,
+  &quot;apple&quot;,       1, &quot;prime&quot;,
+  &quot;peacock&quot;,     2, &quot;peacock&quot;,
+  &quot;peacock&quot;,     1, &quot;netflix&quot;,
+  &quot;hbo&quot;,         3, &quot;hbo&quot;,
+  &quot;hbo&quot;,         1, &quot;prime&quot;
+)
+
+library(ggalluvial)
+
+lodes &lt;- to_lodes_form(streaming_flow, axes = c(&quot;2020&quot;, &quot;2021&quot;))
+lodes &lt;- left_join(lodes, logos,  by = c(&quot;stratum&quot; = &quot;service&quot;))
+lodes &lt;- arrange(lodes, stratum)
+
+ggplot(lodes, aes(x = x, stratum = stratum, alluvium = alluvium, 
+                  y = Freq, fill = stratum, label = stratum, image = path)) + 
+  geom_flow() +
+  geom_stratum(alpha = 0.6) + 
+  geom_text(stat = &quot;stratum&quot;, size = 4) +
+  scale_x_discrete(limits = c(&quot;2020&quot;, &quot;2021&quot;), 
+                   expand = c(0.1, 0.1)) +
+  labs(title = &quot; US Streaming Market Share Flow&quot;, 
+       subtitle = &quot; 2020 to 2021&quot;) +
+  theme_void() +
+  theme(axis.text.x = element_text(size = 20, vjust = 3),
+        plot.title = element_text(family = fontfamily, size = 26), 
+        plot.subtitle = element_text(family = fontfamily, size = 26),
+        plot.background = element_rect(fill = &quot;#f4f7fc&quot;, size = 0),
+        legend.position = &quot;none&quot;) </code></pre>
+<p><img src="staticunnamed-chunk-14-1.png" width="100%" />
+I spent way too long trying to get the logos into this one, but there seems to be
+a fundamental issue with combining <code>{ggalluvial}</code> with <code>{ggimage}</code> which I coulnd’t resolve.</p>
+<p>Do you have a better way to present this data? Let me know in the comments or on <a href="https://twitter.com/carroll_jono">Twitter</a>.</p>
+<br />
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 4.0.3 (2020-10-10)
+##  os       Pop!_OS 20.10               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2021-07-02                  
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package      * version  date       lib source        
+##  ash            1.0-15   2015-09-01 [1] CRAN (R 4.0.3)
+##  assertthat     0.2.1    2019-03-21 [1] CRAN (R 4.0.3)
+##  BiocManager    1.30.12  2021-03-28 [1] CRAN (R 4.0.3)
+##  blogdown       1.2      2021-03-04 [1] CRAN (R 4.0.3)
+##  bookdown       0.21     2020-10-13 [1] CRAN (R 4.0.3)
+##  callr          3.5.1    2020-10-13 [1] CRAN (R 4.0.3)
+##  cli            2.2.0    2020-11-20 [1] CRAN (R 4.0.3)
+##  colorspace     2.0-0    2020-11-11 [1] CRAN (R 4.0.3)
+##  crayon         1.3.4    2017-09-16 [1] CRAN (R 4.0.3)
+##  desc           1.2.0    2018-05-01 [1] CRAN (R 4.0.3)
+##  devtools       2.3.2    2020-09-18 [1] CRAN (R 4.0.3)
+##  digest         0.6.27   2020-10-24 [1] CRAN (R 4.0.3)
+##  dplyr        * 1.0.2    2020-08-18 [1] CRAN (R 4.0.3)
+##  ellipsis       0.3.1    2020-05-15 [1] CRAN (R 4.0.3)
+##  evaluate       0.14     2019-05-28 [1] CRAN (R 4.0.3)
+##  extrafont    * 0.17     2014-12-08 [1] CRAN (R 4.0.3)
+##  extrafontdb    1.0      2012-06-11 [1] CRAN (R 4.0.3)
+##  fansi          0.4.1    2020-01-08 [1] CRAN (R 4.0.3)
+##  farver         2.0.3    2020-01-16 [1] CRAN (R 4.0.3)
+##  fs             1.5.0    2020-07-31 [1] CRAN (R 4.0.3)
+##  generics       0.1.0    2020-10-31 [1] CRAN (R 4.0.3)
+##  ggalluvial   * 0.12.3   2020-12-05 [1] CRAN (R 4.0.3)
+##  ggalt        * 0.4.0    2017-02-15 [1] CRAN (R 4.0.3)
+##  gganimate    * 1.0.7    2020-10-15 [1] CRAN (R 4.0.3)
+##  ggimage      * 0.2.8    2020-04-02 [1] CRAN (R 4.0.3)
+##  ggplot2      * 3.3.3    2020-12-30 [1] CRAN (R 4.0.3)
+##  ggplotify      0.0.7    2021-05-11 [1] CRAN (R 4.0.3)
+##  ggtext         0.1.1    2020-12-17 [1] CRAN (R 4.0.3)
+##  gifski         1.4.3-1  2021-05-02 [1] CRAN (R 4.0.3)
+##  glue           1.4.2    2020-08-27 [1] CRAN (R 4.0.3)
+##  gridGraphics   0.5-1    2020-12-13 [1] CRAN (R 4.0.3)
+##  gridtext       0.1.4    2020-12-10 [1] CRAN (R 4.0.3)
+##  gtable         0.3.0    2019-03-25 [1] CRAN (R 4.0.3)
+##  hms            0.5.3    2020-01-08 [1] CRAN (R 4.0.3)
+##  htmltools      0.5.0    2020-06-16 [1] CRAN (R 4.0.3)
+##  jsonlite       1.7.2    2020-12-09 [1] CRAN (R 4.0.3)
+##  KernSmooth     2.23-18  2020-10-29 [4] CRAN (R 4.0.3)
+##  knitr          1.30     2020-09-22 [1] CRAN (R 4.0.3)
+##  labeling       0.4.2    2020-10-20 [1] CRAN (R 4.0.3)
+##  lifecycle      0.2.0    2020-03-06 [1] CRAN (R 4.0.3)
+##  magick         2.6.0    2021-01-13 [1] CRAN (R 4.0.3)
+##  magrittr       2.0.1    2020-11-17 [1] CRAN (R 4.0.3)
+##  maps           3.3.0    2018-04-03 [1] CRAN (R 4.0.3)
+##  markdown       1.1      2019-08-07 [1] CRAN (R 4.0.3)
+##  MASS           7.3-53   2020-09-09 [4] CRAN (R 4.0.2)
+##  memoise        1.1.0    2017-04-21 [1] CRAN (R 4.0.3)
+##  munsell        0.5.0    2018-06-12 [1] CRAN (R 4.0.3)
+##  pillar         1.4.7    2020-11-20 [1] CRAN (R 4.0.3)
+##  pkgbuild       1.2.0    2020-12-15 [1] CRAN (R 4.0.3)
+##  pkgconfig      2.0.3    2019-09-22 [1] CRAN (R 4.0.3)
+##  pkgload        1.1.0    2020-05-29 [1] CRAN (R 4.0.3)
+##  png            0.1-7    2013-12-03 [1] CRAN (R 4.0.3)
+##  prettyunits    1.1.1    2020-01-24 [1] CRAN (R 4.0.3)
+##  processx       3.4.5    2020-11-30 [1] CRAN (R 4.0.3)
+##  progress       1.2.2    2019-05-16 [1] CRAN (R 4.0.3)
+##  proj4          1.0-10.1 2021-01-26 [1] CRAN (R 4.0.3)
+##  ps             1.5.0    2020-12-05 [1] CRAN (R 4.0.3)
+##  purrr          0.3.4    2020-04-17 [1] CRAN (R 4.0.3)
+##  R6             2.5.0    2020-10-28 [1] CRAN (R 4.0.3)
+##  RColorBrewer   1.1-2    2014-12-07 [1] CRAN (R 4.0.3)
+##  Rcpp           1.0.5    2020-07-06 [1] CRAN (R 4.0.3)
+##  remotes        2.2.0    2020-07-21 [1] CRAN (R 4.0.3)
+##  rlang          0.4.10   2020-12-30 [1] CRAN (R 4.0.3)
+##  rmarkdown      2.6      2020-12-14 [1] CRAN (R 4.0.3)
+##  rprojroot      2.0.2    2020-11-15 [1] CRAN (R 4.0.3)
+##  Rttf2pt1       1.3.8    2020-01-10 [1] CRAN (R 4.0.3)
+##  rvcheck        0.1.8    2020-03-01 [1] CRAN (R 4.0.3)
+##  scales         1.1.1    2020-05-11 [1] CRAN (R 4.0.3)
+##  sessioninfo    1.1.1    2018-11-05 [1] CRAN (R 4.0.3)
+##  stringi        1.5.3    2020-09-09 [1] CRAN (R 4.0.3)
+##  stringr        1.4.0    2019-02-10 [1] CRAN (R 4.0.3)
+##  testthat       3.0.1    2020-12-17 [1] CRAN (R 4.0.3)
+##  tibble         3.0.4    2020-10-12 [1] CRAN (R 4.0.3)
+##  tidyr          1.1.2    2020-08-27 [1] CRAN (R 4.0.3)
+##  tidyselect     1.1.0    2020-05-11 [1] CRAN (R 4.0.3)
+##  tweenr         1.0.2    2021-03-23 [1] CRAN (R 4.0.3)
+##  usethis        2.0.0    2020-12-10 [1] CRAN (R 4.0.3)
+##  vctrs          0.3.6    2020-12-17 [1] CRAN (R 4.0.3)
+##  withr          2.3.0    2020-09-22 [1] CRAN (R 4.0.3)
+##  xfun           0.22     2021-03-11 [1] CRAN (R 4.0.3)
+##  xml2           1.3.2    2020-04-23 [1] CRAN (R 4.0.3)
+##  yaml           2.2.1    2020-02-01 [1] CRAN (R 4.0.3)
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.0
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>
