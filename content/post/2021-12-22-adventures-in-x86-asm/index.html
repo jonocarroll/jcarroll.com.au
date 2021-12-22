@@ -1,0 +1,531 @@
+---
+title: Adventures in x86 ASM
+author: Jonathan Carroll
+date: '2021-12-22'
+slug: adventures-in-x86-asm
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+<script src="{{< blogdown/postref >}}index_files/header-attrs/header-attrs.js"></script>
+
+
+<p>I just finished <a href="https://en.wikipedia.org/wiki/Code:_The_Hidden_Language_of_Computer_Hardware_and_Software">‘Code: The Hidden Language of Computer Hardware and Software’</a> by Charles Petzold which was a really well-written (in my opinion) guided journey from flashing a light in morse code through to building a whole computer, and everything needed along the way.</p>
+<p>The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I
+remembered that it’s not the first time I’ve played with assembly…</p>
+<div class="figure">
+<img src="images/X86_Assembly_Listing_for_ComplexAdd.png" alt="" />
+<p class="caption">random x86 instructions</p>
+</div>
+<!--more-->
+<p>I just finished <a href="https://en.wikipedia.org/wiki/Code:_The_Hidden_Language_of_Computer_Hardware_and_Software">‘Code: The Hidden Language of Computer Hardware and Software’</a> by Charles Petzold which was a really well-written (in my opinion) guided journey from flashing a light in morse code through to building a whole computer, and everything needed along the way.</p>
+<p>The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I
+remembered that it’s not the first time I’ve played with assembly…</p>
+<p>Years and years ago (I don’t recall how it actually started) I spent some time trying to solve a puzzle. I don’t recall whether I saw the puzzle or a solution first, but I do remember wanting to be able to understand it properly, and ideally be able to use some software <em>I wrote</em> to reach the solution.</p>
+<p>The puzzle was just a set of characters on a poster for the (then named) Australian Defence Signals Directorate (now the <a href="https://www.asd.gov.au/">Australian Signals Directorate</a> - one of our Secret Squirrel orgs) at <a href="https://ruxcon.org.au/">ruxcon</a> in 2011</p>
+<div class="figure">
+<img src="images/dsd_poster.JPG" alt="" />
+<p class="caption">ruxcon2011 DSD poster</p>
+</div>
+<p>Yes, that was a long time ago, but I never wrote up what I did, and now seems like a good time to get really distracted.</p>
+<p>I would be surprised if I understood it well enough at the time, so I suspect I was aware of <a href="http://0xdec0.blogspot.com/2011/12/ruxcon-dsd-challenge.html">this blogpost</a> which walks through the solution (spoilers). Nonetheless, I wanted to be able to do that myself, not just follow some instructions - I was confident that I could write enough code (of some sort) to go from this sequence of letters and symbols to the final solution.</p>
+<p>My attempts at the time were mostly command-line attempts; the blog post linked above uses only web services, so that felt like I could make it ‘my own’. I first needed to get the characters into my computer - that’s just writing them out to a text file, say, a file called <code>dsd</code></p>
+<pre class="bash"><code># dsd:
+6AAAAABbi8uDwx4zwDPSigOK
+ETLCiAM8AHQrg8EBg8MB6+wz
+/7/z+TEct0SlpGf5dRyl53US
+YQEE56Ri7Kdkj8IAABkcOsw=</code></pre>
+<p>Knowing that this is base-64 encoded, I can decode it with <code>hexdump</code></p>
+<pre class="bash"><code>cat dsd | base64 -d | hexdump -C
+
+00000000  e8 00 00 00 00 5b 8b cb  83 c3 1e 33 c0 33 d2 8a  |.....[.....3.3..|
+00000010  03 8a 11 32 c2 88 03 3c  00 74 2b 83 c1 01 83 c3  |...2...&lt;.t+.....|
+00000020  01 eb ec 33 ff bf f3 f9  31 1c b7 44 a5 a4 67 f9  |...3....1..D..g.|
+00000030  75 1c a5 e7 75 12 61 01  04 e7 a4 62 ec a7 64 8f  |u...u.a....b..d.|
+00000040  c2 00 00 19 1c 3a cc                              |.....:.|
+00000047</code></pre>
+<p>To just get the bytecode, I used some different options and saved the file as <code>dsd.hex</code></p>
+<pre class="bash"><code>cat dsd | base64 -d | hexdump  -v -e &#39;/1 %02X &#39; &gt; dsd.hex
+
+# dsd.hex:
+E8 00 00 00 00 5B 8B CB 83 C3 1E 33 C0 33 D2 8A 03 8A 11 32 C2 88 03 3C 00 74 2B 83 C1 01 83 C3 01 EB EC 33 FF BF F3 F9 31 1C B7 44 A5 A4 67 F9 75 1C A5 E7 75 12 61 01 04 E7 A4 62 EC A7 64 8F C2 00 00 19 1C 3A CC </code></pre>
+<p>I did go a similar route to the linked blogpost and converted these bytes to shellcode, wrapped them in a C program and disassembled it with <code>gdb</code>, but much simpler was to use a better tool, in this case <a href="http://udis86.sourceforge.net/">udis</a> which I needed to install separately. This
+gives the same result as the blogpost, which was nice</p>
+<pre class="bash"><code>udcli -x dsd.hex &gt; dsd.hex.asm
+
+# dsd.hex.asm:
+0000000000000000 e800000000       call 0x5                
+0000000000000005 5b               pop ebx                 
+0000000000000006 8bcb             mov ecx, ebx            
+0000000000000008 83c31e           add ebx, 0x1e           
+000000000000000b 33c0             xor eax, eax            
+000000000000000d 33d2             xor edx, edx            
+000000000000000f 8a03             mov al, [ebx]           
+0000000000000011 8a11             mov dl, [ecx]           
+0000000000000013 32c2             xor al, dl              
+0000000000000015 8803             mov [ebx], al           
+0000000000000017 3c00             cmp al, 0x0             
+0000000000000019 742b             jz 0x46                 
+000000000000001b 83c101           add ecx, 0x1            
+000000000000001e 83c301           add ebx, 0x1            
+0000000000000021 ebec             jmp 0xf                 
+0000000000000023 33ff             xor edi, edi            
+0000000000000025 bff3f9311c       mov edi, 0x1c31f9f3     
+000000000000002a b744             mov bh, 0x44            
+000000000000002c a5               movsd                   
+000000000000002d a4               movsb                   
+000000000000002e 67f9             a16 stc                 
+0000000000000030 751c             jnz 0x4e                
+0000000000000032 a5               movsd                   
+0000000000000033 e775             out 0x75, eax           
+0000000000000035 126101           adc ah, [ecx+0x1]       
+0000000000000038 04e7             add al, 0xe7            
+000000000000003a a4               movsb                   
+000000000000003b 62ec             invalid                 
+000000000000003d a7               cmpsd                   
+000000000000003e 648fc2           pop edx                 
+0000000000000041 0000             add [eax], al           
+0000000000000043 191c3a           sbb [edx+edi], ebx      
+0000000000000046 cc               int3                    </code></pre>
+<p>At this point, I got a bit lost (at the time) because I didn’t understand assembly well enough (or at all), so, continuing with the logic presented in the linked blogpost, I considered just working with the bytes directly.</p>
+<p>All we really need to do it take the bytes starting at <code>0x5</code> and <code>0x23</code> and <code>xor</code> them. I figured I’ll need the decimal value of these addresses; <code>0x5</code> is just 5, but <code>0x23</code> = 16*2 + 3 = 35. We can of course get this via <code>printf</code></p>
+<pre class="bash"><code>printf &quot;%d\n&quot; 0x23 </code></pre>
+<pre class="bg-success"><code>## 35</code></pre>
+<p>or less simply with the built-in calculator tool <code>bc</code>, going from (input) base 16 to (output) base 10</p>
+<pre class="bash"><code>echo &quot;obase=10;ibase=16; 23&quot; | bc</code></pre>
+<pre class="bg-success"><code>## 35</code></pre>
+<p>I placed the bytes in sequence (removing spaces) with</p>
+<pre class="bash"><code>str=$(cat dsd.hex | sed &#39;s/ //g&#39;)
+echo $str</code></pre>
+<pre class="bg-success"><code>## E8000000005B8BCB83C31E33C033D28A038A1132C288033C00742B83C10183C301EBEC33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC20000191C3ACC</code></pre>
+<p>Since I have 2 characters per hex, <code>0x5</code> starts at character 10, and <code>0x23</code> starts at character 70, so we define our strings as</p>
+<pre class="bash"><code>astr=${str:70} # 0x23 to end
+echo $astr</code></pre>
+<pre class="bg-success"><code>## 33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC20000191C3ACC</code></pre>
+<p>and</p>
+<pre class="bash"><code>$ bstr=${str:10} # 0x5 to end
+$ echo $bstr</code></pre>
+<pre class="bg-success"><code>## 5B8BCB83C31E33C033D28A038A1132C288033C00742B83C10183C301EBEC33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC20000191C3ACC</code></pre>
+<p>There is overlap here, which we will have to deal with when we get to it. For now, we want to <code>xor</code> these. Let’s cut these down to 60 characters (where they start to overlap)</p>
+<pre class="bash"><code>trimastr=${astr:0:60}
+echo $trimastr</code></pre>
+<pre class="bg-success"><code>## 33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC2</code></pre>
+<pre class="bash"><code>trimbstr=${bstr:0:60}
+echo $trimbstr</code></pre>
+<pre class="bg-success"><code>## 5B8BCB83C31E33C033D28A038A1132C288033C00742B83C10183C301EBEC</code></pre>
+<p>The command <code>xor</code> (<code>^</code>) chokes on this many digits (in fact, any more than about 8) so I’ve written a script to <code>xor</code> the characters one at a time:</p>
+<pre class="bash"><code>for i in {0..59} ; do echo $(( 0x${astr:$i:1} ^ 0x${bstr:$i:1} )) | awk &#39;{printf &quot;%X&quot;,$0}&#39; ; done &gt; xor.dat
+
+# xor.dat:
+687474703A2F2F7777772E6473642E676F762E61752F6465636F6465642E</code></pre>
+<p>What about that bit that overlapped? we only xored the first 60 characters, but the length of the string is</p>
+<pre class="bash"><code>echo ${#astr}</code></pre>
+<pre class="bg-success"><code>## 72</code></pre>
+<p>so we need those first 12 (72-12) characters (6 hex) of overlap</p>
+<pre class="bash"><code>olap1=${astr:60:12}
+echo $olap1</code></pre>
+<pre class="bg-success"><code>## 0000191C3ACC</code></pre>
+<p>The assembly code would have overwritten the overlapped part by the time it reached there, so we need to <code>xor</code> with the <code>xor</code>’d part, i.e. the first 12 characters of <code>xor.dat</code></p>
+<pre class="bash"><code>olap2=$(cat xor.dat | cut -c -12)
+echo $olap2</code></pre>
+<pre class="bg-success"><code>## 687474703A2F</code></pre>
+<p>Now, finally, do the last <code>xor</code> (<code>^</code>)</p>
+<pre class="bash"><code>for i in {0..11} ; do echo $(( 0x${olap1:$i:1} ^ 0x${olap2:$i:1} )) | awk &#39;{printf &quot;%X&quot;,$0}&#39; ; done &gt; xorolap.dat
+
+# xorolap.dat:
+68746D6C00E3</code></pre>
+<p>so this needs to go at the end of our xor.dat</p>
+<pre class="bash"><code>cat xor.dat xorolap.dat &gt; xorfinal.dat
+
+# xorfinal.dat:
+687474703A2F2F7777772E6473642E676F762E61752F6465636F6465642E68746D6C00E3</code></pre>
+<p>The final <code>00</code> and after is useless, so let’s drop it. Finally, we just need to convert this back to text using <code>xxd -r</code></p>
+<pre class="bash"><code>cat xorfinal.dat | sed &#39;s/[0]\{2\}.*//&#39; | xxd -r -p &gt; dsd.sol</code></pre>
+<p>Phew. I’m not going to reveal the solution just yet, because this isn’t the end of the story (but I did get the right answer).</p>
+<p>So, that’s a commandline solution to (at least this part) of the puzzle. But now I know R!</p>
+<p>Learning more about assembly from the book ‘Code’, it occurred to me that the
+operations - which could be implemented with something as simple as telegraph relays (or <a href="https://hackaday.com/2012/09/28/making-logic-gates-out-of-crabs/">crabs</a>) - were just operations on data. Given an input, produce an output (sort of). A <code>MOV</code> operation just moved some value stored at some address to another address (or to/from a register). This felt like it could be simple enough to encode in some R functions. Perhaps not some “pure” R functions, because I <em>want</em> the side-effect of altering a global memory bank, but surely I could do simple things like <code>ADD</code>.</p>
+<p>I looked around to see if someone else had done this before. As is usually the case with odd requests, Mike (a.k.a. <a href="https://github.com/coolbutuseless"><span class="citation">@coolbutuseless</span></a>) has done something similar in the form of <a href="https://github.com/coolbutuseless/r64">r64</a> which I didn’t appreciate was a sufficiently distinct flavour of assembly (I never had a Commodore64, we had an <a href="https://en.wikipedia.org/wiki/Amstrad_CPC#CPC664">Amstrad CPC664</a> on which I really only played games). After a quick <a href="https://github.com/coolbutuseless/r64/pull/1">PR</a> to bring that repo up to date with other changes by the author (a migration of one dependency) I realised this wasn’t what I needed, but did learn a lot from how it was structured.</p>
+<p>Okay, on to building something myself. I knew I’d need some memory and some registers. The registers seemed easy - they wouldn’t hold a lot and I could address them by name, e.g. <code>eax</code>. An environment seemed natural, both because of the named list structure, and because I knew it would be mutable. That seemed like a benefit for this use-case - having a global set of registers I could move data in and out of without making copies of the thing or passing it around everywhere.</p>
+<p>Next I’d need memory. I figured a vector of hex value made sense, but I wanted to be able to refer to the first one as <code>0x00</code>. Now, the names of a vector need to be a character vector - you can’t use the actual hex values</p>
+<pre class="r"><code>memory &lt;- c(0x00 = 0x19, 0x01 = 0x1a, 0x02 = 0x1b)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error: &lt;text&gt;:1:18: unexpected &#39;=&#39;
+## 1: memory &lt;- c(0x00 =
+##                      ^</code></pre>
+<p>so we need to use character strings</p>
+<pre class="r"><code>memory &lt;- c(&quot;0x00&quot; = 0x19, &quot;0x01&quot; = 0x1a, &quot;0x02&quot; = 0x1b)
+memory</code></pre>
+<pre class="bg-success"><code>## 0x00 0x01 0x02 
+##   25   26   27</code></pre>
+<p>More importantly, we’ll need to ensure we <em>only</em> refer to these by the character
+strings because <code>[</code> first tries a coercion to integer, which, side-note, is why this works</p>
+<pre class="r"><code>(1:10)[2.3] # since as.integer(2.3) == 2</code></pre>
+<pre class="bg-success"><code>## [1] 2</code></pre>
+<pre class="r"><code>(1:10)[4.7] # since as.integer(4.7) == 4</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
+<p>The risk is that we use a hex value to extract an element, in which case we might accidentally try to get the first value with</p>
+<pre class="r"><code>memory[0x00]</code></pre>
+<pre class="bg-success"><code>## named numeric(0)</code></pre>
+<p>Instead, we want</p>
+<pre class="r"><code>memory[&quot;0x00&quot;]</code></pre>
+<pre class="bg-success"><code>## 0x00 
+##   25</code></pre>
+<p>In order to make sure we always do this, we need a <code>sanitize()</code> function which
+always returns the string.</p>
+<p>We can convert a value to hexmode with <code>as.hexmode</code>, but that’s a lot of typing, so I added an alias as</p>
+<pre class="r"><code>hex &lt;- as.hexmode</code></pre>
+<p>For processing assembly instructions, we might see something like</p>
+<pre class="bash"><code>mov eax, 0x5</code></pre>
+<p>which should move the value <code>0x5</code> into the register <code>eax</code>… so we’ll need a way
+to distinguish direct addresses from registers. Worse still, we might refer to the address stored in a register, as <code>[eax]</code>. A <code>reg_or_val()</code> function would identify anything which points to an address (containing a <code>[</code>), any of the named registers, or a value, and would return the address (or where that points).</p>
+<p>With all of those pieces, the only thing left is to actually be able to run code.</p>
+<p>Assembly runs sequentially through the instructions, unless we encounter some flow
+control opcodes (e.g. <code>JMP</code> - jump to address - I’ll keep calling them opcodes but mnemonics is a more correct term). The basic process would then be to
+read in the instruction, identify the opcode and the arguments, and execute, modifying the memory and registers in-place. Once that’s done, we move to the next instruction.</p>
+<p>With flow control we might need to identify a <em>different</em> address to go to next, and that might depend on the status of the registers, for example <code>JNZ 0x00</code> jumps to address <code>0x00</code> if the zero flag is <em>not</em> set. So, we can execute the current instruction but then apply any flag-based logic to see if we need to go to a new address, and go wherever we should go go next. This is implemented as <code>runasm()</code></p>
+<p>That takes care of running the code, but what are we running? Oh, operations. Right. Well, we need some of those. Going through the opcodes I need for the puzzle, I’ll need the following:</p>
+<pre><code>call
+pop
+mov
+add
+xor
+cmp
+jz
+jmp
+halt</code></pre>
+<p><code>CALL</code> just pushes a value onto the stack (register <code>esp</code>), <code>POP</code> retrieves it and
+stores it at an address, <code>MOV</code> as we said moves a value from place to place, <code>ADD</code>
+adds two values, <code>XOR</code> does what it suggests, and so on. These don’t seem tricky to implement, for example</p>
+<pre class="r"><code>mov &lt;- function(x, y) {
+  # copy y into x
+  res &lt;- hex(reg_or_val(y))
+  if (x %in% names(registers)) {
+    assign(x, res, envir = registers)
+  } else {
+    mem[sanitize(x)] &lt;&lt;- sanitize(res)
+  }
+  return(invisible(NULL))
+}</code></pre>
+<p>The wrinkle will be that particular instructions <em>also</em> update registers, for
+example an <code>ADD</code> stores whether the result was <code>0x00</code> in the zero-flag register</p>
+<pre class="r"><code>function(x, y) {
+  # add y to x and save in x
+  res &lt;- hex(reg_or_val(x)) + hex(reg_or_val(y))
+  if (x %in% names(registers)) {
+    assign(x, res, envir = registers)
+  } else {
+    mem[sanitize(x)] &lt;&lt;- sanitize(res)
+  }
+  assign(&quot;zf&quot;, hex(as.integer(res == 0x00)), envir = registers)
+  return(invisible(x))
+}</code></pre>
+<p>A <code>JMP</code> (or other jump) will check this register and jump (or not) accordingly.</p>
+<p>With these pieces in place, an R package was a natural home for the code, so I can now present the <code>{rx86}</code> package: <a href="https://github.com/jonocarroll/rx86" class="uri">https://github.com/jonocarroll/rx86</a></p>
+<p>Let’s use it to solve the puzzle!!!</p>
+<p>Starting with the puzzle string</p>
+<pre class="r"><code>dsd &lt;- &quot;6AAAAABbi8uDwx4zwDPSigOK
+ETLCiAM8AHQrg8EBg8MB6+wz
+/7/z+TEct0SlpGf5dRyl53US
+YQEE56Ri7Kdkj8IAABkcOsw=&quot;</code></pre>
+<p>we decode it (this time in R)</p>
+<pre class="r"><code>(b64 &lt;- base64enc::base64decode(dsd))</code></pre>
+<pre class="bg-success"><code>##  [1] e8 00 00 00 00 5b 8b cb 83 c3 1e 33 c0 33 d2 8a 03 8a 11 32 c2 88 03 3c 00
+## [26] 74 2b 83 c1 01 83 c3 01 eb ec 33 ff bf f3 f9 31 1c b7 44 a5 a4 67 f9 75 1c
+## [51] a5 e7 75 12 61 01 04 e7 a4 62 ec a7 64 8f c2 00 00 19 1c 3a cc</code></pre>
+<p>This will be the only non-R part: we still need to disassemble the bytecode into assembly, but we can do that <em>from</em> R with a <code>system()</code> call to <code>udcli</code></p>
+<pre class="r"><code>(disas &lt;- system(&quot;udcli -x&quot;, input = paste(b64, collapse = &quot; &quot;), intern = TRUE))</code></pre>
+<pre class="bg-success"><code>##  [1] &quot;0000000000000000 e800000000       call 0x5                &quot;
+##  [2] &quot;0000000000000005 5b               pop ebx                 &quot;
+##  [3] &quot;0000000000000006 8bcb             mov ecx, ebx            &quot;
+##  [4] &quot;0000000000000008 83c31e           add ebx, 0x1e           &quot;
+##  [5] &quot;000000000000000b 33c0             xor eax, eax            &quot;
+##  [6] &quot;000000000000000d 33d2             xor edx, edx            &quot;
+##  [7] &quot;000000000000000f 8a03             mov al, [ebx]           &quot;
+##  [8] &quot;0000000000000011 8a11             mov dl, [ecx]           &quot;
+##  [9] &quot;0000000000000013 32c2             xor al, dl              &quot;
+## [10] &quot;0000000000000015 8803             mov [ebx], al           &quot;
+## [11] &quot;0000000000000017 3c00             cmp al, 0x0             &quot;
+## [12] &quot;0000000000000019 742b             jz 0x46                 &quot;
+## [13] &quot;000000000000001b 83c101           add ecx, 0x1            &quot;
+## [14] &quot;000000000000001e 83c301           add ebx, 0x1            &quot;
+## [15] &quot;0000000000000021 ebec             jmp 0xf                 &quot;
+## [16] &quot;0000000000000023 33ff             xor edi, edi            &quot;
+## [17] &quot;0000000000000025 bff3f9311c       mov edi, 0x1c31f9f3     &quot;
+## [18] &quot;000000000000002a b744             mov bh, 0x44            &quot;
+## [19] &quot;000000000000002c a5               movsd                   &quot;
+## [20] &quot;000000000000002d a4               movsb                   &quot;
+## [21] &quot;000000000000002e 67f9             a16 stc                 &quot;
+## [22] &quot;0000000000000030 751c             jnz 0x4e                &quot;
+## [23] &quot;0000000000000032 a5               movsd                   &quot;
+## [24] &quot;0000000000000033 e775             out 0x75, eax           &quot;
+## [25] &quot;0000000000000035 126101           adc ah, [ecx+0x1]       &quot;
+## [26] &quot;0000000000000038 04e7             add al, 0xe7            &quot;
+## [27] &quot;000000000000003a a4               movsb                   &quot;
+## [28] &quot;000000000000003b 62ec             invalid                 &quot;
+## [29] &quot;000000000000003d a7               cmpsd                   &quot;
+## [30] &quot;000000000000003e 648fc2           pop edx                 &quot;
+## [31] &quot;0000000000000041 0000             add [eax], al           &quot;
+## [32] &quot;0000000000000043 191c3a           sbb [edx+edi], ebx      &quot;
+## [33] &quot;0000000000000046 cc               int3                    &quot;</code></pre>
+<p>We then read this back into R as a data.frame</p>
+<pre class="r"><code>asm &lt;- suppressWarnings(
+  readr::read_fwf(paste(disas, collapse = &quot;\n&quot;), 
+                  col_types = &quot;ccc&quot;,
+                  col_positions = readr::fwf_widths(c(16, 16, 21)))
+)
+colnames(asm) &lt;- c(&quot;addr&quot;, &quot;bytecode&quot;, &quot;instr&quot;)
+# trim the leading 0s from addr since this is all we&#39;re using
+asm$addr &lt;- substr(asm$addr, nchar(asm$addr)-1, nchar(asm$addr))
+asm</code></pre>
+<pre class="bg-success"><code>## # A tibble: 33 x 3
+##    addr  bytecode   instr        
+##    &lt;chr&gt; &lt;chr&gt;      &lt;chr&gt;        
+##  1 00    e800000000 call 0x5     
+##  2 05    5b         pop ebx      
+##  3 06    8bcb       mov ecx, ebx 
+##  4 08    83c31e     add ebx, 0x1e
+##  5 0b    33c0       xor eax, eax 
+##  6 0d    33d2       xor edx, edx 
+##  7 0f    8a03       mov al, [ebx]
+##  8 11    8a11       mov dl, [ecx]
+##  9 13    32c2       xor al, dl   
+## 10 15    8803       mov [ebx], al
+## # … with 23 more rows</code></pre>
+<p>The last instruction, <code>int3</code>, is an interrupt, but let’s generalise it to a <code>halt</code> because we’ll be done</p>
+<pre class="r"><code>asm[33, &quot;instr&quot;] &lt;- &quot;halt&quot;</code></pre>
+<p>We can run this with <code>{rx86}</code>… we need a memory array and some registers</p>
+<pre class="r"><code>mem &lt;- create_mem()
+registers &lt;- create_reg()</code></pre>
+<p>Then we can run the code</p>
+<pre class="r"><code>runasm(asm)</code></pre>
+<p>As we saw earlier, the ‘code’ part of the asm is stored in <code>0x00</code> to <code>0x21</code> with the remaining addresses being used for temporary storage, from <code>0x23</code>. The operations encoded
+perform an <code>XOR</code> between the values stored at <code>0x05</code> through to <code>0x21</code> with those starting at <code>0x23</code>, storing the results starting at <code>0x23</code>.
+Extracting the memory from this offset onward (up to where it zeroes) results in</p>
+<pre class="r"><code>(mem_offset &lt;- mem[which(names(mem) == &quot;0x23&quot;):length(mem)])</code></pre>
+<pre class="bg-success"><code>##   0x23   0x24   0x25   0x26   0x27   0x28   0x29   0x2a   0x2b   0x2c   0x2d 
+## &quot;0x68&quot; &quot;0x74&quot; &quot;0x74&quot; &quot;0x70&quot; &quot;0x3a&quot; &quot;0x2f&quot; &quot;0x2f&quot; &quot;0x77&quot; &quot;0x77&quot; &quot;0x77&quot; &quot;0x2e&quot; 
+##   0x2e   0x2f   0x30   0x31   0x32   0x33   0x34   0x35   0x36   0x37   0x38 
+## &quot;0x64&quot; &quot;0x73&quot; &quot;0x64&quot; &quot;0x2e&quot; &quot;0x67&quot; &quot;0x6f&quot; &quot;0x76&quot; &quot;0x2e&quot; &quot;0x61&quot; &quot;0x75&quot; &quot;0x2f&quot; 
+##   0x39   0x3a   0x3b   0x3c   0x3d   0x3e   0x3f   0x40   0x41   0x42   0x43 
+## &quot;0x64&quot; &quot;0x65&quot; &quot;0x63&quot; &quot;0x6f&quot; &quot;0x64&quot; &quot;0x65&quot; &quot;0x64&quot; &quot;0x2e&quot; &quot;0x68&quot; &quot;0x74&quot; &quot;0x6d&quot; 
+##   0x44   0x45   0x46   0x47   0x48   0x49   0x4a   0x4b   0x4c   0x4d   0x4e 
+## &quot;0x6c&quot; &quot;0x00&quot; &quot;0xcc&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; 
+##   0x4f   0x50   0x51   0x52   0x53   0x54   0x55   0x56   0x57   0x58   0x59 
+## &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; 
+##   0x5a   0x5b   0x5c   0x5d   0x5e   0x5f   0x60   0x61   0x62   0x63   0x64 
+## &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; 
+##   0x65   0x66   0x67   0x68   0x69   0x6a   0x6b   0x6c   0x6d   0x6e   0x6f 
+## &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; 
+##   0x70   0x71   0x72   0x73   0x74   0x75   0x76   0x77   0x78   0x79   0x7a 
+## &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; 
+##   0x7b   0x7c   0x7d   0x7e   0x7f 
+## &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot; &quot;0x00&quot;</code></pre>
+<p>And then lastly, we need to convert this sequence of hex values into characters. I’ve added a helper which achieves this, dropping everything after the first null-terminating byte (<code>0x00</code>) then</p>
+<pre class="r"><code>hex2string(mem_offset)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;http://www.dsd.gov.au/decoded.html&quot;</code></pre>
+<p>TADA!</p>
+<p>This example is stored along with the package as a vignette, so</p>
+<pre class="r"><code>vignette(&quot;dsd_ruxcon_challenge&quot;, package = &quot;rx86&quot;)</code></pre>
+<p>The link in this solution just redirects to the ASD frontpage since the puzzle is now over 10 years old, but when it was active it led to a page with some binary</p>
+<pre><code>0100 0011 0100 1111 0100 1110 0100 0111 0101 0010 0100 0001 0101 0100 0101
+0101 0100 1100 0100 0001 0101 0100 0100 1001 0100 1111 0100 1110 0101 0011</code></pre>
+<p>Originally, I solved this part at the command line by storing this code in a file named <code>decoded</code> and running a similar <code>bc</code> conversion to before, but this time from binary (ibase=2) to hex (obase=16), storing the result in <code>decoded.hex</code></p>
+<pre class="bash"><code>for bin in $(cat decoded) ; do echo &quot;obase=16;ibase=2; $bin&quot; | bc &gt;&gt; decoded.hex ; done</code></pre>
+<p>From there, removing the line breaks and spaces, and passing through <code>xxd</code> in reverse (similar to <code>hexdump</code> but reverse works on my machine)</p>
+<pre class="bash"><code>cat decoded.hex | tr &#39;\n&#39; &#39; &#39; | sed &#39;s/ //g&#39; | xxd -r -p </code></pre>
+<p>Again, I’ll hold off showing the answer, but it was correct.</p>
+<p>It would be satisfying to also do this in R, so I added another helper in <code>{rx86}</code> that does this conversion - it’s not terribly complex, but involves splitting a string into pairs of strings (split at some point) and a conversion</p>
+<pre class="r"><code>split_pairs &lt;- function(x, split = &quot;&quot;) {
+  sst &lt;- strsplit(x, split)[[1]]
+  out &lt;- paste0(sst[c(TRUE, FALSE)], sst[c(FALSE, TRUE)])
+  paste0(out, collapse = &quot;,&quot;)
+}
+
+bin2ascii &lt;- function(bin) {
+  nolb &lt;- gsub(&quot;\n&quot;, &quot; &quot;, bin)
+  split &lt;- strsplit(split_pairs(paste(nolb, collapse = &quot; &quot;), split = &quot; &quot;), &quot;,&quot;)[[1]]
+  ints &lt;- strtoi(split, base = 2)
+  intToUtf8(ints)
+}</code></pre>
+<p>It appears to do the job</p>
+<pre class="r"><code>binary &lt;- &quot;0100 0011 0100 1111 0100 1110 0100 0111 0101 0010 0100 0001 0101 0100 0101
+0101 0100 1100 0100 0001 0101 0100 0100 1001 0100 1111 0100 1110 0101 0011&quot;
+
+bin2ascii(binary)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;CONGRATULATIONS&quot;</code></pre>
+<p>There, an (almost) entirely R solution to the puzzle, and all it took was writing my own x86 assembly parser.</p>
+<p>I did want to see if I’d made my parser too specific and it only worked with this one example around which I’d designed it, so I wanted to add another example. This
+journey started with the book ‘Code’, so it felt fitting to use an example from there. In the book, an example of multiplying two 8-bit numbers is used, which
+involved an <code>ADC</code> (add with carry) operation to handle overflow. This seemed like a good candidate, and I started coding it, but soon realised that the exact routine
+relied on an <code>add al, 0xff</code> which has the effect of adding -1 in 8-bit, but on my machine</p>
+<pre class="r"><code>as.integer(0xff)</code></pre>
+<pre class="bg-success"><code>## [1] 255</code></pre>
+<p>and</p>
+<pre class="r"><code>as.hexmode(-1)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ffffffff&quot;</code></pre>
+<p>which isn’t compatible. I <em>could</em> instead code a <code>SUB</code> opcode and <code>sub al, 0x01</code> (which I did) but at this point I decided to abandon the 8-bit idea and simplify down to just doing essential part of the program which multiplies 127 and 28 through repeated additions (via a loop). The asm for this is also stored in the package, and executing it is as simple as</p>
+<pre class="r"><code>mult_asm &lt;- suppressWarnings(
+  readr::read_fwf(system.file(&quot;asm&quot;, &quot;mult.asm&quot;, package = &quot;rx86&quot;), 
+                  col_types = &quot;ccc&quot;,
+                  col_positions = readr::fwf_widths(c(3, 6, 20)))
+)
+colnames(mult_asm) &lt;- c(&quot;addr&quot;, &quot;bytecode&quot;, &quot;instr&quot;)
+print(mult_asm)</code></pre>
+<pre class="bg-success"><code>## # A tibble: 14 x 3
+##    addr  bytecode instr         
+##    &lt;chr&gt; &lt;chr&gt;    &lt;chr&gt;         
+##  1 00    101005   mov al, [0x22]
+##  2 03    201001   add al, [0x20]
+##  3 06    111005   mov [0x22], al
+##  4 09    101004   mov al, [0x21]
+##  5 0c    221000   sub al, 0x01  
+##  6 0f    111004   mov 0x21, al  
+##  7 12    101003   jnz 0x00      
+##  8 15    20001e   halt          
+##  9 18    111003   invalid       
+## 10 1b    330000   invalid       
+## 11 1e    ff00     invalid       
+## 12 20    a7       data 167      
+## 13 21    1c       data 28       
+## 14 22    00       result</code></pre>
+<p>Again, we need a new memory array and some registers</p>
+<pre class="r"><code>mem &lt;- create_mem(len = 64)
+registers &lt;- create_reg()</code></pre>
+<p>Then run the code</p>
+<pre class="r"><code>runasm(mult_asm)</code></pre>
+<p>The final result can be extracted but it is still a hex value</p>
+<pre class="r"><code>mem[sanitize(0x22)]</code></pre>
+<pre class="bg-success"><code>##     0x22 
+## &quot;0x1244&quot;</code></pre>
+<p>Converting it to an integer gives the expected result</p>
+<pre class="r"><code>as.integer(mem[sanitize(0x22)])</code></pre>
+<pre class="bg-success"><code>## [1] 4676</code></pre>
+<pre class="r"><code>167*28</code></pre>
+<pre class="bg-success"><code>## [1] 4676</code></pre>
+<p>This, too, is stored as a vignette in the package, and can be found with</p>
+<pre class="r"><code>vignette(&quot;mult_code_petzold&quot;, package = &quot;rx86&quot;)</code></pre>
+<p>The package is far from perfect, and only supports what I needed it to, but I’ve learned a lot about assembly and got to build something I’ve always wanted to. Plus I’ve finally written up my process for this puzzle that has been sitting on a disused laptop for a decade.</p>
+<p>That’s not quite the end, though - I really wanted to test out what I’ve learned so far, and what good is a new programming ability without a “Hello, world!” example?</p>
+<p>Almost all of the examples I found floating around use ‘modern’ asm (without the bytecode) and allow such luxuries as “storing a string” and “system calls” - none of that here, thank you. Instead, I added a new opcode mnemonic <code>int 0x80</code> which sort of does what it should - it writes to screen the value (converted to character) of whatever is in the register <code>eax</code>. That’s helpful, but I still need
+the assembly that will use that. This is where I feel I’ve actually hand-programmed something myself. This is a piece of code that could literally have been punched into a <a href="https://en.wikipedia.org/wiki/Punched_card">card</a></p>
+<div class="figure">
+<img src="images/Used_Punchcard_(5151286161).jpg" alt="" />
+<p class="caption">Punch card</p>
+</div>
+<p>The whole thing works, of course</p>
+<pre class="r"><code>hello_asm &lt;- suppressWarnings(
+  readr::read_fwf(system.file(&quot;asm&quot;, &quot;helloworld.asm&quot;, package = &quot;rx86&quot;), 
+                  col_types = &quot;ccc&quot;,
+                  col_positions = readr::fwf_widths(c(3, 3, 20)))
+)
+colnames(hello_asm) &lt;- c(&quot;addr&quot;, &quot;bytecode&quot;, &quot;instr&quot;)
+print(hello_asm)</code></pre>
+<pre class="bg-success"><code>## # A tibble: 23 x 3
+##    addr  bytecode instr        
+##    &lt;chr&gt; &lt;chr&gt;    &lt;chr&gt;        
+##  1 00    10       mov ecx, 0x0e
+##  2 01    10       mov al, 0x08 
+##  3 02    10       mov eax, [al]
+##  4 03    cc       int 0x80     
+##  5 04    28       sub ecx, 0x01
+##  6 05    70       jz 0x17      
+##  7 06    05       add al, 0x01 
+##  8 07    e9       jmp 0x02     
+##  9 08    48       data         
+## 10 09    65       data         
+## # … with 13 more rows</code></pre>
+<pre class="r"><code>mem &lt;- create_mem()
+registers &lt;- create_reg()
+
+runasm(hello_asm)</code></pre>
+<pre class="bg-success"><code>## Hello, world!</code></pre>
+<p>and I find that honestly, ridiculous.</p>
+<p>This, too, is included in the package as</p>
+<pre class="r"><code>vignette(&quot;helloworld&quot;, package = &quot;rx86&quot;)</code></pre>
+<p>I’m satisfied that <code>{rx86}</code> works, at least in some sense.</p>
+<p>I’ve learned a lot along the way, and who knows, maybe I’ll add some <a href="https://en.wikipedia.org/wiki/X86_instruction_listings">more opcodes</a> to the package. If you have some suggestions, please let me know!</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 4.0.3 (2020-10-10)
+##  os       Pop!_OS 20.10               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2021-12-22                  
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date       lib source        
+##  base64enc     0.1-3   2015-07-28 [1] CRAN (R 4.0.3)
+##  blogdown      1.7     2021-12-19 [1] CRAN (R 4.0.3)
+##  bookdown      0.24    2021-09-02 [1] CRAN (R 4.0.3)
+##  bslib         0.3.1   2021-10-06 [1] CRAN (R 4.0.3)
+##  callr         3.5.1   2020-10-13 [1] CRAN (R 4.0.3)
+##  cli           3.1.0   2021-10-27 [1] CRAN (R 4.0.3)
+##  crayon        1.3.4   2017-09-16 [1] CRAN (R 4.0.3)
+##  desc          1.4.0   2021-09-28 [1] CRAN (R 4.0.3)
+##  devtools      2.3.2   2020-09-18 [1] CRAN (R 4.0.3)
+##  digest        0.6.27  2020-10-24 [1] CRAN (R 4.0.3)
+##  dplyr         1.0.2   2020-08-18 [1] CRAN (R 4.0.3)
+##  ellipsis      0.3.1   2020-05-15 [1] CRAN (R 4.0.3)
+##  evaluate      0.14    2019-05-28 [1] CRAN (R 4.0.3)
+##  fansi         0.4.1   2020-01-08 [1] CRAN (R 4.0.3)
+##  fastmap       1.1.0   2021-01-25 [1] CRAN (R 4.0.3)
+##  fs            1.5.0   2020-07-31 [1] CRAN (R 4.0.3)
+##  generics      0.1.0   2020-10-31 [1] CRAN (R 4.0.3)
+##  glue          1.4.2   2020-08-27 [1] CRAN (R 4.0.3)
+##  hms           0.5.3   2020-01-08 [1] CRAN (R 4.0.3)
+##  htmltools     0.5.2   2021-08-25 [1] CRAN (R 4.0.3)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.0.3)
+##  jsonlite      1.7.2   2020-12-09 [1] CRAN (R 4.0.3)
+##  knitr         1.37    2021-12-16 [1] CRAN (R 4.0.3)
+##  lifecycle     1.0.1   2021-09-24 [1] CRAN (R 4.0.3)
+##  magrittr      2.0.1   2020-11-17 [1] CRAN (R 4.0.3)
+##  memoise       1.1.0   2017-04-21 [1] CRAN (R 4.0.3)
+##  pillar        1.4.7   2020-11-20 [1] CRAN (R 4.0.3)
+##  pkgbuild      1.2.0   2020-12-15 [1] CRAN (R 4.0.3)
+##  pkgconfig     2.0.3   2019-09-22 [1] CRAN (R 4.0.3)
+##  pkgload       1.1.0   2020-05-29 [1] CRAN (R 4.0.3)
+##  prettyunits   1.1.1   2020-01-24 [1] CRAN (R 4.0.3)
+##  processx      3.4.5   2020-11-30 [1] CRAN (R 4.0.3)
+##  ps            1.5.0   2020-12-05 [1] CRAN (R 4.0.3)
+##  purrr         0.3.4   2020-04-17 [1] CRAN (R 4.0.3)
+##  R6            2.5.0   2020-10-28 [1] CRAN (R 4.0.3)
+##  readr         1.4.0   2020-10-05 [1] CRAN (R 4.0.3)
+##  remotes       2.2.0   2020-07-21 [1] CRAN (R 4.0.3)
+##  rlang         0.4.10  2020-12-30 [1] CRAN (R 4.0.3)
+##  rmarkdown     2.11    2021-09-14 [1] CRAN (R 4.0.3)
+##  rprojroot     2.0.2   2020-11-15 [1] CRAN (R 4.0.3)
+##  rstudioapi    0.13    2020-11-12 [1] CRAN (R 4.0.3)
+##  rx86        * 0.1.0   2021-12-22 [1] local         
+##  sass          0.4.0   2021-05-12 [1] CRAN (R 4.0.3)
+##  sessioninfo   1.1.1   2018-11-05 [1] CRAN (R 4.0.3)
+##  stringi       1.5.3   2020-09-09 [1] CRAN (R 4.0.3)
+##  stringr       1.4.0   2019-02-10 [1] CRAN (R 4.0.3)
+##  testthat      3.0.1   2020-12-17 [1] CRAN (R 4.0.3)
+##  tibble        3.0.4   2020-10-12 [1] CRAN (R 4.0.3)
+##  tidyr         1.1.2   2020-08-27 [1] CRAN (R 4.0.3)
+##  tidyselect    1.1.0   2020-05-11 [1] CRAN (R 4.0.3)
+##  usethis       2.1.5   2021-12-09 [1] CRAN (R 4.0.3)
+##  utf8          1.1.4   2018-05-24 [1] CRAN (R 4.0.3)
+##  vctrs         0.3.6   2020-12-17 [1] CRAN (R 4.0.3)
+##  withr         2.3.0   2020-09-22 [1] CRAN (R 4.0.3)
+##  xfun          0.29    2021-12-14 [1] CRAN (R 4.0.3)
+##  yaml          2.2.1   2020-02-01 [1] CRAN (R 4.0.3)
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.0
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>

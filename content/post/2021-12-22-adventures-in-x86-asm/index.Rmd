@@ -1,0 +1,502 @@
+---
+title: Adventures in x86 ASM
+author: Jonathan Carroll
+date: '2021-12-22'
+slug: adventures-in-x86-asm
+categories: [R]
+tags: [rstats]
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(rx86)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+I just finished ['Code: The Hidden Language of Computer Hardware and Software'](https://en.wikipedia.org/wiki/Code:_The_Hidden_Language_of_Computer_Hardware_and_Software) by Charles Petzold which was a really well-written (in my opinion) guided journey from flashing a light in morse code through to building a whole computer, and everything needed along the way.
+
+The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I 
+remembered that it's not the first time I've played with assembly...
+
+![random x86 instructions](images/X86_Assembly_Listing_for_ComplexAdd.png)
+
+<!--more-->
+
+I just finished ['Code: The Hidden Language of Computer Hardware and Software'](https://en.wikipedia.org/wiki/Code:_The_Hidden_Language_of_Computer_Hardware_and_Software) by Charles Petzold which was a really well-written (in my opinion) guided journey from flashing a light in morse code through to building a whole computer, and everything needed along the way.
+
+The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I 
+remembered that it's not the first time I've played with assembly...
+
+Years and years ago (I don't recall how it actually started) I spent some time trying to solve a puzzle. I don't recall whether I saw the puzzle or a solution first, but I do remember wanting to be able to understand it properly, and ideally be able to use some software _I wrote_ to reach the solution.
+
+The puzzle was just a set of characters on a poster for the (then named) Australian Defence Signals Directorate (now the [Australian Signals Directorate](https://www.asd.gov.au/) - one of our Secret Squirrel orgs) at [ruxcon](https://ruxcon.org.au/) in 2011
+
+![ruxcon2011 DSD poster](images/dsd_poster.JPG)
+
+Yes, that was a long time ago, but I never wrote up what I did, and now seems like a good time to get really distracted.
+
+I would be surprised if I understood it well enough at the time, so I suspect I was aware of [this blogpost](http://0xdec0.blogspot.com/2011/12/ruxcon-dsd-challenge.html) which walks through the solution (spoilers). Nonetheless, I wanted to be able to do that myself, not just follow some instructions - I was confident that I could write enough code (of some sort) to go from this sequence of letters and symbols to the final solution.
+
+My attempts at the time were mostly command-line attempts; the blog post linked above uses only web services, so that felt like I could make it 'my own'. I first needed to get the characters into my computer - that's just writing them out to a text file, say, a file called `dsd`
+```{bash, eval = FALSE}
+# dsd:
+6AAAAABbi8uDwx4zwDPSigOK
+ETLCiAM8AHQrg8EBg8MB6+wz
+/7/z+TEct0SlpGf5dRyl53US
+YQEE56Ri7Kdkj8IAABkcOsw=
+```
+Knowing that this is base-64 encoded, I can decode it with `hexdump`
+```{bash, eval = FALSE}
+cat dsd | base64 -d | hexdump -C
+
+00000000  e8 00 00 00 00 5b 8b cb  83 c3 1e 33 c0 33 d2 8a  |.....[.....3.3..|
+00000010  03 8a 11 32 c2 88 03 3c  00 74 2b 83 c1 01 83 c3  |...2...<.t+.....|
+00000020  01 eb ec 33 ff bf f3 f9  31 1c b7 44 a5 a4 67 f9  |...3....1..D..g.|
+00000030  75 1c a5 e7 75 12 61 01  04 e7 a4 62 ec a7 64 8f  |u...u.a....b..d.|
+00000040  c2 00 00 19 1c 3a cc                              |.....:.|
+00000047
+```
+To just get the bytecode, I used some different options and saved the file as `dsd.hex`
+```{bash, eval = FALSE}
+cat dsd | base64 -d | hexdump  -v -e '/1 %02X ' > dsd.hex
+
+# dsd.hex:
+E8 00 00 00 00 5B 8B CB 83 C3 1E 33 C0 33 D2 8A 03 8A 11 32 C2 88 03 3C 00 74 2B 83 C1 01 83 C3 01 EB EC 33 FF BF F3 F9 31 1C B7 44 A5 A4 67 F9 75 1C A5 E7 75 12 61 01 04 E7 A4 62 EC A7 64 8F C2 00 00 19 1C 3A CC 
+```
+I did go a similar route to the linked blogpost and converted these bytes to shellcode, wrapped them in a C program and disassembled it with `gdb`, but much simpler was to use a better tool, in this case [udis](http://udis86.sourceforge.net/) which I needed to install separately. This 
+gives the same result as the blogpost, which was nice
+```{bash, eval = FALSE}
+udcli -x dsd.hex > dsd.hex.asm
+
+# dsd.hex.asm:
+0000000000000000 e800000000       call 0x5                
+0000000000000005 5b               pop ebx                 
+0000000000000006 8bcb             mov ecx, ebx            
+0000000000000008 83c31e           add ebx, 0x1e           
+000000000000000b 33c0             xor eax, eax            
+000000000000000d 33d2             xor edx, edx            
+000000000000000f 8a03             mov al, [ebx]           
+0000000000000011 8a11             mov dl, [ecx]           
+0000000000000013 32c2             xor al, dl              
+0000000000000015 8803             mov [ebx], al           
+0000000000000017 3c00             cmp al, 0x0             
+0000000000000019 742b             jz 0x46                 
+000000000000001b 83c101           add ecx, 0x1            
+000000000000001e 83c301           add ebx, 0x1            
+0000000000000021 ebec             jmp 0xf                 
+0000000000000023 33ff             xor edi, edi            
+0000000000000025 bff3f9311c       mov edi, 0x1c31f9f3     
+000000000000002a b744             mov bh, 0x44            
+000000000000002c a5               movsd                   
+000000000000002d a4               movsb                   
+000000000000002e 67f9             a16 stc                 
+0000000000000030 751c             jnz 0x4e                
+0000000000000032 a5               movsd                   
+0000000000000033 e775             out 0x75, eax           
+0000000000000035 126101           adc ah, [ecx+0x1]       
+0000000000000038 04e7             add al, 0xe7            
+000000000000003a a4               movsb                   
+000000000000003b 62ec             invalid                 
+000000000000003d a7               cmpsd                   
+000000000000003e 648fc2           pop edx                 
+0000000000000041 0000             add [eax], al           
+0000000000000043 191c3a           sbb [edx+edi], ebx      
+0000000000000046 cc               int3                    
+```
+At this point, I got a bit lost (at the time) because I didn't understand assembly well enough (or at all), so, continuing with the logic presented in the linked blogpost, I considered just working with the bytes directly.
+
+All we really need to do it take the bytes starting at `0x5` and `0x23` and `xor` them. I figured I'll need the decimal value of these addresses; `0x5` is just 5, but `0x23` = 16*2 + 3 = 35. We can of course get this via `printf`
+```{bash, eval = TRUE}
+printf "%d\n" 0x23 
+```
+or less simply with the built-in calculator tool `bc`, going from (input) base 16 to (output) base 10
+```{bash, eval = TRUE}
+echo "obase=10;ibase=16; 23" | bc
+```
+I placed the bytes in sequence (removing spaces) with
+```{bash, eval = FALSE}
+str=$(cat dsd.hex | sed 's/ //g')
+echo $str
+```
+```{bash, echo = FALSE}
+echo E8000000005B8BCB83C31E33C033D28A038A1132C288033C00742B83C10183C301EBEC33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC20000191C3ACC
+```
+Since I have 2 characters per hex, `0x5` starts at character 10, and `0x23` starts at character 70, so we define our strings as
+```{bash, eval = FALSE}
+astr=${str:70} # 0x23 to end
+echo $astr
+```
+```{bash, echo = FALSE}
+echo 33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC20000191C3ACC
+```
+and
+```{bash, eval = FALSE}
+$ bstr=${str:10} # 0x5 to end
+$ echo $bstr
+```
+```{bash, echo = FALSE}
+echo 5B8BCB83C31E33C033D28A038A1132C288033C00742B83C10183C301EBEC33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC20000191C3ACC
+```
+There is overlap here, which we will have to deal with when we get to it. For now, we want to `xor` these. Let's cut these down to 60 characters (where they start to overlap)
+```{bash, eval = FALSE}
+trimastr=${astr:0:60}
+echo $trimastr
+```
+```{bash, echo = FALSE}
+echo 33FFBFF3F9311CB744A5A467F9751CA5E77512610104E7A462ECA7648FC2
+```
+```{bash, eval = FALSE}
+trimbstr=${bstr:0:60}
+echo $trimbstr
+```
+```{bash, echo = FALSE}
+echo 5B8BCB83C31E33C033D28A038A1132C288033C00742B83C10183C301EBEC
+```
+The command `xor` (`^`) chokes on this many digits (in fact, any more than about 8) so I've written a script to `xor` the characters one at a time:
+```{bash, eval = FALSE}
+for i in {0..59} ; do echo $(( 0x${astr:$i:1} ^ 0x${bstr:$i:1} )) | awk '{printf "%X",$0}' ; done > xor.dat
+
+# xor.dat:
+687474703A2F2F7777772E6473642E676F762E61752F6465636F6465642E
+```
+What about that bit that overlapped? we only xored the first 60 characters, but the length of the string is
+```{bash, eval = FALSE}
+echo ${#astr}
+```
+```{bash, echo = FALSE}
+echo 72
+```
+so we need those first 12 (72-12) characters (6 hex) of overlap
+```{bash, eval = FALSE}
+olap1=${astr:60:12}
+echo $olap1
+```
+```{bash, echo = FALSE}
+echo 0000191C3ACC
+```
+
+The assembly code would have overwritten the overlapped part by the time it reached there, so we need to `xor` with the `xor`'d part, i.e. the first 12 characters of `xor.dat`
+```{bash, eval = FALSE}
+olap2=$(cat xor.dat | cut -c -12)
+echo $olap2
+```
+```{bash, echo = FALSE}
+echo 687474703A2F
+```
+Now, finally, do the last `xor` (`^`)
+```{bash, eval = FALSE}
+for i in {0..11} ; do echo $(( 0x${olap1:$i:1} ^ 0x${olap2:$i:1} )) | awk '{printf "%X",$0}' ; done > xorolap.dat
+
+# xorolap.dat:
+68746D6C00E3
+```
+so this needs to go at the end of our xor.dat
+```{bash, eval = FALSE}
+cat xor.dat xorolap.dat > xorfinal.dat
+
+# xorfinal.dat:
+687474703A2F2F7777772E6473642E676F762E61752F6465636F6465642E68746D6C00E3
+```
+
+The final `00` and after is useless, so let's drop it. Finally, we just need to convert this back to text using `xxd -r`
+```{bash, eval = FALSE}
+cat xorfinal.dat | sed 's/[0]\{2\}.*//' | xxd -r -p > dsd.sol
+```
+
+Phew. I'm not going to reveal the solution just yet, because this isn't the end of the story (but I did get the right answer).
+
+So, that's a commandline solution to (at least this part) of the puzzle. But now I know R!
+
+Learning more about assembly from the book 'Code', it occurred to me that the 
+operations - which could be implemented with something as simple as telegraph relays (or [crabs](https://hackaday.com/2012/09/28/making-logic-gates-out-of-crabs/)) - were just operations on data. Given an input, produce an output (sort of). A `MOV` operation just moved some value stored at some address to another address (or to/from a register). This felt like it could be simple enough to encode in some R functions. Perhaps not some "pure" R functions, because I _want_ the side-effect of altering a global memory bank, but surely I could do simple things like `ADD`.
+
+I looked around to see if someone else had done this before. As is usually the case with odd requests, Mike (a.k.a. [@coolbutuseless](https://github.com/coolbutuseless)) has done something similar in the form of [r64](https://github.com/coolbutuseless/r64) which I didn't appreciate was a sufficiently distinct flavour of assembly (I never had a Commodore64, we had an [Amstrad CPC664](https://en.wikipedia.org/wiki/Amstrad_CPC#CPC664) on which I really only played games). After a quick [PR](https://github.com/coolbutuseless/r64/pull/1) to bring that repo up to date with other changes by the author (a migration of one dependency) I realised this wasn't what I needed, but did learn a lot from how it was structured.
+
+Okay, on to building something myself. I knew I'd need some memory and some registers. The registers seemed easy - they wouldn't hold a lot and I could address them by name, e.g. `eax`. An environment seemed natural, both because of the named list structure, and because I knew it would be mutable. That seemed like a benefit for this use-case - having a global set of registers I could move data in and out of without making copies of the thing or passing it around everywhere.
+
+Next I'd need memory. I figured a vector of hex value made sense, but I wanted to be able to refer to the first one as `0x00`. Now, the names of a vector need to be a character vector - you can't use the actual hex values
+```{r, error = TRUE}
+memory <- c(0x00 = 0x19, 0x01 = 0x1a, 0x02 = 0x1b)
+```
+so we need to use character strings
+```{r}
+memory <- c("0x00" = 0x19, "0x01" = 0x1a, "0x02" = 0x1b)
+memory
+```
+More importantly, we'll need to ensure we _only_ refer to these by the character 
+strings because `[` first tries a coercion to integer, which, side-note, is why this works 
+```{r}
+(1:10)[2.3] # since as.integer(2.3) == 2
+(1:10)[4.7] # since as.integer(4.7) == 4
+```
+The risk is that we use a hex value to extract an element, in which case we might accidentally try to get the first value with
+```{r}
+memory[0x00]
+```
+Instead, we want
+```{r}
+memory["0x00"]
+```
+In order to make sure we always do this, we need a `sanitize()` function which 
+always returns the string.
+
+We can convert a value to hexmode with `as.hexmode`, but that's a lot of typing, so I added an alias as
+```{r, eval = FALSE}
+hex <- as.hexmode
+```
+
+For processing assembly instructions, we might see something like 
+```{bash, eval = FALSE}
+mov eax, 0x5
+```
+which should move the value `0x5` into the register `eax`... so we'll need a way 
+to distinguish direct addresses from registers. Worse still, we might refer to the address stored in a register, as `[eax]`. A `reg_or_val()` function would identify anything which points to an address (containing a `[`), any of the named registers, or a value, and would return the address (or where that points).
+
+With all of those pieces, the only thing left is to actually be able to run code.
+
+Assembly runs sequentially through the instructions, unless we encounter some flow 
+control opcodes (e.g. `JMP` - jump to address - I'll keep calling them opcodes but mnemonics is a more correct term). The basic process would then be to 
+read in the instruction, identify the opcode and the arguments, and execute, modifying the memory and registers in-place. Once that's done, we move to the next instruction.
+
+With flow control we might need to identify a _different_ address to go to next, and that might depend on the status of the registers, for example `JNZ 0x00` jumps to address `0x00` if the zero flag is _not_ set. So, we can execute the current instruction but then apply any flag-based logic to see if we need to go to a new address, and go wherever we should go go next. This is implemented as `runasm()`
+
+That takes care of running the code, but what are we running? Oh, operations. Right. Well, we need some of those. Going through the opcodes I need for the puzzle, I'll need the following:
+```
+call
+pop
+mov
+add
+xor
+cmp
+jz
+jmp
+halt
+```
+`CALL` just pushes a value onto the stack (register `esp`), `POP` retrieves it and
+stores it at an address, `MOV` as we said moves a value from place to place, `ADD` 
+adds two values, `XOR` does what it suggests, and so on. These don't seem tricky to implement, for example
+```{r, eval = FALSE}
+mov <- function(x, y) {
+  # copy y into x
+  res <- hex(reg_or_val(y))
+  if (x %in% names(registers)) {
+    assign(x, res, envir = registers)
+  } else {
+    mem[sanitize(x)] <<- sanitize(res)
+  }
+  return(invisible(NULL))
+}
+```
+The wrinkle will be that particular instructions _also_ update registers, for 
+example an `ADD` stores whether the result was `0x00` in the zero-flag register
+```{r, eval = FALSE}
+function(x, y) {
+  # add y to x and save in x
+  res <- hex(reg_or_val(x)) + hex(reg_or_val(y))
+  if (x %in% names(registers)) {
+    assign(x, res, envir = registers)
+  } else {
+    mem[sanitize(x)] <<- sanitize(res)
+  }
+  assign("zf", hex(as.integer(res == 0x00)), envir = registers)
+  return(invisible(x))
+}
+```
+A `JMP` (or other jump) will check this register and jump (or not) accordingly.
+
+With these pieces in place, an R package was a natural home for the code, so I can now present the `{rx86}` package: https://github.com/jonocarroll/rx86
+
+Let's use it to solve the puzzle!!!
+
+Starting with the puzzle string
+```{r}
+dsd <- "6AAAAABbi8uDwx4zwDPSigOK
+ETLCiAM8AHQrg8EBg8MB6+wz
+/7/z+TEct0SlpGf5dRyl53US
+YQEE56Ri7Kdkj8IAABkcOsw="
+```
+we decode it (this time in R)
+
+```{r}
+(b64 <- base64enc::base64decode(dsd))
+```
+This will be the only non-R part: we still need to disassemble the bytecode into assembly, but we can do that _from_ R with a `system()` call to `udcli`
+```{r}
+(disas <- system("udcli -x", input = paste(b64, collapse = " "), intern = TRUE))
+```
+We then read this back into R as a data.frame
+```{r}
+asm <- suppressWarnings(
+  readr::read_fwf(paste(disas, collapse = "\n"), 
+                  col_types = "ccc",
+                  col_positions = readr::fwf_widths(c(16, 16, 21)))
+)
+colnames(asm) <- c("addr", "bytecode", "instr")
+# trim the leading 0s from addr since this is all we're using
+asm$addr <- substr(asm$addr, nchar(asm$addr)-1, nchar(asm$addr))
+asm
+```
+The last instruction, `int3`, is an interrupt, but let's generalise it to a `halt` because we'll be done
+```{r}
+asm[33, "instr"] <- "halt"
+```
+We can run this with `{rx86}`... we need a memory array and some registers
+```{r}
+mem <- create_mem()
+registers <- create_reg()
+```
+Then we can run the code
+```{r}
+runasm(asm)
+```
+As we saw earlier, the 'code' part of the asm is stored in `0x00` to `0x21` with the remaining addresses being used for temporary storage, from `0x23`. The operations encoded 
+perform an `XOR` between the values stored at `0x05` through to `0x21` with those starting at `0x23`, storing the results starting at `0x23`.
+Extracting the memory from this offset onward (up to where it zeroes) results in
+```{r}
+(mem_offset <- mem[which(names(mem) == "0x23"):length(mem)])
+```
+And then lastly, we need to convert this sequence of hex values into characters. I've added a helper which achieves this, dropping everything after the first null-terminating byte (`0x00`) then 
+```{r}
+hex2string(mem_offset)
+```
+TADA!
+
+This example is stored along with the package as a vignette, so
+```{r, eval = FALSE}
+vignette("dsd_ruxcon_challenge", package = "rx86")
+```
+The link in this solution just redirects to the ASD frontpage since the puzzle is now over 10 years old, but when it was active it led to a page with some binary
+```
+0100 0011 0100 1111 0100 1110 0100 0111 0101 0010 0100 0001 0101 0100 0101
+0101 0100 1100 0100 0001 0101 0100 0100 1001 0100 1111 0100 1110 0101 0011
+```
+Originally, I solved this part at the command line by storing this code in a file named `decoded` and running a similar `bc` conversion to before, but this time from binary (ibase=2) to hex (obase=16), storing the result in `decoded.hex`
+```{bash, eval = FALSE}
+for bin in $(cat decoded) ; do echo "obase=16;ibase=2; $bin" | bc >> decoded.hex ; done
+```
+From there, removing the line breaks and spaces, and passing through `xxd` in reverse (similar to `hexdump` but reverse works on my machine)
+```{bash, eval = FALSE}
+cat decoded.hex | tr '\n' ' ' | sed 's/ //g' | xxd -r -p 
+```
+Again, I'll hold off showing the answer, but it was correct.
+
+It would be satisfying to also do this in R, so I added another helper in `{rx86}` that does this conversion - it's not terribly complex, but involves splitting a string into pairs of strings (split at some point) and a conversion
+```{r}
+split_pairs <- function(x, split = "") {
+  sst <- strsplit(x, split)[[1]]
+  out <- paste0(sst[c(TRUE, FALSE)], sst[c(FALSE, TRUE)])
+  paste0(out, collapse = ",")
+}
+
+bin2ascii <- function(bin) {
+  nolb <- gsub("\n", " ", bin)
+  split <- strsplit(split_pairs(paste(nolb, collapse = " "), split = " "), ",")[[1]]
+  ints <- strtoi(split, base = 2)
+  intToUtf8(ints)
+}
+```
+It appears to do the job
+```{r}
+binary <- "0100 0011 0100 1111 0100 1110 0100 0111 0101 0010 0100 0001 0101 0100 0101
+0101 0100 1100 0100 0001 0101 0100 0100 1001 0100 1111 0100 1110 0101 0011"
+
+bin2ascii(binary)
+```
+There, an (almost) entirely R solution to the puzzle, and all it took was writing my own x86 assembly parser. 
+
+I did want to see if I'd made my parser too specific and it only worked with this one example around which I'd designed it, so I wanted to add another example. This 
+journey started with the book 'Code', so it felt fitting to use an example from there. In the book, an example of multiplying two 8-bit numbers is used, which 
+involved an `ADC` (add with carry) operation to handle overflow. This seemed like a good candidate, and I started coding it, but soon realised that the exact routine 
+relied on an `add al, 0xff` which has the effect of adding -1 in 8-bit, but on my machine
+```{r}
+as.integer(0xff)
+```
+and
+```{r}
+as.hexmode(-1)
+```
+which isn't compatible. I _could_ instead code a `SUB` opcode and `sub al, 0x01` (which I did) but at this point I decided to abandon the 8-bit idea and simplify down to just doing essential part of the program which multiplies 127 and 28 through repeated additions (via a loop). The asm for this is also stored in the package, and executing it is as simple as
+```{r}
+mult_asm <- suppressWarnings(
+  readr::read_fwf(system.file("asm", "mult.asm", package = "rx86"), 
+                  col_types = "ccc",
+                  col_positions = readr::fwf_widths(c(3, 6, 20)))
+)
+colnames(mult_asm) <- c("addr", "bytecode", "instr")
+print(mult_asm)
+```
+Again, we need a new memory array and some registers
+```{r}
+mem <- create_mem(len = 64)
+registers <- create_reg()
+```
+Then run the code
+```{r}
+runasm(mult_asm)
+```
+The final result can be extracted but it is still a hex value
+```{r}
+mem[sanitize(0x22)]
+```
+Converting it to an integer gives the expected result
+```{r}
+as.integer(mem[sanitize(0x22)])
+
+167*28
+```
+This, too, is stored as a vignette in the package, and can be found with
+```{r, eval = FALSE}
+vignette("mult_code_petzold", package = "rx86")
+```
+
+The package is far from perfect, and only supports what I needed it to, but I've learned a lot about assembly and got to build something I've always wanted to. Plus I've finally written up my process for this puzzle that has been sitting on a disused laptop for a decade.
+
+That's not quite the end, though - I really wanted to test out what I've learned so far, and what good is a new programming ability without a "Hello, world!" example?
+
+Almost all of the examples I found floating around use 'modern' asm (without the bytecode) and allow such luxuries as "storing a string" and "system calls" - none of that here, thank you. Instead, I added a new opcode mnemonic `int 0x80` which sort of does what it should - it writes to screen the value (converted to character) of whatever is in the register `eax`. That's helpful, but I still need 
+the assembly that will use that. This is where I feel I've actually hand-programmed something myself. This is a piece of code that could literally have been punched into a [card](https://en.wikipedia.org/wiki/Punched_card)
+
+![Punch card](images/Used_Punchcard_(5151286161).jpg)
+
+The whole thing works, of course
+```{r}
+hello_asm <- suppressWarnings(
+  readr::read_fwf(system.file("asm", "helloworld.asm", package = "rx86"), 
+                  col_types = "ccc",
+                  col_positions = readr::fwf_widths(c(3, 3, 20)))
+)
+colnames(hello_asm) <- c("addr", "bytecode", "instr")
+print(hello_asm)
+
+mem <- create_mem()
+registers <- create_reg()
+
+runasm(hello_asm)
+```
+and I find that honestly, ridiculous.
+
+This, too, is included in the package as
+```{r, eval = FALSE}
+vignette("helloworld", package = "rx86")
+```
+I'm satisfied that `{rx86}` works, at least in some sense.
+
+I've learned a lot along the way, and who knows, maybe I'll add some [more opcodes](https://en.wikipedia.org/wiki/X86_instruction_listings) to the package. If you have some suggestions, please let me know!
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
