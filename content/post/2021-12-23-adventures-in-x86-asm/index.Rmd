@@ -25,7 +25,7 @@ I just finished ['Code: The Hidden Language of Computer Hardware and Software'](
 The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I 
 remembered that it's not the first time I've played with assembly...
 
-![x86 assembly instructions](2021-12-22-adventures-in-x86-asm/images/X86_Assembly_Listing_for_ComplexAdd.jpg)
+![x86 assembly instructions](2021/12/23/adventures-in-x86-asm/images/X86_Assembly_Listing_for_ComplexAdd.jpg)
 
 <!--more-->
 
