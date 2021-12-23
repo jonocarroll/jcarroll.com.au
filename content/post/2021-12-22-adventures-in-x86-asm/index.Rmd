@@ -1,10 +1,10 @@
 ---
-title: Adventures in x86 ASM
+title: Adventures in x86 ASM with rx86
 author: Jonathan Carroll
-date: '2021-12-22'
+date: '2021-12-23'
 slug: adventures-in-x86-asm
 categories: [R]
-tags: [rstats]
+tags: [rstats, assembly, x86, commandline]
 type: ''
 subtitle: ''
 image: ''
@@ -25,7 +25,7 @@ I just finished ['Code: The Hidden Language of Computer Hardware and Software'](
 The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I 
 remembered that it's not the first time I've played with assembly...
 
-![random x86 instructions](images/X86_Assembly_Listing_for_ComplexAdd.png)
+![random x86 instructions](images/X86_Assembly_Listing_for_ComplexAdd.jpg)
 
 <!--more-->
 
@@ -40,7 +40,7 @@ The puzzle was just a set of characters on a poster for the (then named) Austral
 
 ![ruxcon2011 DSD poster](images/dsd_poster.JPG)
 
-Yes, that was a long time ago, but I never wrote up what I did, and now seems like a good time to get really distracted.
+Yes, that was a long time ago, but I never wrote up what I did, and now seems like a good enough time to get really distracted.
 
 I would be surprised if I understood it well enough at the time, so I suspect I was aware of [this blogpost](http://0xdec0.blogspot.com/2011/12/ruxcon-dsd-challenge.html) which walks through the solution (spoilers). Nonetheless, I wanted to be able to do that myself, not just follow some instructions - I was confident that I could write enough code (of some sort) to go from this sequence of letters and symbols to the final solution.
 
@@ -480,7 +480,7 @@ registers <- create_reg()
 
 runasm(hello_asm)
 ```
-and I find that honestly, ridiculous.
+and I find that honestly, ridiculously pleasing.
 
 This, too, is included in the package as
 ```{r, eval = FALSE}

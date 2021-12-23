@@ -1,10 +1,10 @@
 ---
-title: Adventures in x86 ASM
+title: Adventures in x86 ASM with rx86
 author: Jonathan Carroll
-date: '2021-12-22'
+date: '2021-12-23'
 slug: adventures-in-x86-asm
 categories: [R]
-tags: [rstats]
+tags: [rstats, assembly, x86, commandline]
 type: ''
 subtitle: ''
 image: ''
@@ -17,7 +17,7 @@ image: ''
 <p>The section on encoding instructions for the processor (built up from logic gates) - assembly instructions as a human readable version of the machine code - was particularly interesting to me, and as I was describing this to a colleague I
 remembered that it’s not the first time I’ve played with assembly…</p>
 <div class="figure">
-<img src="images/X86_Assembly_Listing_for_ComplexAdd.png" alt="" />
+<img src="images/X86_Assembly_Listing_for_ComplexAdd.jpg" alt="" />
 <p class="caption">random x86 instructions</p>
 </div>
 <!--more-->
@@ -30,7 +30,7 @@ remembered that it’s not the first time I’ve played with assembly…</p>
 <img src="images/dsd_poster.JPG" alt="" />
 <p class="caption">ruxcon2011 DSD poster</p>
 </div>
-<p>Yes, that was a long time ago, but I never wrote up what I did, and now seems like a good time to get really distracted.</p>
+<p>Yes, that was a long time ago, but I never wrote up what I did, and now seems like a good enough time to get really distracted.</p>
 <p>I would be surprised if I understood it well enough at the time, so I suspect I was aware of <a href="http://0xdec0.blogspot.com/2011/12/ruxcon-dsd-challenge.html">this blogpost</a> which walks through the solution (spoilers). Nonetheless, I wanted to be able to do that myself, not just follow some instructions - I was confident that I could write enough code (of some sort) to go from this sequence of letters and symbols to the final solution.</p>
 <p>My attempts at the time were mostly command-line attempts; the blog post linked above uses only web services, so that felt like I could make it ‘my own’. I first needed to get the characters into my computer - that’s just writing them out to a text file, say, a file called <code>dsd</code></p>
 <pre class="bash"><code># dsd:
@@ -442,7 +442,7 @@ registers &lt;- create_reg()
 
 runasm(hello_asm)</code></pre>
 <pre class="bg-success"><code>## Hello, world!</code></pre>
-<p>and I find that honestly, ridiculous.</p>
+<p>and I find that honestly, ridiculously pleasing.</p>
 <p>This, too, is included in the package as</p>
 <pre class="r"><code>vignette(&quot;helloworld&quot;, package = &quot;rx86&quot;)</code></pre>
 <p>I’m satisfied that <code>{rx86}</code> works, at least in some sense.</p>
@@ -462,7 +462,7 @@ runasm(hello_asm)</code></pre>
 ##  collate  en_AU.UTF-8                 
 ##  ctype    en_AU.UTF-8                 
 ##  tz       Australia/Adelaide          
-##  date     2021-12-22                  
+##  date     2021-12-23                  
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
 ##  package     * version date       lib source        
