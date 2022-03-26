@@ -1,0 +1,217 @@
+---
+title: Codegolfing Minecraft Lighting
+author: Jonathan Carroll
+date: '2022-03-26'
+slug: codegolfing-minecraft-lighting
+categories:
+  - R
+tags:
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(dplyr)
+library(forcats)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I occasionally like to participate in an odd sport known as 'code golf' where the aim is to write some code to achieve a given task using the smallest number of characters. 
+
+![The tradtional way to cheat at golf is to lower your score](2022/03/26/codegolfing-minecraft-lighting/images/cheatatgolf.jpg)
+
+<!--more-->
+
+I occasionally like to participate in an odd sport known as 'code golf' where the aim is to write some code to achieve a given task using the smallest number of characters. 
+
+![The tradtional way to cheat at golf is to lower your score](2022/03/26/codegolfing-minecraft-lighting/images/cheatatgolf.jpg)
+
+R isn't optimised for this in the slightest (why would it be?) and there are other languages which have expanded character sets which are, e.g. [BQL](https://mlochbaum.github.io/BQN/), [MATL](https://github.com/lmendo/MATL), and [05AB1E](https://github.com/Adriandmen/05AB1E).
+
+These are typically short, contained problems which can be solved in a variety of ways, so they usually include some restrictions and test cases. Some are more amenable to using R, while others have better support in other languages.
+
+[This one](https://codegolf.stackexchange.com/questions/245451/recreate-minecrafts-lighting) caught my eye, partly because my kids are obsessed with Minecraft. The problem as stated:
+
+> Minecraft has a fairly unique lighting system. Each block's light value is either one less than the brightest one surrounding it, or it is a light source itself. Your task is to write a method that takes in a 2D array of light source values, and then returns a 2D array with spread out lighting, where 0 is the minimum value.
+
+```
+Input1 = [
+         [0, 0, 4, 0], 
+         [0, 0, 0, 0], 
+         [0, 2, 0, 0], 
+         [0, 0, 0, 0]
+        ]
+
+Output1 = [
+         [2, 3, 4, 3], 
+         [1, 2, 3, 2], 
+         [1, 2, 2, 1], 
+         [0, 1, 1, 0]
+        ]
+
+Input2 = [
+         [2, 0, 0, 3], 
+         [0, 0, 0, 0], 
+         [0, 0, 0, 0], 
+         [0, 0, 0, 0]
+        ]
+
+Output2 = [
+         [2, 1, 2, 3], 
+         [1, 0, 1, 2], 
+         [0, 0, 0, 1], 
+         [0, 0, 0, 0]
+        ]
+```
+
+Matrix operations? That sounds like something R can work with. I decided to have a go. There were already some answers using the golfing languages, and I can't even read those, so those aren't any help. There was at least one python answer, but I didn't want to confuse myself trying to translate an existing answer when the tooling doesn't quite work that way.
+
+Defining the input matrices is straightforward enough
+```{r}
+mtest1 <- matrix(c(0, 0, 4, 0,
+                   0, 0, 0, 0,
+                   0, 2, 0, 0,
+                   0, 0, 0, 0), 4, 4, byrow = TRUE)
+mtest1
+
+mtest2 <- matrix(c(2, 0, 0, 3,
+                   0, 0, 0, 0,
+                   0, 0, 0, 0,
+                   0, 0, 0, 0), 4, 4, byrow = TRUE)
+mtest2
+```
+but do remember to set `byrow = TRUE` if you're writing your matrix out ... by rows.
+
+I needed a way to identify the locations and values of these light sources. I know that `which()` can return array indices with `arr.ind = TRUE` so I tried that
+```{r}
+which(mtest1 > 0, arr.ind = TRUE)
+```
+I'll also need the values at those sources
+```{r}
+mtest1[mtest1 > 0]
+```
+So far, so good. Now, I'll need to spread 'light' out from each of those sources. That seems... trickier.
+
+A few options came to mind, including a convolution operation, but I couldn't get that to work. I eventually ended up writing a loop to set decreasing values along the row and column of each light source, forwards and backwards.
+```{r, eval = FALSE}
+for (r in seq_along(y)) {
+    q <- p <- y[[r]]
+    q <- rbind(q, data.frame(l=p$l-seq_along(p$c:n)+1, r=p$r, c=p$c:n))
+    q <- rbind(q, data.frame(l=p$l-seq_along(p$c:1)+1, r=p$r, c=p$c:1))
+    q <- rbind(q, data.frame(l=p$l-seq_along(p$r:n)+1, r=p$r:n, c=p$c))
+    q <- rbind(q, data.frame(l=p$l-seq_along(p$r:1)+1, r=p$r:1, c=p$c))
+}
+```
+This involved creating a `data.frame` of row and column values, plus the value of the light at that position. This isn't efficient at all, and not just from the processing side - it uses a lot of characters. 
+
+One way to get around this in codegolf is to use a short alias to a longer named function, e.g. `d = data.frame`, `b = rbind`. This saves a lot of characters.
+
+The idea of creating indices at which to set values comes from the fact that a matrix can be subset by another matrix that specifies the rows and columns. i.e.
+```{r}
+## create a matrix
+m = matrix(1:9, 3, 3, byrow = TRUE)
+m
+
+## specify the extraction of the elements as (1, 2) and (3, 2)
+msub = matrix(c(1, 2, 3, 2), 2, 2, byrow = TRUE)
+msub
+
+m[msub]
+```
+This can essentially 'un-`which()`' a matrix.
+
+Once I had the reduced values in each direction away from a light source, for each light source, the last step was to combine these and take the maximum value at each element. `Reduce()` does this nicely with the function `pmax()` (parallel maximum which works across multiple vectors rather than the global maximum). 
+
+Lastly, a second pass using all these new points as light sources ensures that the 'light' is propagated in all directions.
+
+The solution, as I had it, worked and produced the test case results, but it was not yet golfed.
+
+To "golf" some R code there's some optimisations we can make.
+
+* Delete spaces where possible
+* Use `=` over `<-` to save a character each time
+* For R>=4.1, use the shorthand syntax for `function()`
+```{r}
+f=\(x)x^2
+f(3)
+```
+* use `T` and `F` for `TRUE` and `FALSE` - generally inadvisable in regular code, but here they save some characters.
+* use partial argument matching where possible - it's a dangerous feature of the language, but you only "need" to use as many letters of a function argument so that it's uniquely specified, so
+```{r}
+which(mtest1>0, arr.ind = TRUE)
+```
+can be shortened to
+```{r}
+which(mtest1>0,a=T)
+```
+* Create aliases to functions - just remember to alias the *name* of the function, not the call (with parentheses)
+```{r}
+d=determinant.matrix
+identical(
+  d(mtest1),
+  determinant.matrix(mtest1)
+)
+```
+* Use the prefix notation version of functions which require many characters, e.g. `if`
+```{r, eval = FALSE}
+if (3 > 2) {
+  "res1"
+} else {
+  "res2"
+}
+```
+vs
+```{r, eval = FALSE}
+`if`(3>2,"res1","res2")
+```
+keeping in mind that `ifelse()` requires the same structure in both returned results (and it evaluates both), which tripped me up
+```{r}
+ifelse(TRUE, 1:4, 2)
+```
+
+With all those in place, I landed at 377 characters for my solution. Certainly not great, considering the python answer was ~200.
+
+I really wanted a better way to "spread" the light out from a single point, but I wasn't finding any nice solutions to that simpler sub-problem. A great way to get a solution is to ask other people, so I wrote a short post on [my new mini blog](https://jcarroll.xyz/2022/03/25/r-challenge-contour.html) asking the simpler question of how to achieve this. That cross-posts to Twitter, where [June Choe](https://twitter.com/yjunechoe/status/1507344665514848258?s=20&t=27rn8zNl-36D-3ppsslAjw) provided a great `outer()` solution. I'd tried something like that but not so cleverly. 
+```{r}
+vx <- 4
+vy <- 3
+vv <- 5
+n <- 8
+outer(1:n, 1:n, function(x, y) pmax(vv - abs(x - vx) - abs(y - vy), 0))
+```
+This greatly improves R's chances at solving this efficiently because now we can condense all the 'spread light' stuff into this one function, and because it's not iterative, we can `lapply()` over the results.
+
+The "final" version, after some more clean up, is [an okay 182 characters](https://codegolf.stackexchange.com/a/245581/26763)
+```{r}
+ls=\(m,w=T) {
+  n=ncol(m)
+  p=m>1
+  i=which(p,a=T)
+  y=lapply(1:nrow(i),\(j)outer(1:n,1:n,\(x,y)pmax(m[p][j]-abs(x-i[j,1])-abs(y-i[j,2]),0)))
+  z=Reduce(pmax,y)
+  `if`(w,ls(z,F),z)
+}
+
+ls(mtest1)
+ls(mtest2)
+```
+I'm still of course interested if there are more optimisations to be made, so do let me know if you can spot any!
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
