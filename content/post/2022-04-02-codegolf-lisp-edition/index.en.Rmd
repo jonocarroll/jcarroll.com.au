@@ -53,13 +53,13 @@ The number 0 and negative numbers do not need to be handled, so don't worry abou
 >Test cases:
 
 ```
->56 => five-ten six
->11 => ten one
->72 => seven-ten two
->478 => four-hundred seven-ten eight
->754 => seven-hundred five-ten four
->750 => seven-hundred five-ten
->507 => five-hundred seven
+56 => five-ten six
+11 => ten one
+72 => seven-ten two
+478 => four-hundred seven-ten eight
+754 => seven-hundred five-ten four
+750 => seven-hundred five-ten
+507 => five-hundred seven
 ```
 
 On it's own, this seems like it's going to need some sort of mapping from digits to words. R _does_ have one of those in the [{english}](https://cran.r-project.org/package=english) package (I know this because I used it the last example in [this post](https://jcarroll.com.au/2020/03/09/iseven-without-modulo/)) but code-golf doesn't really allow you to use external packages (mostly).

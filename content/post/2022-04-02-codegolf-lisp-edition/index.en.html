@@ -40,13 +40,13 @@ The input will be a positive integer up to 3 digits.</p>
 The output should be a string that looks like something below.</p>
 <p>Test cases:</p>
 </blockquote>
-<pre><code>&gt;56 =&gt; five-ten six
-&gt;11 =&gt; ten one
-&gt;72 =&gt; seven-ten two
-&gt;478 =&gt; four-hundred seven-ten eight
-&gt;754 =&gt; seven-hundred five-ten four
-&gt;750 =&gt; seven-hundred five-ten
-&gt;507 =&gt; five-hundred seven</code></pre>
+<pre><code>56 =&gt; five-ten six
+11 =&gt; ten one
+72 =&gt; seven-ten two
+478 =&gt; four-hundred seven-ten eight
+754 =&gt; seven-hundred five-ten four
+750 =&gt; seven-hundred five-ten
+507 =&gt; five-hundred seven</code></pre>
 <p>On it’s own, this seems like it’s going to need some sort of mapping from digits to words. R <em>does</em> have one of those in the <a href="https://cran.r-project.org/package=english">{english}</a> package (I know this because I used it the last example in <a href="https://jcarroll.com.au/2020/03/09/iseven-without-modulo/">this post</a>) but code-golf doesn’t really allow you to use external packages (mostly).</p>
 <p>What gave me hope is something I really wish R had natively, and that the <code>"~R"</code> option of lisp’s format method</p>
 <pre><code>(format nil &quot;~R&quot; 14000605) </code></pre>
