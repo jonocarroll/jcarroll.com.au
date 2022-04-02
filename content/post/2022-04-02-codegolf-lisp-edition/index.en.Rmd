@@ -26,13 +26,13 @@ knitr::opts_chunk$set(
 
 I occasionally like a round of code-golf (e.g. [recently](https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/)) and I try to solve these with R, but [this one](https://codegolf.stackexchange.com/questions/245778/numbers-in-2050) gave me some hope that I could make use of a really cool feature I knew about in common lisp.
 
-![lisp is timeless. XKCD: https://xkcd.com/297](2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png)
+![lisp is timeless. https://xkcd.com/297](2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png)
 
 <!--more-->
 
 I occasionally like a round of code-golf (e.g. [recently](https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/)) and I try to solve these with R, but [this one](https://codegolf.stackexchange.com/questions/245778/numbers-in-2050) gave me some hope that I could make use of a really cool feature I knew about in common lisp.
 
-![lisp is timeless. XKCD: https://xkcd.com/297](2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png)
+![lisp is timeless. https://xkcd.com/297](2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png)
 
 I have occasionally tinkered with lisp - initially because I learned emacs, but later because it's really interesting and does [teach a lot about quoting](https://www.milesmcbain.com/posts/the-roots-of-quotation/). [Practical Common Lisp](https://www.amazon.com.au/Practical-Common-LISP-Peter-Seibel/dp/1590592395) is a book I'm still (slowly) making my way through, but it's a great read so far.
 

@@ -18,14 +18,14 @@ image: ''
 
 <p>I occasionally like a round of code-golf (e.g. <a href="https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/">recently</a>) and I try to solve these with R, but <a href="https://codegolf.stackexchange.com/questions/245778/numbers-in-2050">this one</a> gave me some hope that I could make use of a really cool feature I knew about in common lisp.</p>
 <div class="figure">
-<img src="2022/04/02/codegolfing-lisp-edition/images/lisp_cycles.png" alt="" />
-<p class="caption">lisp is timeless. XKCD: <a href="https://xkcd.com/297" class="uri">https://xkcd.com/297</a></p>
+<img src="2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png" alt="" />
+<p class="caption">lisp is timeless. <a href="https://xkcd.com/297" class="uri">https://xkcd.com/297</a></p>
 </div>
-<!-- more -->
+<!--more-->
 <p>I occasionally like a round of code-golf (e.g. <a href="https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/">recently</a>) and I try to solve these with R, but <a href="https://codegolf.stackexchange.com/questions/245778/numbers-in-2050">this one</a> gave me some hope that I could make use of a really cool feature I knew about in common lisp.</p>
 <div class="figure">
-<img src="2022/04/02/codegolfing-lisp-edition/images/lisp_cycles.png" alt="" />
-<p class="caption">lisp is timeless. XKCD: <a href="https://xkcd.com/297" class="uri">https://xkcd.com/297</a></p>
+<img src="2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png" alt="" />
+<p class="caption">lisp is timeless. <a href="https://xkcd.com/297" class="uri">https://xkcd.com/297</a></p>
 </div>
 <p>I have occasionally tinkered with lisp - initially because I learned emacs, but later because it’s really interesting and does <a href="https://www.milesmcbain.com/posts/the-roots-of-quotation/">teach a lot about quoting</a>. <a href="https://www.amazon.com.au/Practical-Common-LISP-Peter-Seibel/dp/1590592395">Practical Common Lisp</a> is a book I’m still (slowly) making my way through, but it’s a great read so far.</p>
 <p>There’s a lot you can do with lisp - you can even <a href="https://github.com/dirkschumacher/llr">connect it up to R</a> (sort of).</p>
@@ -39,14 +39,14 @@ The input will be a positive integer up to 3 digits.</p>
 <p>Output:
 The output should be a string that looks like something below.</p>
 <p>Test cases:</p>
-<p>56 =&gt; five-ten six
-11 =&gt; ten one
-72 =&gt; seven-ten two
-478 =&gt; four-hundred seven-ten eight
-754 =&gt; seven-hundred five-ten four
-750 =&gt; seven-hundred five-ten
-507 =&gt; five-hundred seven</p>
 </blockquote>
+<pre><code>&gt;56 =&gt; five-ten six
+&gt;11 =&gt; ten one
+&gt;72 =&gt; seven-ten two
+&gt;478 =&gt; four-hundred seven-ten eight
+&gt;754 =&gt; seven-hundred five-ten four
+&gt;750 =&gt; seven-hundred five-ten
+&gt;507 =&gt; five-hundred seven</code></pre>
 <p>On it’s own, this seems like it’s going to need some sort of mapping from digits to words. R <em>does</em> have one of those in the <a href="https://cran.r-project.org/package=english">{english}</a> package (I know this because I used it the last example in <a href="https://jcarroll.com.au/2020/03/09/iseven-without-modulo/">this post</a>) but code-golf doesn’t really allow you to use external packages (mostly).</p>
 <p>What gave me hope is something I really wish R had natively, and that the <code>"~R"</code> option of lisp’s format method</p>
 <pre><code>(format nil &quot;~R&quot; 14000605) </code></pre>
