@@ -1,0 +1,209 @@
+---
+title: Codegolf - Lisp Edition
+author: Jonathan Carroll
+date: '2022-04-02'
+slug: codegolf-lisp-edition
+categories:
+  - lisp
+tags:
+  - lisp
+  - codegolf
+type: ''
+subtitle: ''
+image: ''
+---
+
+<script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
+
+
+<p>I occasionally like a round of code-golf (e.g. <a href="https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/">recently</a>) and I try to solve these with R, but <a href="https://codegolf.stackexchange.com/questions/245778/numbers-in-2050">this one</a> gave me some hope that I could make use of a really cool feature I knew about in common lisp.</p>
+<div class="figure">
+<img src="2022/04/02/codegolfing-lisp-edition/images/lisp_cycles.png" alt="" />
+<p class="caption">lisp is timeless. XKCD: <a href="https://xkcd.com/297" class="uri">https://xkcd.com/297</a></p>
+</div>
+<!-- more -->
+<p>I occasionally like a round of code-golf (e.g. <a href="https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/">recently</a>) and I try to solve these with R, but <a href="https://codegolf.stackexchange.com/questions/245778/numbers-in-2050">this one</a> gave me some hope that I could make use of a really cool feature I knew about in common lisp.</p>
+<div class="figure">
+<img src="2022/04/02/codegolfing-lisp-edition/images/lisp_cycles.png" alt="" />
+<p class="caption">lisp is timeless. XKCD: <a href="https://xkcd.com/297" class="uri">https://xkcd.com/297</a></p>
+</div>
+<p>I have occasionally tinkered with lisp - initially because I learned emacs, but later because it’s really interesting and does <a href="https://www.milesmcbain.com/posts/the-roots-of-quotation/">teach a lot about quoting</a>. <a href="https://www.amazon.com.au/Practical-Common-LISP-Peter-Seibel/dp/1590592395">Practical Common Lisp</a> is a book I’m still (slowly) making my way through, but it’s a great read so far.</p>
+<p>There’s a lot you can do with lisp - you can even <a href="https://github.com/dirkschumacher/llr">connect it up to R</a> (sort of).</p>
+<p>Anyway, back to the code-golf. The problem as stated:</p>
+<blockquote>
+<p>It’s 2050, and people have decided to write numbers in a new way. They want less to memorize, and number to be able to be written quicker.
+For every place value(ones, tens, hundreds, etc.) the number is written with the number in that place, a hyphen, and the place value name. “zero” and it’s place value does not need to be written.
+The number 0 and negative numbers do not need to be handled, so don’t worry about those.</p>
+<p>Input:
+The input will be a positive integer up to 3 digits.</p>
+<p>Output:
+The output should be a string that looks like something below.</p>
+<p>Test cases:</p>
+<p>56 =&gt; five-ten six
+11 =&gt; ten one
+72 =&gt; seven-ten two
+478 =&gt; four-hundred seven-ten eight
+754 =&gt; seven-hundred five-ten four
+750 =&gt; seven-hundred five-ten
+507 =&gt; five-hundred seven</p>
+</blockquote>
+<p>On it’s own, this seems like it’s going to need some sort of mapping from digits to words. R <em>does</em> have one of those in the <a href="https://cran.r-project.org/package=english">{english}</a> package (I know this because I used it the last example in <a href="https://jcarroll.com.au/2020/03/09/iseven-without-modulo/">this post</a>) but code-golf doesn’t really allow you to use external packages (mostly).</p>
+<p>What gave me hope is something I really wish R had natively, and that the <code>"~R"</code> option of lisp’s format method</p>
+<pre><code>(format nil &quot;~R&quot; 14000605) </code></pre>
+<pre class="bg-success"><code>&quot;fourteen million six hundred five&quot;</code></pre>
+<p>This works really nicely, and seemed like an efficient route to a code-golf solution.</p>
+<p>What was missing from this? For starters, we explicity need the tens digits to be of the form ‘n-ten’, which isn’t the case here</p>
+<pre><code>(format nil &quot;~R&quot; 478) </code></pre>
+<pre class="bg-success"><code>&quot;four hundred seventy-eight&quot;</code></pre>
+<p>I considered trying to do a text replacement of “ty” to “-ten” but, alas,</p>
+<pre><code>(format nil &quot;~R&quot; 56) </code></pre>
+<pre class="bg-success"><code>&quot;fifty-six&quot;</code></pre>
+<p>is going to break that pattern.</p>
+<p>The alternative, I suppose, is to split out the digits and add the “-hundred” and “-ten” parts. This took me down a rabbit hole, but eventually I managed to pull together enough stack overflow answers to achieve</p>
+<pre><code>(map &#39;list #&#39;digit-char-p (prin1-to-string 458))</code></pre>
+<pre class="bg-success"><code>(4 5 8)</code></pre>
+<p>There’s (hopefully) a faster way to do that, but it works.</p>
+<p>Converting each of these digits to words means applying the format in a map. That… also took a while to figure out, and this is probably overkill</p>
+<pre><code>(mapcar (lambda (it) (format nil &quot;~R&quot; it)) (map &#39;list #&#39;digit-char-p (prin1-to-string 458)))</code></pre>
+<pre class="bg-success"><code>(&quot;four&quot; &quot;five&quot; &quot;eight&quot;)</code></pre>
+<p>Pasting together this result with a list of suffixes requires the <code>concatenate</code> operator, again in a map, but with a lambda function to do this pairwise, otherwise it just appends the lists</p>
+<pre><code>(mapcar (lambda(j k) (concatenate &#39;string j k)) (mapcar (lambda (it) (format nil &quot;~R&quot; it)) (map &#39;list #&#39;digit-char-p (prin1-to-string 458))) &#39;(&quot;-hundred&quot; &quot;-ten&quot; &quot;&quot;))</code></pre>
+<pre class="bg-success"><code>(&quot;four-hundred&quot; &quot;five-ten&quot; &quot;eight&quot;)</code></pre>
+<p>Nearly there! Or so I thought. How does this suffixing work when there isn’t a hundred digit, e.g. <code>21</code>?</p>
+<pre><code>(print (mapcar (lambda(j k) (concatenate &#39;string j k)) (mapcar (lambda (it) (format nil &quot;~R&quot; it)) (map &#39;list #&#39;digit-char-p (prin1-to-string 21))) &#39;(&quot;-hundred&quot; &quot;-ten&quot; &quot;&quot;)))</code></pre>
+<pre class="bg-success"><code>(&quot;two-hundred&quot; &quot;one-ten&quot;) </code></pre>
+<p>Well, that’s not right. But lisp seems okay with having the unequal sized lists. How about starting from the ones digit (i.e. reversed)? That means reversing the split digits list and reversing the suffixes list, doing the operations, then reversing the result</p>
+<pre><code>(print (reverse (mapcar (lambda(j k) (concatenate &#39;string j k)) (mapcar (lambda (it) (format nil &quot;~R&quot; it)) (reverse (map &#39;list #&#39;digit-char-p (prin1-to-string 21)))) (reverse &#39;(&quot;-hundred&quot; &quot;-ten&quot; &quot;&quot;)))))</code></pre>
+<pre class="bg-success"><code>(&quot;two-ten&quot; &quot;one&quot;) </code></pre>
+<p>Fantastic! And the larger digits?</p>
+<pre><code>(print (reverse (mapcar (lambda(j k) (concatenate &#39;string j k)) (mapcar (lambda (it) (format nil &quot;~R&quot; it)) (reverse (map &#39;list #&#39;digit-char-p (prin1-to-string 458)))) (reverse &#39;(&quot;-hundred&quot; &quot;-ten&quot; &quot;&quot;)))))</code></pre>
+<pre class="bg-success"><code>(&quot;four-hundred&quot; &quot;five-ten&quot; &quot;eight&quot;)</code></pre>
+<p>Woohoo!</p>
+<p>The last step is to manually reverse the suffix list, make it a function, and try out the test cases, which you can <a href="https://ato.pxeger.com/run?1=hVBNToQwFI5bzuDipS4oiyaDGWSSiXMIb9CBAh2hJe1jxpUXcYOJXsU76GlsB4cBNjZpmrzv9_Xtw-6zun8PPjss2Ob7i-ai6BQUVEVAjTgKYwXQhrcZN0Br3uxzTg_w7NBMq4yjUO5CaNFIVYJHoiUfqEQ3LLRpOIKSNZDXJwJuuMiAsJYW4S7MZSmRZRU3rAXaOuuYoWZ_ISpyB0JKCBDmCvin6lRuRE48FMCwzc_N7VmLLhuSB6fZbuFxB4U8Cq8DK1-CKyOOR4YHtRITML0fQesaq7MeT3pCWaeba4TuzKXTRCBkWeHUNVkvbC-asaN3milW_ygm5GSVzpeeNRo-qe-H9xc">try out for yourself here</a></p>
+<pre><code>(defun f(n) (reverse (mapcar (lambda(j k) (concatenate &#39;string j k)) (mapcar (lambda (it) (format nil &quot;~R&quot; it)) (reverse (map &#39;list #&#39;digit-char-p (prin1-to-string n)))) &#39;(&quot;&quot; &quot;-ten&quot; &quot;-hundred&quot;))))
+
+(print (f 56))
+(print (f 11))
+(print (f 72))
+(print (f 478))
+(print (f 754))
+(print (f 750))
+(print (f 507))</code></pre>
+<pre class="bg-success"><code>(&quot;five-ten&quot; &quot;six&quot;) 
+(&quot;one-ten&quot; &quot;one&quot;) 
+(&quot;seven-ten&quot; &quot;two&quot;) 
+(&quot;four-hundred&quot; &quot;seven-ten&quot; &quot;eight&quot;) 
+(&quot;seven-hundred&quot; &quot;five-ten&quot; &quot;four&quot;) 
+(&quot;seven-hundred&quot; &quot;five-ten&quot; &quot;zero&quot;) 
+(&quot;five-hundred&quot; &quot;zero-ten&quot; &quot;seven&quot;)</code></pre>
+<p>That’s soemwhat close to what the challenge wants, and the ‘Attempt This Online’ tool linked about claims 198 bytes for this solution, but it’s not <em>quite</em> there yet:</p>
+<ul>
+<li>these should be a single string per test, which I presume involves collapsing the list into a <code>'string</code></li>
+<li>I still have the <code>"zero-ten"</code> and <code>"zero"</code> entries which break the tests</li>
+<li><code>"one"</code> should only appear in the ones entry, so <code>11</code> should produce <code>"ten one"</code>.</li>
+</ul>
+<p>At this point, it was 1am, and I figured I’d learned enough for the day. If anyone would like to improve on this solution, please be my guest.</p>
+<p>What’s also great to see is that there’s <a href="https://codegolf.stackexchange.com/a/245816/26763">a Julia solution now</a>!</p>
+<pre class="julia"><code>!n=n&lt;10 ? split(&quot; one two three four five six seven eight nine&quot;,&quot; &quot;)[n+1] :
+n&lt;20 ? &quot;ten &quot;*!(n-10) :
+n&lt;(H=100) ? !(n÷10)*&quot;-&quot;*!(10+n%10) :
+n&lt;2H ? &quot;hundred &quot;*!(n-H) :
+!(n÷H)*&quot;-&quot;*!(H+n%H)</code></pre>
+<pre class="bg-success"><code>## ! (generic function with 1 method)</code></pre>
+<pre class="julia"><code>tests = [1; 11; 56; 72; 478; 754; 750; 507];
+for t in tests
+    println(t =&gt; !t)
+end</code></pre>
+<pre class="bg-success"><code>## 1 =&gt; &quot;one&quot;
+## 11 =&gt; &quot;ten one&quot;
+## 56 =&gt; &quot;five-ten six&quot;
+## 72 =&gt; &quot;seven-ten two&quot;
+## 478 =&gt; &quot;four-hundred seven-ten eight&quot;
+## 754 =&gt; &quot;seven-hundred five-ten four&quot;
+## 750 =&gt; &quot;seven-hundred five-ten &quot;
+## 507 =&gt; &quot;five-hundred seven&quot;</code></pre>
+<p>I’ll be trying to make sense of this for sure. You can <a href="https://ato.pxeger.com/run?1=NZAxboNAEEV7TvFZKRLYRtpFdrBsE7dbp7VcRGIwG6HBgsHOXdK48Rmi1DlFbpOFmC1mR3_--9LM5_29r93b7XbvpUzWv98h57wzGnt059pJpNAwQa4NpGqJUDZ9i9JdCJ37QEcXYpA7VQJ2TGqhoOIDz80Rm4B36RCkxHvULIw4MToe9cjmRvt-D6_-fHl5ppLBYvScnyZXage66rloqXgk2GE0QnZirEds_FjgVaiTDjkOZmPSLVbPW2T-X2Zr36yWQ9Fe1tkxKJsWAscYmQD-nVvHUnMkyF8QShwQF__J04n-AA">try it out yourself here</a></p>
+<p>As usual, the journey was the important part of this - I got to play with and learn some more lisp. There’s no prize for the challenge aside from arbitrary internet points, so I’m entirely happy with how this turned out.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 21.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2022-04-02                  
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date       lib source        
+##  assertthat    0.2.1   2019-03-21 [3] CRAN (R 4.0.1)
+##  blogdown      1.8     2022-02-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.24    2021-09-02 [1] CRAN (R 4.1.2)
+##  brio          1.1.1   2021-01-20 [3] CRAN (R 4.0.3)
+##  bslib         0.3.1   2021-10-06 [1] CRAN (R 4.1.2)
+##  cachem        1.0.3   2021-02-04 [3] CRAN (R 4.0.3)
+##  callr         3.7.0   2021-04-20 [1] CRAN (R 4.1.2)
+##  cli           3.2.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  crayon        1.5.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  DBI           1.1.1   2021-01-15 [3] CRAN (R 4.0.3)
+##  desc          1.4.1   2022-03-06 [1] CRAN (R 4.1.2)
+##  devtools      2.4.3   2021-11-30 [1] CRAN (R 4.1.2)
+##  digest        0.6.27  2020-10-24 [3] CRAN (R 4.0.3)
+##  dplyr       * 1.0.8   2022-02-08 [1] CRAN (R 4.1.2)
+##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.1.2)
+##  evaluate      0.14    2019-05-28 [3] CRAN (R 4.0.1)
+##  fansi         0.4.2   2021-01-15 [3] CRAN (R 4.0.3)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.0.3)
+##  fs            1.5.0   2020-07-31 [3] CRAN (R 4.0.2)
+##  generics      0.1.0   2020-10-31 [3] CRAN (R 4.0.3)
+##  glue          1.6.1   2022-01-22 [1] CRAN (R 4.1.2)
+##  htmltools     0.5.2   2021-08-25 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.1.2)
+##  jsonlite      1.7.2   2020-12-09 [3] CRAN (R 4.0.3)
+##  JuliaCall     0.17.4  2021-05-16 [1] CRAN (R 4.1.2)
+##  knitr         1.37    2021-12-16 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.1   2021-09-24 [1] CRAN (R 4.1.2)
+##  magrittr      2.0.1   2020-11-17 [3] CRAN (R 4.0.3)
+##  memoise       2.0.0   2021-01-26 [3] CRAN (R 4.0.3)
+##  pillar        1.7.0   2022-02-01 [1] CRAN (R 4.1.2)
+##  pkgbuild      1.2.0   2020-12-15 [3] CRAN (R 4.0.3)
+##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
+##  pkgload       1.2.4   2021-11-30 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.5.2   2021-04-30 [1] CRAN (R 4.1.2)
+##  ps            1.5.0   2020-12-05 [3] CRAN (R 4.0.3)
+##  purrr         0.3.4   2020-04-17 [3] CRAN (R 4.0.1)
+##  R6            2.5.0   2020-10-28 [3] CRAN (R 4.0.2)
+##  Rcpp          1.0.6   2021-01-15 [3] CRAN (R 4.0.3)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.1   2022-02-03 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.13    2022-03-10 [1] CRAN (R 4.1.2)
+##  rprojroot     2.0.2   2020-11-15 [3] CRAN (R 4.0.3)
+##  rstudioapi    0.13    2020-11-12 [3] CRAN (R 4.0.3)
+##  sass          0.4.0   2021-05-12 [1] CRAN (R 4.1.2)
+##  sessioninfo   1.1.1   2018-11-05 [3] CRAN (R 4.0.1)
+##  stringi       1.5.3   2020-09-09 [3] CRAN (R 4.0.2)
+##  stringr       1.4.0   2019-02-10 [3] CRAN (R 4.0.1)
+##  testthat      3.1.2   2022-01-20 [1] CRAN (R 4.1.2)
+##  tibble        3.1.6   2021-11-07 [1] CRAN (R 4.1.2)
+##  tidyselect    1.1.2   2022-02-21 [1] CRAN (R 4.1.2)
+##  usethis       2.1.5   2021-12-09 [1] CRAN (R 4.1.2)
+##  utf8          1.1.4   2018-05-24 [3] CRAN (R 4.0.2)
+##  vctrs         0.3.8   2021-04-29 [1] CRAN (R 4.1.2)
+##  withr         2.5.0   2022-03-03 [1] CRAN (R 4.1.2)
+##  xfun          0.30    2022-03-02 [1] CRAN (R 4.1.2)
+##  yaml          2.2.1   2020-02-01 [3] CRAN (R 4.0.1)
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>
