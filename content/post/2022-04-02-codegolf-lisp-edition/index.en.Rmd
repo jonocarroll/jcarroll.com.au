@@ -1,0 +1,193 @@
+---
+title: Codegolf - Lisp Edition
+author: Jonathan Carroll
+date: '2022-04-02'
+slug: codegolf-lisp-edition
+categories:
+  - lisp
+tags:
+  - lisp
+  - codegolf
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(dplyr)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I occasionally like a round of code-golf (e.g. [recently](https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/)) and I try to solve these with R, but [this one](https://codegolf.stackexchange.com/questions/245778/numbers-in-2050) gave me some hope that I could make use of a really cool feature I knew about in common lisp.
+
+![lisp is timeless. https://xkcd.com/297](2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png)
+
+<!--more-->
+
+I occasionally like a round of code-golf (e.g. [recently](https://jcarroll.com.au/2022/03/26/codegolfing-minecraft-lighting/)) and I try to solve these with R, but [this one](https://codegolf.stackexchange.com/questions/245778/numbers-in-2050) gave me some hope that I could make use of a really cool feature I knew about in common lisp.
+
+![lisp is timeless. https://xkcd.com/297](2022/04/02/codegolf-lisp-edition/images/lisp_cycles.png)
+
+I have occasionally tinkered with lisp - initially because I learned emacs, but later because it's really interesting and does [teach a lot about quoting](https://www.milesmcbain.com/posts/the-roots-of-quotation/). [Practical Common Lisp](https://www.amazon.com.au/Practical-Common-LISP-Peter-Seibel/dp/1590592395) is a book I'm still (slowly) making my way through, but it's a great read so far.
+
+There's a lot you can do with lisp - you can even [connect it up to R](https://github.com/dirkschumacher/llr) (sort of).
+
+Anyway, back to the code-golf. The problem as stated:
+
+>It's 2050, and people have decided to write numbers in a new way. They want less to memorize, and number to be able to be written quicker.
+For every place value(ones, tens, hundreds, etc.) the number is written with the number in that place, a hyphen, and the place value name. "zero" and it's place value does not need to be written.
+The number 0 and negative numbers do not need to be handled, so don't worry about those.
+>
+>Input:
+>The input will be a positive integer up to 3 digits.
+>
+>Output:
+>The output should be a string that looks like something below.
+>
+>Test cases:
+
+```
+56 => five-ten six
+11 => ten one
+72 => seven-ten two
+478 => four-hundred seven-ten eight
+754 => seven-hundred five-ten four
+750 => seven-hundred five-ten
+507 => five-hundred seven
+```
+
+On it's own, this seems like it's going to need some sort of mapping from digits to words. R _does_ have one of those in the [{english}](https://cran.r-project.org/package=english) package (I know this because I used it the last example in [this post](https://jcarroll.com.au/2020/03/09/iseven-without-modulo/)) but code-golf doesn't really allow you to use external packages (mostly).
+
+What gave me hope is something I really wish R had natively, and that the `"~R"` option of lisp's format method
+
+```
+(format nil "~R" 14000605) 
+```
+```{r, echo = FALSE, comment = ""}
+cat('"fourteen million six hundred five"')
+```
+This works really nicely, and seemed like an efficient route to a code-golf solution. 
+
+What was missing from this? For starters, we explicity need the tens digits to be of the form 'n-ten', which isn't the case here
+```
+(format nil "~R" 478) 
+```
+```{r, echo = FALSE, comment = ""}
+cat('"four hundred seventy-eight"')
+```
+I considered trying to do a text replacement of "ty" to "-ten" but, alas,
+```
+(format nil "~R" 56) 
+```
+```{r, echo = FALSE, comment = ""}
+cat('"fifty-six"')
+```
+is going to break that pattern.
+
+The alternative, I suppose, is to split out the digits and add the "-hundred" and "-ten" parts. This took me down a rabbit hole, but eventually I managed to pull together enough stack overflow answers to achieve
+```
+(map 'list #'digit-char-p (prin1-to-string 458))
+```
+```{r, echo = FALSE, comment = ""}
+cat('(4 5 8)')
+```
+There's (hopefully) a faster way to do that, but it works.
+
+Converting each of these digits to words means applying the format in a map. That... also took a while to figure out, and this is probably overkill
+```
+(mapcar (lambda (it) (format nil "~R" it)) (map 'list #'digit-char-p (prin1-to-string 458)))
+```
+```{r, echo = FALSE, comment = ""}
+cat('("four" "five" "eight")')
+```
+Pasting together this result with a list of suffixes requires the `concatenate` operator, again in a map, but with a lambda function to do this pairwise, otherwise it just appends the lists
+```
+(mapcar (lambda(j k) (concatenate 'string j k)) (mapcar (lambda (it) (format nil "~R" it)) (map 'list #'digit-char-p (prin1-to-string 458))) '("-hundred" "-ten" ""))
+```
+```{r, echo = FALSE, comment = ""}
+cat('("four-hundred" "five-ten" "eight")')
+```
+Nearly there! Or so I thought. How does this suffixing work when there isn't a hundred digit, e.g. `21`?
+```
+(print (mapcar (lambda(j k) (concatenate 'string j k)) (mapcar (lambda (it) (format nil "~R" it)) (map 'list #'digit-char-p (prin1-to-string 21))) '("-hundred" "-ten" "")))
+```
+```{r, echo = FALSE, comment = ""}
+cat('("two-hundred" "one-ten") ')
+```
+Well, that's not right. But lisp seems okay with having the unequal sized lists. How about starting from the ones digit (i.e. reversed)? That means reversing the split digits list and reversing the suffixes list, doing the operations, then reversing the result
+```
+(print (reverse (mapcar (lambda(j k) (concatenate 'string j k)) (mapcar (lambda (it) (format nil "~R" it)) (reverse (map 'list #'digit-char-p (prin1-to-string 21)))) (reverse '("-hundred" "-ten" "")))))
+```
+```{r, echo = FALSE, comment = ""}
+cat('("two-ten" "one") ')
+```
+Fantastic! And the larger digits?
+```
+(print (reverse (mapcar (lambda(j k) (concatenate 'string j k)) (mapcar (lambda (it) (format nil "~R" it)) (reverse (map 'list #'digit-char-p (prin1-to-string 458)))) (reverse '("-hundred" "-ten" "")))))
+```
+```{r, echo = FALSE, comment = ""}
+cat('("four-hundred" "five-ten" "eight")')
+```
+Woohoo!
+
+The last step is to manually reverse the suffix list, make it a function, and try out the test cases, which you can [try out for yourself here](https://ato.pxeger.com/run?1=hVBNToQwFI5bzuDipS4oiyaDGWSSiXMIb9CBAh2hJe1jxpUXcYOJXsU76GlsB4cBNjZpmrzv9_Xtw-6zun8PPjss2Ob7i-ai6BQUVEVAjTgKYwXQhrcZN0Br3uxzTg_w7NBMq4yjUO5CaNFIVYJHoiUfqEQ3LLRpOIKSNZDXJwJuuMiAsJYW4S7MZSmRZRU3rAXaOuuYoWZ_ISpyB0JKCBDmCvin6lRuRE48FMCwzc_N7VmLLhuSB6fZbuFxB4U8Cq8DK1-CKyOOR4YHtRITML0fQesaq7MeT3pCWaeba4TuzKXTRCBkWeHUNVkvbC-asaN3milW_ygm5GSVzpeeNRo-qe-H9xc)
+```
+(defun f(n) (reverse (mapcar (lambda(j k) (concatenate 'string j k)) (mapcar (lambda (it) (format nil "~R" it)) (reverse (map 'list #'digit-char-p (prin1-to-string n)))) '("" "-ten" "-hundred"))))
+
+(print (f 56))
+(print (f 11))
+(print (f 72))
+(print (f 478))
+(print (f 754))
+(print (f 750))
+(print (f 507))
+```
+```{r, echo = FALSE, comment = ""}
+cat('("five-ten" "six") 
+("one-ten" "one") 
+("seven-ten" "two") 
+("four-hundred" "seven-ten" "eight") 
+("seven-hundred" "five-ten" "four") 
+("seven-hundred" "five-ten" "zero") 
+("five-hundred" "zero-ten" "seven")')
+```
+That's soemwhat close to what the challenge wants, and the 'Attempt This Online' tool linked about claims 198 bytes for this solution, but it's not *quite* there yet:
+
+* these should be a single string per test, which I presume involves collapsing the list into a `'string`
+* I still have the `"zero-ten"` and `"zero"` entries which break the tests
+* `"one"` should only appear in the ones entry, so `11` should produce `"ten one"`.
+
+At this point, it was 1am, and I figured I'd learned enough for the day. If anyone would like to improve on this solution, please be my guest.
+
+What's also great to see is that there's [a Julia solution now](https://codegolf.stackexchange.com/a/245816/26763)!  
+```{julia}
+!n=n<10 ? split(" one two three four five six seven eight nine"," ")[n+1] :
+n<20 ? "ten "*!(n-10) :
+n<(H=100) ? !(n÷10)*"-"*!(10+n%10) :
+n<2H ? "hundred "*!(n-H) :
+!(n÷H)*"-"*!(H+n%H)
+tests = [1; 11; 56; 72; 478; 754; 750; 507];
+for t in tests
+    println(t => !t)
+end
+```
+I'll be trying to make sense of this for sure. You can [try it out yourself here](https://ato.pxeger.com/run?1=NZAxboNAEEV7TvFZKRLYRtpFdrBsE7dbp7VcRGIwG6HBgsHOXdK48Rmi1DlFbpOFmC1mR3_--9LM5_29r93b7XbvpUzWv98h57wzGnt059pJpNAwQa4NpGqJUDZ9i9JdCJ37QEcXYpA7VQJ2TGqhoOIDz80Rm4B36RCkxHvULIw4MToe9cjmRvt-D6_-fHl5ppLBYvScnyZXage66rloqXgk2GE0QnZirEds_FjgVaiTDjkOZmPSLVbPW2T-X2Zr36yWQ9Fe1tkxKJsWAscYmQD-nVvHUnMkyF8QShwQF__J04n-AA)
+
+As usual, the journey was the important part of this - I got to play with and learn some more lisp. There's no prize for the challenge aside from arbitrary internet points, so I'm entirely happy with how this turned out.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
