@@ -26,13 +26,12 @@ knitr::opts_chunk$set(
 )
 ```
 I've long been interested in exactly _how_ R works - not quite enough for me to learn _all_ the
-internals, but I was surprised that I could not find a clear guide towards exactly how a vectorization works at the deepest level.
+internals, but I was surprised that I could not find a clear guide towards exactly how vectorization works at the deepest level.
 
 <!--more-->
 
 I've long been interested in exactly _how_ R works - not quite enough for me to learn _all_ the
-internals, but I was surprised that I could not find a clear guide towards exactly how a `for` loop 
-works at the deepest level.
+internals, but I was surprised that I could not find a clear guide towards exactly how vectorization works at the deepest level.
 
 Let's say we want to add two vectors which we've defined as `x` and `y`
 ```{r add_vecs}
