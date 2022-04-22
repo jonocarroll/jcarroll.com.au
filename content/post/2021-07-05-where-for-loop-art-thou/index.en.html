@@ -1,0 +1,214 @@
+---
+title: Where for (loop) ARt Thou?
+author: Jonathan Carroll
+date: '2021-07-05'
+slug: where-for-loop-art-thou
+categories:
+  - R
+tags:
+  - rstats
+  - julia
+type: ''
+subtitle: 'A loop by any other name...'
+image: ''
+---
+
+<script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
+
+
+<p>I’ve long been interested in exactly <em>how</em> R works - not quite enough for me to learn <em>all</em> the
+internals, but I was surprised that I could not find a clear guide towards exactly how vectorization works at the deepest level.</p>
+<!--more-->
+<p>I’ve long been interested in exactly <em>how</em> R works - not quite enough for me to learn <em>all</em> the
+internals, but I was surprised that I could not find a clear guide towards exactly how vectorization works at the deepest level.</p>
+<p>Let’s say we want to add two vectors which we’ve defined as <code>x</code> and <code>y</code></p>
+<pre class="r"><code>x &lt;- c(2, 4, 6)
+y &lt;- c(1, 3, 2)</code></pre>
+<p>One way to do this (the verbose, elementwise way) would be to add each pair of elements</p>
+<pre class="r"><code>c(x[1] + y[1], x[2] + y[2], x[3] + y[3])</code></pre>
+<pre class="bg-success"><code>## [1] 3 7 8</code></pre>
+<p>but if you are familiar with not repeating yourself, you might write this in a loop. Best practice
+involves pre-filling the result to the correct size</p>
+<pre class="r"><code>res &lt;- c(NA, NA, NA)
+for (i in 1:3) {
+  res[i] &lt;- x[i] + y[i]
+}
+res</code></pre>
+<pre class="bg-success"><code>## [1] 3 7 8</code></pre>
+<p>There, we wrote a <code>for</code> loop.</p>
+<p>Now, if you’ve ever seen R tutorials or discussions, you’ve probably had it drilled into you that
+this is “bad” and should be replaced with something else. One of those options is an <code>apply</code> family
+function</p>
+<pre class="r"><code>plus &lt;- function(i) {
+  x[i] + y[i]
+}
+sapply(1:3, plus)</code></pre>
+<pre class="bg-success"><code>## [1] 3 7 8</code></pre>
+<p>or something ‘tidier’</p>
+<pre class="r"><code>purrr::map_dbl(1:3, plus)</code></pre>
+<pre class="bg-success"><code>## [1] 3 7 8</code></pre>
+<p>(yes, yes, these functions are ‘bad’ because they don’t take <code>x</code> or <code>y</code> as arguments) but this stil
+performs the operation elementwise. If you’ve seen even more R tutorais/discussions you’ve
+probably been seen that <em>vectorization</em> is very handy - The R function <code>+</code> knows what to do with objects that
+aren’t just a single value, and does what you might expect</p>
+<pre class="r"><code>x + y</code></pre>
+<pre class="bg-success"><code>## [1] 3 7 8</code></pre>
+<p>Now, if you’ve really read a lot about R, you’ll know that ‘under the hood’ a <code>for</code>-loop
+is involved in every one of these, but it’s “lower down”, “at the C level”. Jenny Bryan makes the
+point that <a href="https://speakerdeck.com/jennybc/row-oriented-workflows-in-r-with-the-tidyverse?slide=16">“Of course someone has to write loops / It doesn’t have to be you”</a> and for this reason,
+vectorization in R is of great benefit.</p>
+<p>So, there <em>is</em> a loop, but where exactly does that happen?</p>
+<p>At some point, the computer needs to add the elements of <code>x</code> to the elements of <code>y</code>, and the simplest versions of this
+happens one element at a time, in a loop. There’s a big sidetrack here about <a href="https://en.wikipedia.org/wiki/SIMD">SIMD</a>
+which I’ll try to avoid, but I will mention that the Microsoft fork of R (<a href="https://mran.revolutionanalytics.com/open/">artist, formerly known as Revolution R</a>) running on Intel chips can do SIMD in MKL.</p>
+<p>So, let’s start at the operator.</p>
+<pre class="r"><code>`+`</code></pre>
+<pre class="bg-success"><code>## function (e1, e2)  .Primitive(&quot;+&quot;)</code></pre>
+<p>Digging into primitives is a little tricky, but <code>{pryr}</code> can help</p>
+<pre class="r"><code>pryr::show_c_source(.Primitive(&quot;+&quot;))</code></pre>
+<pre class="r bg-success"><code>+ is implemented by do_arith with op = PLUSOP</code></pre>
+<p>We can browse a copy of the source for <code>do_arith</code> (in arithmetic.c) <a href="https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L417">here</a> where we see some
+logic paths for scalars and vectors. Let’s assume we’re working with our example which has <code>length(x) == length(y) &gt; 1</code>. With two non-scalar arguments</p>
+<pre class="c"><code>if !IS_SCALAR and argc == length(arg) == 2</code></pre>
+<p><a href="https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L525">This leads</a> us to call <a href="https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L549"><code>R_binary</code></a></p>
+<p>Depending on the class of the arguments, we need to call different functions, but for the sake of our example let’s say we have non-integer real numbers so we fork to <a href="https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L975"><code>real_binary</code></a>. This takes a <code>code</code> argument for which type of operation we’re performing, and in our case it’s <code>PLUSOP</code> (noted above). There’s a <a href="https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L991"><code>case</code> branch for this</a> in which case, provided the arguments are of the same length (<code>n1 == n2</code>) we <a href="https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L1004-L1005">call</a></p>
+<pre class="c"><code>R_ITERATE_CHECK(NINTERRUPT, n, i, da[i] = dx[i] + dy[i];);</code></pre>
+<p>That’s starting to look a lot like a loop - there’s an iterator <code>i</code> and we’re going to call another function.</p>
+<p>This jumps us over to a <a href="https://github.com/wch/r-source/blob/d22ee2fc0dc8142b23eed9f46edf76ea9d3ca69a/src/include/R_ext/Itermacros.h#L53">different file</a> where we see <code>LOOP_WITH_INTERRUPT_CHECK</code> definitely performs some sort of loop. This takes the body above and the argument <a href="https://github.com/wch/r-source/blob/d22ee2fc0dc8142b23eed9f46edf76ea9d3ca69a/src/include/R_ext/Itermacros.h#L44"><code>LOOP_ITERATE_CORE</code></a> which is finally the actual loop!</p>
+<pre class="c"><code>#define R_ITERATE_CORE(n, i, loop_body) do {    \
+   for (; i &lt; n; ++i) { loop_body } \
+} while (0)
+</code></pre>
+<p>so, that’s where the <em>actual</em> loop in a vectorized R call happens! <em>ALL</em> that sits behind the innocent-looking <code>+</code>.</p>
+<p>That was thoroughly satisfying, but I did originally have in mind comparing R to another language - one where loops aren’t frowned upon because of performance, but rather encouraged… How do Julia loops differ?</p>
+<p>Julia is not a vectorized language per se, but it has a neat ability to “vectorize” any operation, though in Julia syntax it’s “broadcasting”.</p>
+<p>Simple addition can combine scalar values</p>
+<pre class="julia"><code>3+4</code></pre>
+<pre class="bg-success"><code>## 7</code></pre>
+<p>Julia actually has scalar values (in R, even a single value is just a vector of length 1) so a single value could be</p>
+<pre class="julia"><code>typeof(3)</code></pre>
+<pre class="bg-success"><code>## Int64</code></pre>
+<p>whereas several values need to be an <code>Array</code>, even if it only has 1 dimension</p>
+<pre class="julia"><code>Vector{Int64}([1, 2, 3])</code></pre>
+<pre class="bg-success"><code>## 3-element Array{Int64,1}:
+##  1
+##  2
+##  3</code></pre>
+<p>Trying to add two <code>Arrays</code> does work</p>
+<pre class="julia"><code>[1, 2, 3] + [4, 5, 6]</code></pre>
+<pre class="bg-success"><code>## 3-element Array{Int64,1}:
+##  5
+##  7
+##  9</code></pre>
+<p>but only because a specific method has been written for this case, i.e.</p>
+<pre class="julia"><code>methods(+, (Array, Array))</code></pre>
+<pre class="bg-success"><code>## # 1 method for generic function &quot;+&quot;:
+## [1] +(A::Array, Bs::Array...) in Base at arraymath.jl:43</code></pre>
+<p>One thing I particularly like is that we can see <em>exactly</em> which method was called using the <code>@which</code> macro</p>
+<pre class="julia"><code>@which [1, 2, 3, 4] + [1, 2, 3, 4]</code></pre>
+<pre class="julia bg-success"><code>+(A::Array, Bs::Array...) in Base at arraymath.jl:43</code></pre>
+<p>something that I really wish <a href="https://twitter.com/BrodieGaslam/status/971771827335974915?s=20&amp;t=z-p-4RoHzw5rZ656Igxp_g">was easier to do in R</a>. The <code>@edit</code> macro even jumps us right into the actual code for this dispatched call.</p>
+<p>This ‘add vectors’ problem <em>can</em> be solved through broadcasting, which performs an operation elementwise</p>
+<pre class="julia"><code>[1, 2, 3] .+ [4, 5, 6]</code></pre>
+<pre class="bg-success"><code>## 3-element Array{Int64,1}:
+##  5
+##  7
+##  9</code></pre>
+<p>The fun fact about this <a href="https://twitter.com/carroll_jono/status/1501164366233624582?s=20&amp;t=WUpy7m-RL2SQCoUN_S5SbA">I recently learned</a> was that broadcasting works on <em>any</em> operation, even if that’s the pipe itself</p>
+<pre class="julia"><code>[&quot;a&quot;, &quot;list&quot;, &quot;of&quot;, &quot;strings&quot;] .|&gt; [uppercase, reverse, titlecase, length]</code></pre>
+<pre class="bg-success"><code>## 4-element Array{Any,1}:
+##   &quot;A&quot;
+##   &quot;tsil&quot;
+##   &quot;Of&quot;
+##  7</code></pre>
+<p>Back to our loops, the method for <code>+</code> on two <code>Array</code>s points us to <a href="https://github.com/JuliaLang/julia/blob/3cff21e725097673f969c19f8f0992c9a0838ab3/base/arraymath.jl#L12">arraymath.jl</a> (linked to current relevant line) which contains</p>
+<pre class="julia"><code>function +(A::Array, Bs::Array...)
+    for B in Bs
+        promote_shape(A, B) # check size compatibility
+    end
+    broadcast_preserving_zero_d(+, A, Bs...)
+end</code></pre>
+<p>The last part of that is the meaningful part, and that leads to <a href="https://github.com/JuliaLang/julia/blame/b5871eb1b5def4b6ef6be15a8ef53cfb8e4fe309/base/broadcast.jl#L847"><code>Broadcast.broadcast_preserving_zero_d</code></a>.</p>
+<p>This starts to get out of my depth, but essentially</p>
+<pre class="julia"><code>@inline function broadcast_preserving_zero_d(f, As...)
+    bc = broadcasted(f, As...)
+    r = materialize(bc)
+    return length(axes(bc)) == 0 ? fill!(similar(bc, typeof(r)), r) : r
+end
+
+@inline broadcast(f, t::NTuple{N,Any}, ts::Vararg{NTuple{N,Any}}) where {N} = map(f, t, ts...)</code></pre>
+<p>involves a <code>map</code> operation to achieve the broadcasting.</p>
+<p>Perhaps that’s a problem to tackle when I’m better at digging through Julia.</p>
+<p>As always, comments, suggestions, and anything else welcome!</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 21.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2022-04-22                  
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date       lib source        
+##  blogdown      1.8     2022-02-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.24    2021-09-02 [1] CRAN (R 4.1.2)
+##  brio          1.1.1   2021-01-20 [3] CRAN (R 4.0.3)
+##  bslib         0.3.1   2021-10-06 [1] CRAN (R 4.1.2)
+##  cachem        1.0.3   2021-02-04 [3] CRAN (R 4.0.3)
+##  callr         3.7.0   2021-04-20 [1] CRAN (R 4.1.2)
+##  cli           3.2.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  crayon        1.5.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  desc          1.4.1   2022-03-06 [1] CRAN (R 4.1.2)
+##  devtools      2.4.3   2021-11-30 [1] CRAN (R 4.1.2)
+##  digest        0.6.27  2020-10-24 [3] CRAN (R 4.0.3)
+##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.1.2)
+##  evaluate      0.14    2019-05-28 [3] CRAN (R 4.0.1)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.0.3)
+##  fs            1.5.0   2020-07-31 [3] CRAN (R 4.0.2)
+##  glue          1.6.1   2022-01-22 [1] CRAN (R 4.1.2)
+##  htmltools     0.5.2   2021-08-25 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.1.2)
+##  jsonlite      1.7.2   2020-12-09 [3] CRAN (R 4.0.3)
+##  JuliaCall   * 0.17.4  2021-05-16 [1] CRAN (R 4.1.2)
+##  knitr         1.37    2021-12-16 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.1   2021-09-24 [1] CRAN (R 4.1.2)
+##  magrittr      2.0.1   2020-11-17 [3] CRAN (R 4.0.3)
+##  memoise       2.0.0   2021-01-26 [3] CRAN (R 4.0.3)
+##  pkgbuild      1.2.0   2020-12-15 [3] CRAN (R 4.0.3)
+##  pkgload       1.2.4   2021-11-30 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.5.2   2021-04-30 [1] CRAN (R 4.1.2)
+##  ps            1.5.0   2020-12-05 [3] CRAN (R 4.0.3)
+##  purrr         0.3.4   2020-04-17 [3] CRAN (R 4.0.1)
+##  R6            2.5.0   2020-10-28 [3] CRAN (R 4.0.2)
+##  Rcpp          1.0.6   2021-01-15 [3] CRAN (R 4.0.3)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.1   2022-02-03 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.13    2022-03-10 [1] CRAN (R 4.1.2)
+##  rprojroot     2.0.2   2020-11-15 [3] CRAN (R 4.0.3)
+##  rstudioapi    0.13    2020-11-12 [3] CRAN (R 4.0.3)
+##  sass          0.4.0   2021-05-12 [1] CRAN (R 4.1.2)
+##  sessioninfo   1.1.1   2018-11-05 [3] CRAN (R 4.0.1)
+##  stringi       1.5.3   2020-09-09 [3] CRAN (R 4.0.2)
+##  stringr       1.4.0   2019-02-10 [3] CRAN (R 4.0.1)
+##  testthat      3.1.2   2022-01-20 [1] CRAN (R 4.1.2)
+##  usethis       2.1.5   2021-12-09 [1] CRAN (R 4.1.2)
+##  withr         2.5.0   2022-03-03 [1] CRAN (R 4.1.2)
+##  xfun          0.30    2022-03-02 [1] CRAN (R 4.1.2)
+##  yaml          2.2.1   2020-02-01 [3] CRAN (R 4.0.1)
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>
