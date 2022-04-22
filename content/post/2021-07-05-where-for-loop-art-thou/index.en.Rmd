@@ -1,0 +1,226 @@
+---
+title: Where for (loop) ARt Thou?
+author: Jonathan Carroll
+date: '2021-07-05'
+slug: where-for-loop-art-thou
+categories:
+  - R
+tags:
+  - rstats
+  - julia
+type: ''
+subtitle: 'A loop by any other name...'
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(JuliaCall)
+
+julia <- julia_setup()
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+I've long been interested in exactly _how_ R works - not quite enough for me to learn _all_ the
+internals, but I was surprised that I could not find a clear guide towards exactly how a `for` loop 
+works at the deepest level.
+
+<--more-->
+
+I've long been interested in exactly _how_ R works - not quite enough for me to learn _all_ the
+internals, but I was surprised that I could not find a clear guide towards exactly how a `for` loop 
+works at the deepest level.
+
+Let's say we want to add two vectors which we've defined as `x` and `y`
+```{r add_vecs}
+x <- c(2, 4, 6)
+y <- c(1, 3, 2)
+```
+One way to do this (the verbose, elementwise way) would be to add each pair of elements
+```{r}
+c(x[1] + y[1], x[2] + y[2], x[3] + y[3])
+```
+but if you are familiar with not repeating yourself, you might write this in a loop. Best practice 
+involves pre-filling the result to the correct size
+```{r}
+res <- c(NA, NA, NA)
+for (i in 1:3) {
+  res[i] <- x[i] + y[i]
+}
+res
+```
+There, we wrote a `for` loop.
+
+Now, if you've ever seen R tutorials or discussions, you've probably had it drilled into you that 
+this is "bad" and should be replaced with something else. One of those options is an `apply` family 
+function
+```{r}
+plus <- function(i) {
+  x[i] + y[i]
+}
+sapply(1:3, plus)
+```
+or something 'tidier'
+```{r}
+purrr::map_dbl(1:3, plus)
+```
+(yes, yes, these functions are 'bad' because they don't take `x` or `y` as arguments) but this stil 
+performs the operation elementwise. If you've seen even more R tutorais/discussions you've 
+probably been seen that _vectorization_ is very handy - The R function `+` knows what to do with objects that 
+aren't just a single value, and does what you might expect
+```{r}
+x + y
+```
+Now, if you've really read a lot about R, you'll know that 'under the hood' a `for`-loop 
+is involved in every one of these, but it's "lower down", "at the C level". Jenny Bryan makes the 
+point that ["Of course someone has to write loops / It doesn't have to be you"](https://speakerdeck.com/jennybc/row-oriented-workflows-in-r-with-the-tidyverse?slide=16) and for this reason, 
+vectorization in R is of great benefit.
+
+So, there _is_ a loop, but where exactly does that happen?
+
+At some point, the computer needs to add the elements of `x` to the elements of `y`, and the simplest versions of this 
+happens one element at a time, in a loop. There's a big sidetrack here about [SIMD](https://en.wikipedia.org/wiki/SIMD) 
+which I'll try to avoid, but I will mention that the Microsoft fork of R ([artist, formerly known as Revolution R](https://mran.revolutionanalytics.com/open/)) running on Intel chips can do SIMD in MKL.
+
+
+So, let's start at the operator.
+```{r}
+`+`
+```
+Digging into primitives is a little tricky, but `{pryr}` can help
+```{r show_c, eval = FALSE}
+pryr::show_c_source(.Primitive("+"))
+```
+```{r, class.source="bg-success", eval = FALSE}
++ is implemented by do_arith with op = PLUSOP
+```
+We can browse a copy of the source for `do_arith` (in arithmetic.c) [here](https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L417) where we see some 
+logic paths for scalars and vectors. Let's assume we're working with our example which has `length(x) == length(y) > 1`. With two non-scalar arguments 
+
+```{c, eval = FALSE}
+if !IS_SCALAR and argc == length(arg) == 2
+```
+[This leads](https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L525) us to call [`R_binary`](https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L549)
+
+Depending on the class of the arguments, we need to call different functions, but for the sake of our example let's say we have non-integer real numbers so we fork to [`real_binary`](https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L975). This takes a `code` argument for which type of operation we're performing, and in our case it's `PLUSOP` (noted above). There's a [`case` branch for this](https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L991) in which case, provided the arguments are of the same length (`n1 == n2`) we [call](https://github.com/wch/r-source/blob/fe82da3baf849fcd3cc7dbc31c6abc72b57aa083/src/main/arithmetic.c#L1004-L1005)
+
+```{c, eval = FALSE}
+R_ITERATE_CHECK(NINTERRUPT, n, i, da[i] = dx[i] + dy[i];);
+```
+
+That's starting to look a lot like a loop - there's an iterator `i` and we're going to call another function.
+
+This jumps us over to a [different file](https://github.com/wch/r-source/blob/d22ee2fc0dc8142b23eed9f46edf76ea9d3ca69a/src/include/R_ext/Itermacros.h#L53) where we see `LOOP_WITH_INTERRUPT_CHECK` definitely performs some sort of loop. This takes the body above and the argument [`LOOP_ITERATE_CORE`](https://github.com/wch/r-source/blob/d22ee2fc0dc8142b23eed9f46edf76ea9d3ca69a/src/include/R_ext/Itermacros.h#L44) which is finally the actual loop! 
+
+```{c, eval = FALSE}
+#define R_ITERATE_CORE(n, i, loop_body) do {	\
+   for (; i < n; ++i) { loop_body }	\
+} while (0)
+
+```
+
+so, that's where the _actual_ loop in a vectorized R call happens! *ALL* that sits behind the innocent-looking `+`.
+
+That was thoroughly satisfying, but I did originally have in mind comparing R to another language - one where loops aren't frowned upon because of performance, but rather encouraged... How do Julia loops differ?
+
+Julia is not a vectorized language per se, but it has a neat ability to "vectorize" any operation, though in Julia syntax it's "broadcasting".
+
+Simple addition can combine scalar values
+
+```{julia}
+3+4
+```
+
+Julia actually has scalar values (in R, even a single value is just a vector of length 1) so a single value could be
+
+```{julia}
+typeof(3)
+```
+
+whereas several values need to be an `Array`, even if it only has 1 dimension
+
+```{julia}
+Vector{Int64}([1, 2, 3])
+```
+
+Trying to add two `Arrays` does work
+
+```{julia}
+[1, 2, 3] + [4, 5, 6]
+```
+
+but only because a specific method has been written for this case, i.e.
+
+```{julia}
+methods(+, (Array, Array))
+```
+
+One thing I particularly like is that we can see _exactly_ which method was called using the `@which` macro
+
+```{julia, eval = FALSE}
+@which [1, 2, 3, 4] + [1, 2, 3, 4]
+```
+```{julia, class.source="bg-success", eval = FALSE}
++(A::Array, Bs::Array...) in Base at arraymath.jl:43
+```
+
+
+something that I really wish [was easier to do in R](https://twitter.com/BrodieGaslam/status/971771827335974915?s=20&t=z-p-4RoHzw5rZ656Igxp_g). The `@edit` macro even jumps us right into the actual code for this dispatched call.
+
+This 'add vectors' problem _can_ be solved through broadcasting, which performs an operation elementwise
+
+```{julia}
+[1, 2, 3] .+ [4, 5, 6]
+```
+
+The fun fact about this [I recently learned](https://twitter.com/carroll_jono/status/1501164366233624582?s=20&t=WUpy7m-RL2SQCoUN_S5SbA) was that broadcasting works on _any_ operation, even if that's the pipe itself
+
+```{julia}
+["a", "list", "of", "strings"] .|> [uppercase, reverse, titlecase, length]
+```
+
+Back to our loops, the method for `+` on two `Array`s points us to [arraymath.jl](https://github.com/JuliaLang/julia/blob/3cff21e725097673f969c19f8f0992c9a0838ab3/base/arraymath.jl#L12) (linked to current relevant line) which contains
+
+```{julia, eval = FALSE}
+function +(A::Array, Bs::Array...)
+    for B in Bs
+        promote_shape(A, B) # check size compatibility
+    end
+    broadcast_preserving_zero_d(+, A, Bs...)
+end
+```
+
+The last part of that is the meaningful part, and that leads to [`Broadcast.broadcast_preserving_zero_d`](https://github.com/JuliaLang/julia/blame/b5871eb1b5def4b6ef6be15a8ef53cfb8e4fe309/base/broadcast.jl#L847).
+
+This starts to get out of my depth, but essentially 
+
+```{julia, eval = FALSE}
+@inline function broadcast_preserving_zero_d(f, As...)
+    bc = broadcasted(f, As...)
+    r = materialize(bc)
+    return length(axes(bc)) == 0 ? fill!(similar(bc, typeof(r)), r) : r
+end
+
+@inline broadcast(f, t::NTuple{N,Any}, ts::Vararg{NTuple{N,Any}}) where {N} = map(f, t, ts...)
+```
+
+involves a `map` operation to achieve the broadcasting.
+
+Perhaps that's a problem to tackle when I'm better at digging through Julia.
+
+As always, comments, suggestions, and anything else welcome!
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
