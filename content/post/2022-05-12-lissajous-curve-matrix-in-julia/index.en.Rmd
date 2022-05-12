@@ -39,7 +39,7 @@ These are at least reminiscent of [Lissajous curves](https://en.wikipedia.org/wi
 primarily just looked pretty cool - that animation is very nicely put together.
 
 That graphic was [made using Typescript](https://codepen.io/ScarpMetal/pen/abEPdwK) which 
-is pretty cool to begin with, but it looked like something that Julia might be well-suited to, 
+is itself neat to begin with, but it looked like something that Julia might be well-suited to, 
 at least the parts I've learned so far. It seems to involve interpolating between points and animation, 
 both of which I [recently covered on my mini blog](https://jcarroll.xyz/2022/04/07/interpolation-animation-in.html).
 
@@ -429,7 +429,7 @@ and `n=6`
 I was extremely happy to see these come together, and I'm genuinely surprised by how little code it took. I could 
 certainly imagine trying to do the same in R, but I have doubts that it would come together quite so cleanly.
 
-This is definitely stil part of my journey towards learning Julia, so if there's something in here you can spot 
+This is definitely still part of my journey towards learning Julia, so if there's something in here you can spot 
 that I could have done better, I do encourage you to let me know! Either here in the comments or on [Twitter](https://twitter.com/carroll_jono).
 
 The code for generating all of this can be found [here](https://gist.github.com/jonocarroll/e22ea4982a27e6663ec75b82b55b3ec3).
