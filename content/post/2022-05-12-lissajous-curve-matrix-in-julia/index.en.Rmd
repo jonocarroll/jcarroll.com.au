@@ -439,7 +439,7 @@ The code for generating all of this can be found [here](https://gist.github.com/
   <summary>
     <tt>devtools::session_info()</tt>
   </summary>
-```{r sessionInfo, echo = FALSE}
+```{r sessionInfo, echo = FALSE, eval = TRUE}
 devtools::session_info()
 ```
 </details>
