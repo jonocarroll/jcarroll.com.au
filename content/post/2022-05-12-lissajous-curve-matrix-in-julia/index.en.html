@@ -1,0 +1,326 @@
+---
+title: Lissajous Curve Matrix in Julia
+author: Jonathan Carroll
+date: '2022-05-12'
+slug: lissajous-curve-matrix-in-julia
+categories: []
+tags:
+  - julia
+type: ''
+subtitle: ''
+image: ''
+---
+
+<script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
+
+
+<p>Another ‘small learning project’ for me as I continue to learn Julia. I’ve said many
+times that small projects with a defined goal are one of the best ways to learn, at
+least for me. This one was inspired by <a href="https://www.reddit.com/r/oddlysatisfying/comments/uc054a/lissajous_polygons/">yet another Reddit post</a></p>
+<p><img src="2022/05/12/lissajous-curve-matrix-in-julia/images/lissajous.png" /></p>
+<!--more-->
+<p>Another ‘small learning project’ for me as I continue to learn Julia. I’ve said many
+times that small projects with a defined goal are one of the best ways to learn, at
+least for me. This one was inspired by <a href="https://www.reddit.com/r/oddlysatisfying/comments/uc054a/lissajous_polygons/">yet another Reddit post</a></p>
+<iframe id="reddit-embed" src="https://www.redditmedia.com/r/oddlysatisfying/comments/uc054a/lissajous_polygons/?ref_source=embed&amp;ref=share&amp;embed=true" sandbox="allow-scripts allow-same-origin allow-popups" style="border: none;" height="620" width="640" scrolling="no">
+</iframe>
+<p>These are at least reminiscent of <a href="https://en.wikipedia.org/wiki/Lissajous_curve">Lissajous curves</a> but they
+primarily just looked pretty cool - that animation is very nicely put together.</p>
+<p>That graphic was <a href="https://codepen.io/ScarpMetal/pen/abEPdwK">made using Typescript</a> which
+is pretty cool to begin with, but it looked like something that Julia might be well-suited to,
+at least the parts I’ve learned so far. It seems to involve interpolating between points and animation,
+both of which I <a href="https://jcarroll.xyz/2022/04/07/interpolation-animation-in.html">recently covered on my mini blog</a>.</p>
+<p>Better yet, it appeared that matrix operations might be a useful component, for which Julia seems particularly well-suited.</p>
+<p>The first thing I needed to do was to get a polygon plotted in Julia. This already challenged my existing
+knowledge, but that’s where the learning happens. I dabbled with the <code>Shape</code> class and didn’t get very far. I found
+some other implementations that plotted shapes, but none (at least that I understood) that produced a set of
+points I could interpolate between.</p>
+<p>I ended up defining my own function that calculates the vertices of an n-sided polygon with a bit of math. There’s
+very likely already something that does it, but it failed the discoverability aspect. The function I came up with is</p>
+<pre class="julia"><code>&quot;&quot;&quot;
+    vertices(center, R, n[, closed])
+
+# Arguments
+- `center::Point`: center of polygon
+- `R::Real`: circumradius
+- `n::Int`: number of sides
+- `closed::Bool`: should the first point be repeated?
+
+Polygon has a flat bottom and points progress counterclockwise 
+starting at the right end of the base
+
+The final point is the starting point when closed = true
+&quot;&quot;&quot;
+function vertices(center::Point, R::Real, n::Int, closed::Bool=true) 
+    X = center[1] .+ R * cos.(π/n .* (1 .+ 2 .* (0:n-1)) .- π/2)
+    Y = center[2] .+ R * sin.(π/n .* (1 .+ 2 .* (0:n-1)) .- π/2)
+
+    res = permutedims([X Y])
+    ## append the start point if closed
+    if closed
+        res = hcat(res, res[:,1])
+    end
+    return res
+end</code></pre>
+<p>This is where playing around with code and data where you know <em>what</em> you want but
+not how to produce it is the most useful. Coming from R, I was at risk of trying to
+create a <code>data.frame</code> of <code>x</code> and <code>y</code> points, but <code>Array</code>s make more sense here. Getting
+the points in the right structure was the biggest learning experience for me - combining
+<code>Array</code>s of <code>Point</code>s doesn’t quite work in the way I expect coming from R, but I think this works.</p>
+<p>I did play with the idea of making my own <code>struct</code> for this group of <code>Point</code>s, but even though
+(I think) it inherited from <code>AbstractArray</code>, none of the <code>Array</code> methods seemed to work for it - more
+to learn for next time!</p>
+<p>I wanted to make sure that the points I generated here seem to make sense, so I can plot them. Getting
+the plots to work requires <code>using Plots</code>, and <code>Point</code> comes from <code>GeometryBasics</code>, so</p>
+<pre class="julia"><code>using Plots
+import GeometryBasics: Point</code></pre>
+<p>then plotting the vertices of a polygon is as easy as</p>
+<pre class="julia"><code>a = vertices(Point(0,0), 1, 5, true);
+plot(a[1,:], a[2,:], xlim = (-1.2, 1.2), ylim = (-1.2, 1.2), ratio = 1)
+scatter!(a[1,:], a[2,:])</code></pre>
+<p><img src="images/vertices.png" /></p>
+<p>And just by changing the number of vertices</p>
+<pre class="julia"><code>a = vertices(Point(0,0), 1, 6, true);
+plot(a[1,:], a[2,:], xlim = (-1.2, 1.2), ylim = (-1.2, 1.2), ratio = 1)
+scatter!(a[1,:], a[2,:])</code></pre>
+<p><img src="images/vertices6.png" /></p>
+<p>I find it somewhat odd that <code>plot</code> doesn’t have an <code>Array</code> method and I need to explicitly slice out the
+<code>x</code> and <code>y</code> arguments, but perhaps I’m <a href="https://uxdesign.cc/youre-holding-it-wrong-how-to-blame-the-user-6ebfd36f5664?gi=99891968d5b4">“holding it wrong”</a>?</p>
+<p>Next I wanted to interpolate points between these vertices. I played with interpolation
+in Julia in my <a href="https://jcarroll.xyz/2022/04/07/interpolation-animation-in.html">last mini blog post</a> so
+I knew that function was</p>
+<pre class="julia"><code>interpolate(a, b) = t -&gt; ((1.0 - t) * a + t * b)</code></pre>
+<p>Interpolating between vertices meant interpolating between any two vertices, then repeating that over pairs. Taking
+the case of two vertices first</p>
+<pre class="julia"><code>&quot;&quot;&quot;
+    _interPoints(pts, steps, slice)
+
+# Arguments
+- `pts::Array`: Array of `Point`s representing a polygon
+- `steps::Int`: number of points to interpolate
+- `slice::Int`: which polygon vertex to begin with; points will  be interpolated to the next vertex
+
+This is an internal function to interpolate points between 
+    two vertices of a polygon. It is intended to be used 
+    in a `map` across slices of a polygon.
+&quot;&quot;&quot;
+function _interPoints(pts::Array, steps::Int, slice::Int) 
+    int = interpolate(pts[:,slice], pts[:,slice+1])
+    explode = [int(t) for t in range(0,1,length=steps)]
+    return hcat(explode...)
+end</code></pre>
+<p>which I can test with</p>
+<pre class="julia"><code>a = vertices(Point(0,0), 1, 5, true);
+b = _interPoints(a, 10, 1);
+plot(a[1,:], a[2,:], ratio = 1)
+scatter!(b[1,:], b[2,:])</code></pre>
+<p><img src="images/_interPoints.png" /></p>
+<p>Then, mapping across pairs of points is just</p>
+<pre class="julia"><code>&quot;&quot;&quot;
+    interPoints(pts, steps)
+
+# Arguments
+- `pts::Array`: Array of `Point`s representing a polygon
+- `steps::Int`: number of points to interpolate between each pair of vertices
+
+This takes an `Array` of `Point`s representing polygon vertices and interpolates between the vertices
+&quot;&quot;&quot;
+function interPoints(pts::Array, steps::Int) 
+    res = map(s -&gt; _interPoints(pts, steps, s), 1:(size(pts,2)-1))
+    return hcat(res...)
+end</code></pre>
+<p>Plotting all these points</p>
+<pre class="julia"><code>a = vertices(Point(0,0), 1, 5, true);
+b = interPoints(a, 10);
+plot(b[1,:], b[2,:], xlim = (-1.2, 1.2), ylim = (-1.2, 1.2), ratio = 1)
+scatter!(b[1,:], b[2,:])</code></pre>
+<p><img src="images/interPoints.png" /></p>
+<p>Animating these points is as simple as</p>
+<pre class="julia"><code>anim = @animate for t in 1:size(b,2)
+    plot(b[1,:], b[2,:], xlim = (-1.2, 1.2), ylim = (-1.2, 1.2), ratio=1)
+    scatter!([b[1,t]], [b[2,t]], markersize=8)
+end
+
+gif(anim, fps = 12)</code></pre>
+<p><img src="images/n5_points.gif" /></p>
+<p>and I think that’s pretty great progress towards what I want to make. Now I just need to run more of these
+at different speeds, and find the intersections of them.</p>
+<p>Taking the intersection problem first, I just want to create two polygons and extract the <code>x</code> values from one and
+the <code>y</code> values from the other. Simple enough</p>
+<pre class="julia"><code>&quot;&quot;&quot;
+Find the intersection of two Arrays (representing polygons)
+
+# Arguments
+- `a::Array`: first polygon (for x values)
+- `b::Array`: second polygon (for y values)
+
+Take the x values from a and the y values from b
+&quot;&quot;&quot;
+function intersection(a::Array, b::Array) 
+    permutedims(hcat([(a[1, :])...], [(b[2, :])...]))
+end</code></pre>
+<p><code>permutedims</code> was the big win for me here - I naively expected to be able to transpose
+an <code>Array</code> but that ends up with some <code>LinearAlgebra.Adjoint</code> mess and I got confused</p>
+<pre class="julia"><code>[1 2; 3 4]</code></pre>
+<pre class="bg-success"><code>## 2×2 Array{Int64,2}:
+##  1  2
+##  3  4</code></pre>
+<pre class="julia"><code>
+[1 2; 3 4]&#39;</code></pre>
+<pre class="bg-success"><code>## 2×2 Adjoint{Int64,Array{Int64,2}}:
+##  1  3
+##  2  4</code></pre>
+<p>Anyway, this appears to be able to take the intersection of two <code>Array</code>s. Let’s plot it!</p>
+<pre class="julia"><code>t1 = interPoints(vertices(Point(2,8), 0.5, 5), 10);
+t2 = interPoints(vertices(Point(1,7), 0.5, 5), 10);
+tx = intersection(t1, t2);
+
+plot(t1[1,:], t1[2,:], xlim = (0,3.5), ylim = (6,9), ratio = 1)
+plot!(t2[1,:], t2[2,:])
+plot!(tx[1,:], tx[2,:])</code></pre>
+<p><img src="images/intersection.png" /></p>
+<p>Perfect! Now I just need to do it a bunch more times (at different ‘speeds’) and animate it.</p>
+<p>I originally worked out the array math by hand and found a suitable number of points to plot
+for any given polygon and which multiplicative factors I could use, then I worked backwards to
+formalise it into a function</p>
+<pre class="julia"><code>&quot;&quot;&quot;
+
+    speed_factor(poly, speed)
+
+# Arguments
+- `poly::Array`: Array of `Point`s representing a polygon
+- `speed::Real`: mulitiplicative factor representing how the number of times a polygon should be traversed
+&quot;&quot;&quot;
+function speed_factor(poly::Array, speed::Real)
+    if (speed % 1 == 0)
+        res = repeat(poly, outer = (1,Int(speed)))
+    else 
+        n = Int(floor(speed / 1))
+        res = repeat(poly, outer=(1,n))
+        n_rem = Int(speed*size(poly,2)-size(res,2))
+        res = hcat(res, poly[:,1:n_rem])
+    end
+    res
+end</code></pre>
+<p>If I create a polygon of 72 interpolated points, I can create another with the same number of
+points but with larger gaps between them. This means the ‘faster’ polygon will loop around some <code>n&gt;1</code> number
+of times.</p>
+<pre class="julia"><code>r = 0.4; # circumradius for the polygon
+d = 3;   # number of vertices
+
+# Both produce a 2x72 Array{Float64,2}
+tx1 = interPoints(vertices(Point(2,6), r, d), 24)
+tx2 = speed_factor(interPoints(vertices(Point(3,6), r, d), 16) , 1.5) </code></pre>
+<p>I can create a series of these, say, at speeds of 1, 1.5, 2, 2.4, and 3. These are just nice
+numbers which are all integer divisors of the largest number of points (72)</p>
+<pre class="julia"><code>## n = 3
+r = 0.4;
+d = 3;
+
+tx1 = interPoints(vertices(Point(2,6), r, d), 24)
+tx2 = speed_factor(interPoints(vertices(Point(3,6), r, d), 16), 1.5) 
+tx3 = speed_factor(interPoints(vertices(Point(4,6), r, d), 12), 2)
+tx4 = speed_factor(interPoints(vertices(Point(5,6), r, d), 10), 2.4)
+tx5 = speed_factor(interPoints(vertices(Point(6,6), r, d), 8), 3)
+
+ty1 = interPoints(vertices(Point(1,5), r, d), 24)
+ty2 = speed_factor(interPoints(vertices(Point(1,4), r, d), 16), 1.5)
+ty3 = speed_factor(interPoints(vertices(Point(1,3), r, d), 12), 2)
+ty4 = speed_factor(interPoints(vertices(Point(1,2), r, d), 10), 2.4)
+ty5 = speed_factor(interPoints(vertices(Point(1,1), r, d), 8), 3)</code></pre>
+<p>The variable name is arbitrary, but these are a sequence of polygons along the <code>x</code> and <code>y</code> axes of
+some plot area.</p>
+<p>One thing that I really like about Julia is that <em>anything</em> can be in an <code>Array</code> (similar to lists in R) so
+I can combine these groups of points into an <code>Array</code> of <code>Array</code>s</p>
+<pre class="julia"><code>allx = [tx1, tx2, tx3, tx4, tx5]
+ally = [ty1, ty2, ty3, ty4, ty5]</code></pre>
+<p>Now, how to calculate all the intersections? Julia of course does “broadcasting” where we can take some
+operation and (in R parlance) “vectorize it”. That initially led me to</p>
+<pre class="julia"><code>intersection.(allx, ally)</code></pre>
+<p>which does indeed do that - it produces a <code>5-element Array{Array{Float64,2},1}</code> but that’s not what I wanted…
+this <em>only</em> calculates the ‘diagonal’ of <code>intersection(tx1, ty1)</code>, <code>intersection(tx2, ty2)</code>, …</p>
+<p>Thankfully, Julia <em>also</em> has list comprehensions, so the full ‘matrix’ of intersections is actually</p>
+<pre class="julia"><code>allint = [intersection(x, y) for x in allx, y in ally]</code></pre>
+<p>which produces a <code>5×5 Array{Array{Float64,2},2}</code> - the full matrix! With that in place, we now have all the
+pieces we need, so we just need to plot them.</p>
+<p>The following sets up a plot on every ‘timestep’ (one per point in the interpolation) where it redraws the canvas,
+with the progressive drawing of each polygon and the intersections, plus some tracking lines along the <code>x</code> and <code>y</code>
+extractions. One of the very neat things I entirely failed to appreciate earlier was the concept of
+enumerated objects - Julia knows that if I ask for <code>x in obj</code> I want to iterate over all the elements</p>
+<pre class="julia"><code>bbox = Point(6.5,6.5);
+
+anim3 = @animate for t in 1:size(tx1,2)
+    plot(xlim=(0,bbox[2]), ylim=(0,bbox[2]), 
+        legend=false, ratio=1, axis=nothing, border=:none, 
+        background_color=&quot;black&quot;, size=(1200,1200))
+    for p in 1:size(allx,1)
+        plot!(allx[p][1,1:t], allx[p][2,1:t], color=p, linewidth=6)
+        plot!(ally[p][1,1:t], ally[p][2,1:t], color=p, linewidth=6)
+        
+        plot!([allx[p][1,t], allx[p][1,t]], [0.5, allx[p][2,t]], color=&quot;grey&quot;, alpha=0.5, linewidth=5)
+        plot!([ally[p][1,t], bbox[2]], [ally[p][2,t], ally[p][2,t]], color=&quot;grey&quot;, alpha=0.5, linewidth=5)
+    end
+    for p in allint
+        plot!(p[1,1:t], p[2,1:t], color=&quot;blue&quot;, linewidth=5)
+    end
+end
+
+gif(anim3, &quot;n3.gif&quot;, fps=12)</code></pre>
+<p>And, finally, the result</p>
+<p><img src="images/n3.gif" /></p>
+<p>With all that in place, it’s reasonably straightforward to adapt this to other polygons. For <code>n=4</code></p>
+<pre class="julia"><code>r = 0.4;
+d = 4;
+
+tx1 = interPoints(vertices(Point(2,6), r, d), 24)
+tx2 = speed_factor(interPoints(vertices(Point(3,6), r, d), 16), 1.5)
+tx3 = speed_factor(interPoints(vertices(Point(4,6), r, d), 12), 2)
+tx4 = speed_factor(interPoints(vertices(Point(5,6), r, d), 10), 2.4)
+tx5 = speed_factor(interPoints(vertices(Point(6,6), r, d), 8), 3)
+
+ty1 = interPoints(vertices(Point(1,5), r, d), 24)
+ty2 = speed_factor(interPoints(vertices(Point(1,4), r, d), 16), 1.5)
+ty3 = speed_factor(interPoints(vertices(Point(1,3), r, d), 12), 2)
+ty4 = speed_factor(interPoints(vertices(Point(1,2), r, d), 10), 2.4)
+ty5 = speed_factor(interPoints(vertices(Point(1,1), r, d), 8), 3)
+
+allx = [tx1, tx2, tx3, tx4, tx5]
+ally = [ty1, ty2, ty3, ty4, ty5]
+allint = [intersection(x, y) for x in allx, y in ally]
+
+bbox = Point(6.5,6.5);
+
+anim4 = @animate for t in 1:size(tx1,2)
+    plot(xlim=(0,bbox[2]), ylim=(0,bbox[2]), 
+        legend=false, ratio=1, axis=nothing, border=:none, 
+        background_color=&quot;black&quot;, size=(1200,1200))
+    for p in 1:size(allx,1)
+        plot!(allx[p][1,1:t], allx[p][2,1:t], color=p, linewidth=6)
+        plot!(ally[p][1,1:t], ally[p][2,1:t], color=p, linewidth=6)
+        
+        plot!([allx[p][1,t], allx[p][1,t]], [0.5, allx[p][2,t]], color=&quot;grey&quot;, alpha=0.5, linewidth=5)
+        plot!([ally[p][1,t], bbox[2]], [ally[p][2,t], ally[p][2,t]], color=&quot;grey&quot;, alpha=0.5, linewidth=5)
+    end
+    for p in allint
+        plot!(p[1,1:t], p[2,1:t], color=&quot;blue&quot;, linewidth=5)
+    end
+end
+
+gif(anim4, &quot;n4.gif&quot;, fps=12)</code></pre>
+<p><img src="images/n4.gif" /></p>
+<p><code>n=5</code> (very similar code)</p>
+<p><img src="images/n5.gif" /></p>
+<p>and <code>n=6</code></p>
+<p><img src="images/n6.gif" /></p>
+<p>I was extremely happy to see these come together, and I’m genuinely surprised by how little code it took. I could
+certainly imagine trying to do the same in R, but I have doubts that it would come together quite so cleanly.</p>
+<p>This is definitely stil part of my journey towards learning Julia, so if there’s something in here you can spot
+that I could have done better, I do encourage you to let me know! Either here in the comments or on <a href="https://twitter.com/carroll_jono">Twitter</a>.</p>
+<p>The code for generating all of this can be found <a href="https://gist.github.com/jonocarroll/e22ea4982a27e6663ec75b82b55b3ec3">here</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+</details>
+<p><br /></p>
