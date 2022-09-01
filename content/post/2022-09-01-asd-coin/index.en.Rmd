@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 
 I took a _very_ long time [to post about the last Australian Signals Directorate (then DSD) decryption](https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/), so this time I'll be a lot more punctual. [This article](https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964) was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.
 
-![The new ASD 50c coin](2022/09/01/asd-coin/images/asd_coin_front.png)
+![The new ASD 50c coin](2022/09/01/asd_coin/images/asd_coin_front.png)
 
 <!--more-->
 
