@@ -3,9 +3,8 @@ title: Australian Signals Directorate 50c Coin Decryption
 author: Jonathan Carroll
 date: '2022-09-01'
 slug: asd_coin
-categories:
-  - R
-tags: []
+categories: [R]
+tags: [rstats]
 type: ''
 subtitle: ''
 image: ''
