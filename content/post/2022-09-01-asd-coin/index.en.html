@@ -1,0 +1,168 @@
+---
+title: Australian Signals Directorate 50c Coin Decryption
+author: Jonathan Carroll
+date: '2022-09-01'
+slug: asd_coin
+categories:
+  - R
+tags: []
+type: ''
+subtitle: ''
+image: ''
+---
+
+<script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
+
+
+<p>I took a <em>very</em> long time <a href="https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/">to post about the last Australian Signals Directorate (then DSD) decryption</a>, so this time I’ll be a lot more punctual. <a href="https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964">This article</a> was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.</p>
+<div class="figure">
+<img src="2022/09/01/asd-coin/images/asd_coin_front.png" alt="" />
+<p class="caption">The new ASD 50c coin</p>
+</div>
+<!--more-->
+<p>I took a <em>very</em> long time <a href="https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/">to post about the last Australian Signals Directorate (then DSD) decryption</a>, so this time I’ll be a lot more punctual. <a href="https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964">This article</a> was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.</p>
+<div class="figure">
+<img src="images/asd_coin_front.png" alt="" />
+<p class="caption">The new ASD 50c coin</p>
+</div>
+<p>That looks like fun! Typing in the letters and numbers from the image certainly wasn’t, but after that. Of course, I’ll be solving the entire thing with R.</p>
+<p>Apparently there’s 4 challenges here.</p>
+<p>The first problem is the text around the edge That looks to be split into sections. The shortest one is</p>
+<pre class="r"><code>edge1 &lt;- &quot;URMWXOZIRGBRM7DRWGSC5WVKGS&quot;</code></pre>
+<p>I tried a few different substitution ciphers and hit gold with an <a href="https://en.wikipedia.org/wiki/Atbash">Atbash cipher</a> where the alphabet is simply reversed. That’s easy enough to code up…</p>
+<pre class="r"><code>solve_atbash &lt;- function(txt) {
+  txt &lt;- strsplit(txt, &quot;&quot;)[[1]]
+  atbash &lt;- rev(LETTERS)
+  res &lt;- LETTERS[match(txt, atbash)]
+  # if an element doesn&#39;t match, it&#39;s probably a number 
+  # and can go straight in
+  res[is.na(res)] &lt;- txt[is.na(res)]
+  paste(res, collapse = &quot;&quot;)
+}</code></pre>
+<p>R having the alphabet available as <code>LETTERS</code> is certainly nice in this case. Applying that to the string above we get</p>
+<pre class="r"><code>solve_atbash(edge1)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;FINDCLARITYIN7WIDTHX5DEPTH&quot;</code></pre>
+<p>which we can space out a bit to read “FIND CLARITY IN 7 WIDTH X 5 DEPTH”. Sounds like we’re going to need a matrix - good news for R!</p>
+<p>Trying the next edge letters</p>
+<pre class="r"><code>edge2 &lt;- &quot;DVZIVZFWZXRLFHRMXLMXVKGZMWNVGRXFOLFHRMVCVXFGRLM&quot;
+solve_atbash(edge2)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;WEAREAUDACIOUSINCONCEPTANDMETICULOUSINEXECUTION&quot;</code></pre>
+<p>which once again needs some spaces, but we can read “WE ARE AUDACIOUS IN CONCEPT AND METICULOUS IN EXECUTION”. No additional hints there, I guess - just some filler.</p>
+<p>The inner ring of text doesn’t reveal anything with the cipher</p>
+<pre class="r"><code>inner &lt;- &quot;BGOAMVOEIATSIRLNGTTNEOGRERGXNTEAIFCECAIEOALEKFNR5LWEFCHDEEAEEE7NMDRXX5&quot;
+solve_atbash(inner)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;YTLZNELVRZGHRIOMTGGMVLTIVITCMGVZRUXVXZRVLZOVPUMI5ODVUXSWVVZVVV7MNWICC5&quot;</code></pre>
+<p>but we had the earlier clue of a 7 x 5 matrix… that’s only 35 characters, so maybe we need 2</p>
+<pre class="r"><code>mat1 &lt;- matrix(strsplit(inner, &quot;&quot;)[[1]][1:35], 5, 7, byrow = TRUE)
+mat1</code></pre>
+<pre class="bg-success"><code>##      [,1] [,2] [,3] [,4] [,5] [,6] [,7]
+## [1,] &quot;B&quot;  &quot;G&quot;  &quot;O&quot;  &quot;A&quot;  &quot;M&quot;  &quot;V&quot;  &quot;O&quot; 
+## [2,] &quot;E&quot;  &quot;I&quot;  &quot;A&quot;  &quot;T&quot;  &quot;S&quot;  &quot;I&quot;  &quot;R&quot; 
+## [3,] &quot;L&quot;  &quot;N&quot;  &quot;G&quot;  &quot;T&quot;  &quot;T&quot;  &quot;N&quot;  &quot;E&quot; 
+## [4,] &quot;O&quot;  &quot;G&quot;  &quot;R&quot;  &quot;E&quot;  &quot;R&quot;  &quot;G&quot;  &quot;X&quot; 
+## [5,] &quot;N&quot;  &quot;T&quot;  &quot;E&quot;  &quot;A&quot;  &quot;I&quot;  &quot;F&quot;  &quot;C&quot;</code></pre>
+<p>Looking down the columns the text reads consistently, so let’s paste those together</p>
+<pre class="r"><code>res1 &lt;- paste(apply(mat1, 2, paste, collapse = &quot;&quot;), collapse = &quot;&quot;)</code></pre>
+<p>Doing the same for the remaining letters then joining the results</p>
+<pre class="r"><code>mat2 &lt;- matrix(strsplit(inner, &quot;&quot;)[[1]][36:70], 5, 7, byrow = TRUE)
+res2 &lt;- paste(apply(mat2, 2, paste, collapse = &quot;&quot;), collapse = &quot;&quot;)
+paste(res1, res2, collapse = &quot;&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;BELONGINGTOAGREATTEAMSTRIVINGFOREXC ELLENCEWEMAKEADIFFERENCEXORHEXA5D75&quot;</code></pre>
+<p>which, with spaces, reads “BELONGING TO A GREAT TEAM STRIVING FOR EXCELLENCE WE MAKE A DIFFERENCE XOR HEX A5D75”.</p>
+<p><code>XOR</code> is familiar from <a href="https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/">the last time I solved the challenge</a>! The key ‘A5D75’ (l33tspeek for ASD’s 75th Anniversary, I take it) doesn’t have an even number of characters so the bytes won’t work out, so I’ll duplicate it enough times to properly <code>xor</code> with the input. I can only assume the big chunk of hex text is the remaining input. Typing that in was … interesting.</p>
+<pre class="r"><code>hex &lt;- &quot;
+E3B8287D4290F7233814D7A47A291DC0F71B2806
+D1A53B311CC4B97A0E1CC2B93B31068593332F10
+C6A3352F14D1B27A3514D6F7382F1AD0B0322955
+D1B83D3801CDB2287D05C0B82A311085A033291D
+85A3323855D6BC333119D6FB7A3C11C4A72E3C17
+CCBB33290C85B6343955CCBA3B3A1CCBB62E341A
+CBF72E3255CAA73F2F14D1B27A341B85A3323855
+D6BB333055C4A53F3C55C7B22E2A10C0B97A291D
+C0F73E3413C3BE392819D1F73B331185A3323855
+CCBA2A3206D6BE3831108B&quot;
+hex &lt;- gsub(&quot;\\n&quot;, &quot;&quot;, hex) # remove linebreaks
+# split into pairs of bytes
+pairs &lt;- sapply(seq(1, nchar(hex), by = 2), function(x) substr(hex, x, x+1))
+# xor key from earlier solution, duplicated so that pairs can be extracted
+xor &lt;- &quot;A5D75A5D75&quot;
+# duplicate to length of input
+xor &lt;- rep(sapply(seq(1, nchar(xor), by = 2), function(x) substr(xor, x, x+1)), 40)[1:length(pairs)]
+# xor input and key as integers
+res &lt;- bitwXor(strtoi(pairs, 16L), strtoi(xor, 16L))
+# convert result to ASCII
+cat(rawToChar(as.raw(res)))</code></pre>
+<pre class="bg-success"><code>## For 75 years the Australian Signals Directorate has brought together people with the skills, adaptability and imagination to operate in the slim area between the difficult and the impossible.</code></pre>
+<p>What a nice challenge! I don’t expect to be getting a phone call from ASD any time soon, but this was certainly fun to solve with R.</p>
+<p>I was thrown for a while with the pattern of circles and squares near the bottom of the coin, and the highlighted letters on the back. Perhaps there are more puzzles to solve?</p>
+<p>Now I just need to get one of the coins as a souvenir.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value                       
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 21.04               
+##  system   x86_64, linux-gnu           
+##  ui       X11                         
+##  language en_AU:en                    
+##  collate  en_AU.UTF-8                 
+##  ctype    en_AU.UTF-8                 
+##  tz       Australia/Adelaide          
+##  date     2022-09-01                  
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date       lib source        
+##  blogdown      1.8     2022-02-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.24    2021-09-02 [1] CRAN (R 4.1.2)
+##  brio          1.1.1   2021-01-20 [3] CRAN (R 4.0.3)
+##  bslib         0.3.1   2021-10-06 [1] CRAN (R 4.1.2)
+##  cachem        1.0.3   2021-02-04 [3] CRAN (R 4.0.3)
+##  callr         3.7.0   2021-04-20 [1] CRAN (R 4.1.2)
+##  cli           3.2.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  crayon        1.5.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  desc          1.4.1   2022-03-06 [1] CRAN (R 4.1.2)
+##  devtools      2.4.3   2021-11-30 [1] CRAN (R 4.1.2)
+##  digest        0.6.27  2020-10-24 [3] CRAN (R 4.0.3)
+##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.1.2)
+##  evaluate      0.14    2019-05-28 [3] CRAN (R 4.0.1)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.0.3)
+##  fs            1.5.0   2020-07-31 [3] CRAN (R 4.0.2)
+##  glue          1.6.1   2022-01-22 [1] CRAN (R 4.1.2)
+##  htmltools     0.5.2   2021-08-25 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.1.2)
+##  jsonlite      1.7.2   2020-12-09 [3] CRAN (R 4.0.3)
+##  knitr         1.37    2021-12-16 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.1   2021-09-24 [1] CRAN (R 4.1.2)
+##  magrittr      2.0.1   2020-11-17 [3] CRAN (R 4.0.3)
+##  memoise       2.0.0   2021-01-26 [3] CRAN (R 4.0.3)
+##  pkgbuild      1.2.0   2020-12-15 [3] CRAN (R 4.0.3)
+##  pkgload       1.2.4   2021-11-30 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.5.2   2021-04-30 [1] CRAN (R 4.1.2)
+##  ps            1.5.0   2020-12-05 [3] CRAN (R 4.0.3)
+##  purrr         0.3.4   2020-04-17 [3] CRAN (R 4.0.1)
+##  R6            2.5.0   2020-10-28 [3] CRAN (R 4.0.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.1   2022-02-03 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.13    2022-03-10 [1] CRAN (R 4.1.2)
+##  rprojroot     2.0.2   2020-11-15 [3] CRAN (R 4.0.3)
+##  rstudioapi    0.13    2020-11-12 [3] CRAN (R 4.0.3)
+##  sass          0.4.0   2021-05-12 [1] CRAN (R 4.1.2)
+##  sessioninfo   1.1.1   2018-11-05 [3] CRAN (R 4.0.1)
+##  stringi       1.5.3   2020-09-09 [3] CRAN (R 4.0.2)
+##  stringr       1.4.0   2019-02-10 [3] CRAN (R 4.0.1)
+##  testthat      3.1.2   2022-01-20 [1] CRAN (R 4.1.2)
+##  usethis       2.1.5   2021-12-09 [1] CRAN (R 4.1.2)
+##  withr         2.5.0   2022-03-03 [1] CRAN (R 4.1.2)
+##  xfun          0.30    2022-03-02 [1] CRAN (R 4.1.2)
+##  yaml          2.2.1   2020-02-01 [3] CRAN (R 4.0.1)
+## 
+## [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+## [2] /usr/local/lib/R/site-library
+## [3] /usr/lib/R/site-library
+## [4] /usr/lib/R/library</code></pre>
+</details>
+<p><br /></p>
