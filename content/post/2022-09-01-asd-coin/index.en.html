@@ -13,21 +13,54 @@ image: ''
 <script src="{{< blogdown/postref >}}index.en_files/header-attrs/header-attrs.js"></script>
 
 
+<p><strong>Updated: 2022-09-04</strong></p>
 <p>I took a <em>very</em> long time <a href="https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/">to post about the last Australian Signals Directorate (then DSD) decryption</a>, so this time I’ll be a lot more punctual. <a href="https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964">This article</a> was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.</p>
 <div class="figure">
 <img src="2022/09/01/asd_coin/images/asd_coin_front.png" alt="" />
 <p class="caption">The new ASD 50c coin</p>
 </div>
 <!--more-->
+<p><strong>Updated: 2022-09-04</strong></p>
 <p>I took a <em>very</em> long time <a href="https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/">to post about the last Australian Signals Directorate (then DSD) decryption</a>, so this time I’ll be a lot more punctual. <a href="https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964">This article</a> was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.</p>
 <div class="figure">
 <img src="images/asd_coin_front.png" alt="" />
 <p class="caption">The new ASD 50c coin</p>
 </div>
 <p>That looks like fun! Typing in the letters and numbers from the image certainly wasn’t, but after that. Of course, I’ll be solving the entire thing with R.</p>
-<p>Apparently there’s 4 challenges here.</p>
-<p>The first problem is the text around the edge That looks to be split into sections. The shortest one is</p>
-<pre class="r"><code>edge1 &lt;- &quot;URMWXOZIRGBRM7DRWGSC5WVKGS&quot;</code></pre>
+<p>Apparently there’s <s>4</s> 6 challenges here.</p>
+<hr />
+<p><strong>Added 2022-09-04:</strong></p>
+<p>The obverse (head) side of the coin</p>
+<p><img src="images/asd_coin_head.png" /></p>
+<p>has some boxes under particular letters (bolded here) in “ELIZA<strong>B</strong>E<strong>TH</strong> <strong>A</strong>U<strong>S</strong>TRALI<strong>A</strong>”. These are Braille numbers.</p>
+<p><img src="images/braille.png" /></p>
+<p>I’m committed to doing all this solving in base R, so no external packages, but <a href="https://coolbutuseless.github.io/2018/07/31/encoding-and-rendering-grade-1-braille/"><span class="citation">@coolbutuseless</span> has a great post about Braille in R</a> where he notes that the system can be bit-encoded quite nicely. Essentially, the positions of the filled boxes can be represented uniquely by a pattern of bits. This means we can store the Braille numbers as bits and identify which one is which. If we store the lookup table as</p>
+<pre class="r"><code>nums &lt;- c(1, 5, 3, 11, 9, 7, 15, 13, 6) # 1:9</code></pre>
+<p>then we can see one of these (e.g. 8) in the Braille form with</p>
+<pre class="r"><code>print(matrix(intToBits(nums[8])[1:6], ncol=2, byrow = T))</code></pre>
+<pre class="bg-success"><code>##      [,1] [,2]
+## [1,]   01   00
+## [2,]   01   01
+## [3,]   00   00</code></pre>
+<p>Taking the patterns under each of the letters</p>
+<pre class="r"><code>code = list(
+  B = c(1,1,0,0),
+  T = c(1,0,1,0),
+  H = c(1,1,1,0),
+  A = c(1,0,0,0),
+  S = c(1,0,0,1),
+  a = c(1,1,0,1)
+)</code></pre>
+<p>then calculating their bit values</p>
+<pre class="r"><code>sums &lt;- sapply(code, function(x) sum(x*2^(0:3)))</code></pre>
+<p>we can compare against the lookup table and sort the result to see</p>
+<pre class="r"><code>sort(setNames(match(sums, nums), names(code)))</code></pre>
+<pre class="bg-success"><code>## A T B a S H 
+## 1 2 3 4 5 6</code></pre>
+<p>which leads us to the cipher we should use for the next challenge!</p>
+<hr />
+<p>The text around the rim looks to be split into sections. The shortest one is</p>
+<pre class="r"><code>txt1 &lt;- &quot;URMWXOZIRGBRM7DRWGSC5WVKGS&quot;</code></pre>
 <p>I tried a few different substitution ciphers and hit gold with an <a href="https://en.wikipedia.org/wiki/Atbash">Atbash cipher</a> where the alphabet is simply reversed. That’s easy enough to code up…</p>
 <pre class="r"><code>solve_atbash &lt;- function(txt) {
   txt &lt;- strsplit(txt, &quot;&quot;)[[1]]
@@ -39,12 +72,12 @@ image: ''
   paste(res, collapse = &quot;&quot;)
 }</code></pre>
 <p>R having the alphabet available as <code>LETTERS</code> is certainly nice in this case. Applying that to the string above we get</p>
-<pre class="r"><code>solve_atbash(edge1)</code></pre>
+<pre class="r"><code>solve_atbash(txt1)</code></pre>
 <pre class="bg-success"><code>## [1] &quot;FINDCLARITYIN7WIDTHX5DEPTH&quot;</code></pre>
 <p>which we can space out a bit to read “FIND CLARITY IN 7 WIDTH X 5 DEPTH”. Sounds like we’re going to need a matrix - good news for R!</p>
-<p>Trying the next edge letters</p>
-<pre class="r"><code>edge2 &lt;- &quot;DVZIVZFWZXRLFHRMXLMXVKGZMWNVGRXFOLFHRMVCVXFGRLM&quot;
-solve_atbash(edge2)</code></pre>
+<p>Trying the next rim letters</p>
+<pre class="r"><code>txt2 &lt;- &quot;DVZIVZFWZXRLFHRMXLMXVKGZMWNVGRXFOLFHRMVCVXFGRLM&quot;
+solve_atbash(txt2)</code></pre>
 <pre class="bg-success"><code>## [1] &quot;WEAREAUDACIOUSINCONCEPTANDMETICULOUSINEXECUTION&quot;</code></pre>
 <p>which once again needs some spaces, but we can read “WE ARE AUDACIOUS IN CONCEPT AND METICULOUS IN EXECUTION”. No additional hints there, I guess - just some filler.</p>
 <p>The inner ring of text doesn’t reveal anything with the cipher</p>
@@ -93,8 +126,70 @@ res &lt;- bitwXor(strtoi(pairs, 16L), strtoi(xor, 16L))
 cat(rawToChar(as.raw(res)))</code></pre>
 <pre class="bg-success"><code>## For 75 years the Australian Signals Directorate has brought together people with the skills, adaptability and imagination to operate in the slim area between the difficult and the impossible.</code></pre>
 <p>What a nice challenge! I don’t expect to be getting a phone call from ASD any time soon, but this was certainly fun to solve with R.</p>
-<p>I was thrown for a while with the pattern of circles and squares near the bottom of the coin, and the highlighted letters on the back. Perhaps there are more puzzles to solve?</p>
-<p>Now I just need to get one of the coins as a souvenir.</p>
+<hr />
+<p><strong>Added 2022-09-04</strong></p>
+<p>The inner ring text has a dark/light pattern to it. Treating this as binary</p>
+<pre class="r"><code>txt &lt;- &quot;BGOAMVOEIATSIRLNGTTNEOGRERGXNTEAIFCECAIEOALEKFNR5LWEFCHDEEAEEE7NMDRXX5&quot;
+bin &lt;- &quot;1000001101001110001001000011110001011100100110010011000001100100110010&quot;</code></pre>
+<p>then spliting into groups (of 7, since <span class="math inline">\(2^7 = 128\)</span> is sufficient for the <a href="https://www.asciitable.com/">ASCII text table</a>)</p>
+<pre class="r"><code>bin &lt;- sapply(seq(1, nchar(bin), by = 7), function(x) substr(bin, x, x+6))
+bin</code></pre>
+<pre class="bg-success"><code>##  [1] &quot;1000001&quot; &quot;1010011&quot; &quot;1000100&quot; &quot;1000011&quot; &quot;1100010&quot; &quot;1110010&quot; &quot;0110010&quot;
+##  [8] &quot;0110000&quot; &quot;0110010&quot; &quot;0110010&quot;</code></pre>
+<p>then converting to ASCII, this time with a base of 2 for the binary data</p>
+<pre class="r"><code>rawToChar(as.raw(strtoi(bin, 2L)))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ASDCbr2022&quot;</code></pre>
+<p>which looks to be short for “ASD <a href="https://en.wikipedia.org/wiki/Canberra">CANBERRA</a> 2022”.</p>
+<p>The outer ring additionally has a shaded pattern. Instead of binary, we can treat this as Morse code with a light letter representing a dot, a dark letter representing a dash, and a shaded letter representing a space. If we start at the double space near the top of the coin, the pattern is</p>
+<pre class="r"><code>txt &lt;- &quot;WNVGRXFOLFHRMVCVXFGRLM.URMWXOZIRGBRM7DRWGSC5WVKGSDVZIVZFWZXRLFHRMXLMXVKGZM&quot;
+pat &lt;- &quot;-.. ... -... .- .-.. -... . .-. - .--. .- .-. -.- .---- ----. ....- --... &quot;</code></pre>
+<p>Splitting this at the spaces</p>
+<pre class="r"><code>pat &lt;- strsplit(pat, &quot; &quot;)[[1]]
+pat</code></pre>
+<pre class="bg-success"><code>##  [1] &quot;-..&quot;   &quot;...&quot;   &quot;-...&quot;  &quot;.-&quot;    &quot;.-..&quot;  &quot;-...&quot;  &quot;.&quot;     &quot;.-.&quot;   &quot;-&quot;    
+## [10] &quot;.--.&quot;  &quot;.-&quot;    &quot;.-.&quot;   &quot;-.-&quot;   &quot;.----&quot; &quot;----.&quot; &quot;....-&quot; &quot;--...&quot;</code></pre>
+<p>I’m still trying to do this in base R, so again, no packages. Instead I’ll load a lookup table</p>
+<pre class="r"><code>morse &lt;-
+  data.frame(char = c(
+    &quot;A&quot;, &quot;B&quot;, &quot;C&quot;, &quot;D&quot;,
+    &quot;E&quot;, &quot;F&quot;, &quot;G&quot;, &quot;H&quot;,
+    &quot;I&quot;, &quot;J&quot;, &quot;K&quot;, &quot;L&quot;,
+    &quot;M&quot;, &quot;N&quot;, &quot;O&quot;, &quot;P&quot;,
+    &quot;Q&quot;, &quot;R&quot;, &quot;S&quot;, &quot;T&quot;,
+    &quot;U&quot;, &quot;V&quot;, &quot;W&quot;, &quot;X&quot;,
+    &quot;Y&quot;, &quot;Z&quot;, &quot;0&quot;, &quot;1&quot;,
+    &quot;2&quot;, &quot;3&quot;, &quot;4&quot;, &quot;5&quot;,
+    &quot;6&quot;, &quot;7&quot;, &quot;8&quot;, &quot;9&quot;,
+    &quot;,&quot;, &quot;?&quot;, &quot;:&quot;, &quot;-&quot;,
+    &quot;\&quot;&quot;, &quot;(&quot;, &quot;=&quot;, &quot;*&quot;,
+    &quot;.&quot;, &quot;;&quot;, &quot;/&quot;, &quot;&#39;&quot;,
+    &quot;_&quot;, &quot;)&quot;, &quot;+&quot;, &quot;@&quot;,
+    &quot; &quot;),
+    row.names = c(
+      &quot;.-&quot;, &quot;-...&quot;, &quot;-.-.&quot;, &quot;-..&quot;,
+      &quot;.&quot;, &quot;..-.&quot;, &quot;--.&quot;, &quot;....&quot;,
+      &quot;..&quot;, &quot;.---&quot;, &quot;-.-&quot;, &quot;.-..&quot;,
+      &quot;--&quot;, &quot;-.&quot;, &quot;---&quot;, &quot;.--.&quot;,
+      &quot;--.-&quot;, &quot;.-.&quot;, &quot;...&quot;, &quot;-&quot;,
+      &quot;..-&quot;, &quot;...-&quot;, &quot;.--&quot;, &quot;-..-&quot;,
+      &quot;-.--&quot;, &quot;--..&quot;, &quot;-----&quot;, &quot;.----&quot;,
+      &quot;..---&quot;, &quot;...--&quot;, &quot;....-&quot;, &quot;.....&quot;,
+      &quot;-....&quot;, &quot;--...&quot;, &quot;---..&quot;, &quot;----.&quot;,
+      &quot;__..__&quot;, &quot;..__..&quot;, &quot;___...&quot;, &quot;_...._&quot;,
+      &quot;._.._.&quot;, &quot;_.__.&quot;, &quot;_..._&quot;, &quot;_.._&quot;,
+      &quot;._._._&quot;, &quot;_._._.&quot;, &quot;_.._.&quot;,
+      &quot;.____.&quot;, &quot;..__._&quot;, &quot;_.__._&quot;, &quot;._._.&quot;,
+      &quot;.__._.&quot;, &quot;   &quot;)
+  )</code></pre>
+<p>I like using rownames as an easy way to lookup values, despite the aversion to them in the tidyverse. Now it’s just a matter of extracting the values based on the lookup</p>
+<pre class="r"><code>paste(morse[pat, ], collapse = &quot;&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;DSBALBERTPARK1947&quot;</code></pre>
+<p>which stands for “DSB ALBERT PARK 1947”. Back when the division was started in <a href="https://www.asd.gov.au/75th-anniversary/timeline/178-1947-defence-signals-bureau-dsb-established">1947 at Albert Park</a> it was the <a href="https://www.asd.gov.au/75th-anniversary/timeline/181-1964-dsb-renamed-defence-signals-division-dsd">Defence Signals Bureau</a>.</p>
+<p>The very last part is the squares and circles - that appears to be the <a href="https://www.cre8ive.com.au/work/asd/">ADS’s typeface</a> and I think just spells out “ASD”</p>
+<p><img src="images/asd.jpg" /></p>
+<hr />
+<p>Thanks for the comments and helpful tips, everyone!</p>
+<p><s>Now I just need to get one of the coins as a souvenir.</s> I managed to get one of the coins from the Mint, and they’re now sold out.</p>
 <br />
 <details>
 <summary>
@@ -110,7 +205,7 @@ cat(rawToChar(as.raw(res)))</code></pre>
 ##  collate  en_AU.UTF-8                 
 ##  ctype    en_AU.UTF-8                 
 ##  tz       Australia/Adelaide          
-##  date     2022-09-01                  
+##  date     2022-09-04                  
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
 ##  package     * version date       lib source        
