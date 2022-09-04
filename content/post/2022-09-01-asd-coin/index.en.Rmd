@@ -19,11 +19,15 @@ knitr::opts_chunk$set(
 )
 ```
 
+**Updated: 2022-09-04**
+
 I took a _very_ long time [to post about the last Australian Signals Directorate (then DSD) decryption](https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/), so this time I'll be a lot more punctual. [This article](https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964) was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.
 
 ![The new ASD 50c coin](2022/09/01/asd_coin/images/asd_coin_front.png)
 
 <!--more-->
+
+**Updated: 2022-09-04**
 
 I took a _very_ long time [to post about the last Australian Signals Directorate (then DSD) decryption](https://jcarroll.com.au/2021/12/23/adventures-in-x86-asm/), so this time I'll be a lot more punctual. [This article](https://www.abc.net.au/news/2022-09-01/act-spy-agency-releases-coin-with-secret-code/101391964) was published today announcing that ASD have collaborated to release a new 50c coin containing a decryption challenge.
 
@@ -31,12 +35,65 @@ I took a _very_ long time [to post about the last Australian Signals Directorate
 
 That looks like fun! Typing in the letters and numbers from the image certainly wasn't, but after that. Of course, I'll be solving the entire thing with R.
 
-Apparently there's 4 challenges here. 
+Apparently there's <s>4</s> 6 challenges here. 
 
-The first problem is the text around the edge That looks to be split into sections. The shortest one is
+***
+
+**Added 2022-09-04:**
+
+The obverse (head) side of the coin 
+
+![](images/asd_coin_head.png)
+
+has some boxes under particular letters (bolded here) in "ELIZA**B**E**T****H** **A**U**S**TRALI**A**". These are Braille numbers. 
+
+![](images/braille.png)
+
+I'm committed to doing all this solving in base R, so no external packages, but [@coolbutuseless has a great post about Braille in R](https://coolbutuseless.github.io/2018/07/31/encoding-and-rendering-grade-1-braille/) where he notes that the system can be bit-encoded quite nicely. Essentially, the positions of the filled boxes can be represented uniquely by a pattern of bits. This means we can store the Braille numbers as bits and identify which one is which. If we store the lookup table as
 
 ```{r}
-edge1 <- "URMWXOZIRGBRM7DRWGSC5WVKGS"
+nums <- c(1, 5, 3, 11, 9, 7, 15, 13, 6) # 1:9
+```
+
+then we can see one of these (e.g. 8) in the Braille form with
+
+```{r}
+print(matrix(intToBits(nums[8])[1:6], ncol=2, byrow = T))
+```
+
+Taking the patterns under each of the letters 
+
+```{r}
+code = list(
+  B = c(1,1,0,0),
+  T = c(1,0,1,0),
+  H = c(1,1,1,0),
+  A = c(1,0,0,0),
+  S = c(1,0,0,1),
+  a = c(1,1,0,1)
+)
+```
+
+then calculating their bit values
+
+```{r}
+sums <- sapply(code, function(x) sum(x*2^(0:3)))
+```
+
+we can compare against the lookup table and sort the result to see 
+
+```{r}
+sort(setNames(match(sums, nums), names(code)))
+```
+
+which leads us to the cipher we should use for the next challenge!
+
+***
+
+The text around the rim looks to be split into sections. The shortest one is
+
+```{r}
+txt1 <- "URMWXOZIRGBRM7DRWGSC5WVKGS"
 ```
 
 I tried a few different substitution ciphers and hit gold with an [Atbash cipher](https://en.wikipedia.org/wiki/Atbash) where the alphabet is simply reversed. That's easy enough to code up...
@@ -56,16 +113,16 @@ solve_atbash <- function(txt) {
 R having the alphabet available as `LETTERS` is certainly nice in this case. Applying that to the string above we get
 
 ```{r}
-solve_atbash(edge1)
+solve_atbash(txt1)
 ```
 
 which we can space out a bit to read "FIND CLARITY IN 7 WIDTH X 5 DEPTH". Sounds like we're going to need a matrix - good news for R!
 
-Trying the next edge letters 
+Trying the next rim letters 
 
 ```{r}
-edge2 <- "DVZIVZFWZXRLFHRMXLMXVKGZMWNVGRXFOLFHRMVCVXFGRLM"
-solve_atbash(edge2)
+txt2 <- "DVZIVZFWZXRLFHRMXLMXVKGZMWNVGRXFOLFHRMVCVXFGRLM"
+solve_atbash(txt2)
 ```
 
 which once again needs some spaces, but we can read "WE ARE AUDACIOUS IN CONCEPT AND METICULOUS IN EXECUTION". No additional hints there, I guess - just some filler.
@@ -129,9 +186,100 @@ cat(rawToChar(as.raw(res)))
 
 What a nice challenge! I don't expect to be getting a phone call from ASD any time soon, but this was certainly fun to solve with R.
 
-I was thrown for a while with the pattern of circles and squares near the bottom of the coin, and the highlighted letters on the back. Perhaps there are more puzzles to solve?
+*** 
 
-Now I just need to get one of the coins as a souvenir.
+**Added 2022-09-04**
+
+The inner ring text has a dark/light pattern to it. Treating this as binary 
+
+```{r}
+txt <- "BGOAMVOEIATSIRLNGTTNEOGRERGXNTEAIFCECAIEOALEKFNR5LWEFCHDEEAEEE7NMDRXX5"
+bin <- "1000001101001110001001000011110001011100100110010011000001100100110010"
+```
+
+then spliting into groups (of 7, since $2^7 = 128$ is sufficient for the [ASCII text table](https://www.asciitable.com/))
+
+```{r}
+bin <- sapply(seq(1, nchar(bin), by = 7), function(x) substr(bin, x, x+6))
+bin
+```
+
+then converting to ASCII, this time with a base of 2 for the binary data
+
+```{r}
+rawToChar(as.raw(strtoi(bin, 2L)))
+```
+
+which looks to be short for "ASD [CANBERRA](https://en.wikipedia.org/wiki/Canberra) 2022". 
+
+The outer ring additionally has a shaded pattern. Instead of binary, we can treat this as Morse code with a light letter representing a dot, a dark letter representing a dash, and a shaded letter representing a space. If we start at the double space near the top of the coin, the pattern is 
+
+```{r}
+txt <- "WNVGRXFOLFHRMVCVXFGRLM.URMWXOZIRGBRM7DRWGSC5WVKGSDVZIVZFWZXRLFHRMXLMXVKGZM"
+pat <- "-.. ... -... .- .-.. -... . .-. - .--. .- .-. -.- .---- ----. ....- --... "
+```
+
+Splitting this at the spaces
+
+```{r}
+pat <- strsplit(pat, " ")[[1]]
+pat
+```
+
+I'm still trying to do this in base R, so again, no packages. Instead I'll load a lookup table
+
+```{r}
+morse <-
+  data.frame(char = c(
+    "A", "B", "C", "D",
+    "E", "F", "G", "H",
+    "I", "J", "K", "L",
+    "M", "N", "O", "P",
+    "Q", "R", "S", "T",
+    "U", "V", "W", "X",
+    "Y", "Z", "0", "1",
+    "2", "3", "4", "5",
+    "6", "7", "8", "9",
+    ",", "?", ":", "-",
+    "\"", "(", "=", "*",
+    ".", ";", "/", "'",
+    "_", ")", "+", "@",
+    " "),
+    row.names = c(
+      ".-", "-...", "-.-.", "-..",
+      ".", "..-.", "--.", "....",
+      "..", ".---", "-.-", ".-..",
+      "--", "-.", "---", ".--.",
+      "--.-", ".-.", "...", "-",
+      "..-", "...-", ".--", "-..-",
+      "-.--", "--..", "-----", ".----",
+      "..---", "...--", "....-", ".....",
+      "-....", "--...", "---..", "----.",
+      "__..__", "..__..", "___...", "_...._",
+      "._.._.", "_.__.", "_..._", "_.._",
+      "._._._", "_._._.", "_.._.",
+      ".____.", "..__._", "_.__._", "._._.",
+      ".__._.", "   ")
+  )
+```
+
+I like using rownames as an easy way to lookup values, despite the aversion to them in the tidyverse. Now it's just a matter of extracting the values based on the lookup
+
+```{r}
+paste(morse[pat, ], collapse = "")
+```
+
+which stands for "DSB ALBERT PARK 1947". Back when the division was started in [1947 at Albert Park](https://www.asd.gov.au/75th-anniversary/timeline/178-1947-defence-signals-bureau-dsb-established) it was the [Defence Signals Bureau](https://www.asd.gov.au/75th-anniversary/timeline/181-1964-dsb-renamed-defence-signals-division-dsd).
+
+The very last part is the squares and circles - that appears to be the [ADS's typeface](https://www.cre8ive.com.au/work/asd/) and I think just spells out "ASD"
+
+![](images/asd.jpg)
+
+***
+
+Thanks for the comments and helpful tips, everyone!
+
+<s>Now I just need to get one of the coins as a souvenir.</s> I managed to get one of the coins from the Mint, and they're now sold out.
 
 <br />
 <details>
