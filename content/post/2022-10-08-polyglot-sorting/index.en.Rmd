@@ -326,7 +326,7 @@ d$language <- factor(
   levels = c("Rust", "R", "Julia", "Python", "Bash")
 )
 
-ggplot(d, aes(language, time, fill = language, group = version)) +
+ggplot(d, aes(language, time, fill = language, group = run)) + 
   geom_col(position = position_dodge(0.9)) + 
   facet_grid(
     ~language + version, 
