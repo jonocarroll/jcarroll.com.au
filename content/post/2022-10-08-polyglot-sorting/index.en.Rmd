@@ -1,0 +1,364 @@
+---
+title: Polyglot Sorting
+author: Jonathan Carroll
+date: '2022-10-08'
+slug: polyglot-sorting
+categories:
+  - R
+  - python
+  - julia
+  - bash
+  - rust
+tags:
+  - R
+  - julia
+  - python
+  - bash
+  - rust
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+library(dplyr)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger",
+  fig.path = "static",
+  out.width = "100%"
+)
+```
+
+I've had the impression lately that *everyone* is learning [Rust](https://www.rust-lang.org/learn) and there's plenty of [great material](https://github.com/joaocarvalhoopen/How_to_learn_modern_Rust) out there to make that easier. [{gifski}](https://github.com/r-rust/gifski) is perhaps the most well-known example of an R package wrapping a Rust Cargo crate. I don't really know any system language particularly well, so I figured I'd wade into it and see what it's like.
+
+<!--more-->
+
+I've had the impression lately that *everyone* is learning [Rust](https://www.rust-lang.org/learn) and there's plenty of [great material](https://github.com/joaocarvalhoopen/How_to_learn_modern_Rust) out there to make that easier. [{gifski}](https://github.com/r-rust/gifski) is perhaps the most well-known example of an R package wrapping a Rust Cargo crate. I don't really know any system language particularly well, so I figured I'd wade into it and see what it's like.
+
+The big advantages I've heard are that it's more modern than C++, is "safe" (in the sense that you can't compile something that tries to read out of bounds memory), and it's super fast (it's a compiled, strictly-typed language, so one would hope so).
+
+I had a browse through some beginner material, and watched some videos on Youtube. Just enough to have some understanding of the syntax and keywords so I could actually search for things once I inevitably hit problems.
+
+Getting everything up and running went surprisingly smoothly. Installing [the toolchain](https://www.rust-lang.org/tools/install) went okay on my Linux (Pop!_OS) machine, and the [getting started guide](https://www.rust-lang.org/learn/get-started) was straightforward enough to follow along with. I soon enough had Ferris welcoming me to the world of Rust
+
+```
+----------------------------
+< Hello fellow Rustaceans! >
+----------------------------
+              \
+               \
+                 _~^~^~_
+             \) /  o o  \ (/
+               '_   -   _'
+               / '-----' \
+```
+
+Visual Studio Code works nicely as a multi-language editor, and while it's great to have errors visible to you immediately, I can imagine that gets annoying pretty quick (especially if you write as much bad Rust code as I do).
+
+Next I needed to actually code something up myself. I love small, silly problems for learning - you don't know exactly what problems you'll solve along the way. This one ended up being really helpful.
+
+I had [this tweet](https://twitter.com/somacdivad/status/1570779684702679046?s=20&t=tYK7rDueMPTXSBmbjtolow)
+
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">This week I’ve been posting <a href="https://twitter.com/hashtag/Python?src=hash&amp;ref_src=twsrc%5Etfw">#Python</a> 🐍 quizzes about sorting.<br><br>Let’s see if you can put everything together and solve a challenge! 💪<a href="https://twitter.com/hashtag/CuriousAboutCode?src=hash&amp;ref_src=twsrc%5Etfw">#CuriousAboutCode</a> <a href="https://t.co/ht51eA3Ttj">pic.twitter.com/ht51eA3Ttj</a></p>&mdash; David Amos (@somacdivad) <a href="https://twitter.com/somacdivad/status/1570779684702679046?ref_src=twsrc%5Etfw">September 16, 2022</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+in my bookmarks because I wanted to try to solve this with R (naturally) but I decided it was a reasonable candidate for trying to solve a problem and learn some language at the same time, so I decided to give it a go with Rust. This is slightly more complicated than an academic "sort some strings" because it's "natural sorting" (2 before 10) and has a complicating character in the middle.
+
+The first step was to get Rust to read in and just print back the 'data' (strings). I managed to copy some "print a vector of strings" code and got that working. I'll figure out later what's going with the format string here
+
+```
+println!("{:?}", x);
+```
+
+After that, I battled errors in converting between `String`, `&str`, and `i32` types; returning a `Result` (error) rather than a value; dealing with obscure errors ("cannot move out of borrowed content", "expected named lifetime parameter" - ???); and a lack of method support for a `struct` I just created (which didn't have any inherited 'type'). All in all, nothing too surprising given I know approximately 0 Rust, but I got there in the end!
+
+Now, this won't be anything "good", but it does compile and appears to give the right answer, so I'm led to believe that means it's "right".
+
+```
+// enable printing of the struct
+#[derive(Debug)]
+// create a struct with a String and an integer
+// not using &str due to lifetime issues
+struct Pair {
+    x: String,
+    y: i32
+}
+
+fn main() {
+    // input data vector
+    let v = vec!["aa-2", "ab-100", "aa-10", "ba-25", "ab-3"];
+    // create an accumulating vector of `Pair`s
+    let mut res: Vec<Pair> = vec![];
+    // for each string, split at '-', 
+    //  convert the first part to String and the second to integer.
+    //  then push onto the accumulator
+    for s in v {
+        let a: Vec<&str> = s.split("-").collect();
+        let tmp_pair = Pair {x: a[0].to_string(), y: a[1].parse::<i32>().unwrap() };
+        res.push(tmp_pair);
+    }
+    // sort by Pair.x then Pair.y
+    res.sort_by_key(|k| (k.x.clone(), k.y.clone()));
+    // start building a new vector for the final result
+    let mut res2: Vec<String> = vec![];
+    // paste together Pair.x, '-', and Pair.y (as String)
+    for s2 in res {
+        res2.push(s2.x + "-" + &s2.y.to_string());
+    }
+
+    // ["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+    println!("{:?}", res2);
+}
+```
+
+Running
+
+```
+cargo run --release
+```
+produces the expected output
+
+```{R, class.source = "bg-success", eval = FALSE}
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+```
+
+Feel free to suggest anything that could be improved, I'm sure there's plenty.
+
+That _might_ have been an okay place to stop, but I did still want to see if I could solve the problem with R, and how that might compare (in approach, readability, and speed), so I coded that up as
+
+```{r}
+# input vector
+s <- c("aa-2", "ab-100", "aa-10", "ba-25", "ab-3")
+# split into pairs of strings
+x <- strsplit(s, "-")
+# take elements of s sorted by the first elements of x then
+#  the second (as integers)
+s[order(sapply(x, `[[`, 1), as.integer(sapply(x, `[[`, 2)))]
+```
+
+I don't love that I had to use `sapply()` twice, but the only other alternative I could think of was to strip out the first and second element lists and use those in a `do.call()`
+
+```{r}
+s[do.call(order, list(unlist(x)[c(T, F)], as.integer(unlist(x)[c(F,T)])))]
+```
+which... isn't better.
+
+I also had an idea to shoehorn `dplyr::arrange()` into this, but that requires a `data.frame`. One idea I had was to read in the data, using `"-"` as a delimiter, explicitly stating that I wanted to read it as character and integer data. That seemed to work, which means I can try what I hoped
+
+```{r}
+suppressMessages(library(dplyr, quietly = TRUE))
+# input vector
+s <- c("aa-2", "ab-100", "aa-10", "ba-25", "ab-3")
+
+# read strings as fields delimited by '-', 
+#  expecting character and integer
+s %>% read.delim(
+    text = .,
+    sep = "-",
+    header = FALSE,
+    colClasses = c("character", "integer")
+) %>%
+    # sort by first then second column
+    arrange(V1, V2) %>%
+    # collapse to single string per row
+    mutate(res = paste(V1, V2, sep = "-")) %>%
+    pull()
+```
+
+Why stop there? I know other languages! Okay, the Python and Julia examples I found in other Tweets.
+
+In Julia, two options were offered. [This one](https://twitter.com/ArturoErdely/status/1570795178050584581?s=20&t=tYK7rDueMPTXSBmbjtolow)
+
+```{julia}
+strings = String["aa-2", "ab-100", "aa-10", "ba-25", "ab-3"];
+print(join.(sort(split.(strings, "-"), by = x -> (x[1], parse(Int, x[2]))), "-"))
+```
+
+(I added a type to the input and an explicit print), and [this one](https://twitter.com/rm_slp/status/1570931796069715969?s=20&t=tYK7rDueMPTXSBmbjtolow)
+
+```{julia}
+strings = String["aa-2", "ab-100", "aa-10", "ba-25", "ab-3"];
+print(sort(strings, by = x->split(x, "-") |> v->(v[1], parse(Int, v[2]))))
+```
+
+The [Python example](https://twitter.com/somacdivad/status/1571505932252708869?s=20&t=tYK7rDueMPTXSBmbjtolow) offered by the original author of the challenge was
+
+```{python}
+def parts(s):
+    letters, nums = s.split("-")
+    return letters, int(nums)
+
+strings = ["aa-2", "ab-100", "aa-10", "ba-25", "ab-3"]
+
+print(sorted(strings, key=parts))
+```
+
+I actually really like this one - it's the approach I wanted to use for R; provide `sort` with a function returning the keys to use. Alas.
+
+Lastly, I remembered that there's a `sort` function in bash that can do natural sorting with the `-V` flag. I'm reminded of [this anecdote ("More shell, less egg")](https://leancrew.com/all-this/2011/12/more-shell-less-egg/) about using a very simple bash script when it's possible. That came together okay
+
+```{bash}
+#!/bin/bash 
+
+v=("aa-2" "ab-100" "aa-10" "ba-25" "ab-3")
+readarray -t a_out < <(printf '%s\n' "${v[@]}" | sort -V)
+printf '%s ' "${a_out[@]}"
+echo 
+
+exit 0
+```
+
+By the way, aside from the Rust example, all of these were run directly in the Rmd source of this post with knitr's powerful engines... multi-language support FTW!
+
+So, how do all these compare? I haven't tuned any of these for performance; they're how I would have written them as a developer trying to achieve something. Sure, if performance was an issue, I'd do some optimization, but I was curious just how the performance compares 'out of the box'.
+
+Mainly for my own posterity, I'll add how I tracked this. I wrote the relevant code for each language in a file with suffix/filetype appropriate to each language. [They're all here](https://github.com/jonocarroll/polyglot_sort), in case anyone is interested. Then I wanted to run each of them a few times, keeping track of the timing in a file. The solution I went with was to echo into a file (appending each time) both the input and output, with e.g.
+
+```
+echo "Rust (optimised/release)" >> timing
+{time cargo run --release} >> timing 2>&1
+{time cargo run --release} >> timing 2>&1
+{time cargo run --release} >> timing 2>&1
+```
+
+(yes, trivial to loop 3 times, but whatever).
+
+Doing this for all the languages (with both versions for R and Julia) I get 
+
+```
+Rust (optimized/release)
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+cargo run --release  0.04s user 0.02s system 99% cpu 0.066 total
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+cargo run --release  0.07s user 0.01s system 99% cpu 0.087 total
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+cargo run --release  0.06s user 0.02s system 98% cpu 0.084 total
+
+R1
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort1.R  0.15s user 0.05s system 102% cpu 0.197 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort1.R  0.17s user 0.05s system 102% cpu 0.206 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort1.R  0.16s user 0.05s system 103% cpu 0.202 total
+
+R2
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort2.R  0.72s user 0.05s system 100% cpu 0.774 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort2.R  0.67s user 0.06s system 100% cpu 0.720 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort2.R  0.69s user 0.04s system 99% cpu 0.737 total
+
+Python
+['aa-2', 'aa-10', 'ab-3', 'ab-100', 'ba-25']
+python3 sort.py  0.03s user 0.00s system 98% cpu 0.032 total
+['aa-2', 'aa-10', 'ab-3', 'ab-100', 'ba-25']
+python3 sort.py  0.02s user 0.01s system 98% cpu 0.034 total
+['aa-2', 'aa-10', 'ab-3', 'ab-100', 'ba-25']
+python3 sort.py  0.03s user 0.02s system 98% cpu 0.059 total
+
+Julia1
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort1.jl  1.10s user 0.68s system 236% cpu 0.750 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort1.jl  1.14s user 0.64s system 233% cpu 0.765 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort1.jl  1.13s user 0.62s system 241% cpu 0.725 total
+
+Julia2
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort2.jl  0.97s user 0.64s system 270% cpu 0.596 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort2.jl  1.00s user 0.58s system 259% cpu 0.607 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort2.jl  0.96s user 0.63s system 276% cpu 0.578 total
+
+Bash
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.01s user 0.00s system 109% cpu 0.013 total
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.00s user 0.01s system 108% cpu 0.015 total
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.01s user 0.00s system 99% cpu 0.009 total
+```
+
+This wouldn't be much of a coding/benchmark post without a plot, so I also did a visual comparison
+
+```{r}
+library(ggplot2)
+d <- tibble::tribble(
+  ~language, ~version, ~run, ~time,
+  "Rust", "", 1, 0.066,
+  "Rust", "", 2, 0.087,
+  "Rust", "", 3, 0.084,
+  "R", "1", 1, 0.197,
+  "R", "1", 2, 0.206,
+  "R", "1", 3, 0.202,
+  "R", "2", 1, 0.774,
+  "R", "2", 2, 0.720,
+  "R", "2", 3, 0.737,
+  "Julia", "1", 1, 0.750,
+  "Julia", "1", 2, 0.756,
+  "Julia", "1", 3, 0.725,
+  "Julia", "2", 1, 0.596,
+  "Julia", "2", 2, 0.607,
+  "Julia", "2", 3, 0.578,
+  "Python", "", 1, 0.032,
+  "Python", "", 2, 0.034,
+  "Python", "", 3, 0.059,
+  "Bash", "", 1, 0.013,
+  "Bash", "", 2, 0.015,
+  "Bash", "", 3, 0.009
+)
+
+d$language <- factor(
+  d$language, 
+  levels = c("Rust", "R", "Julia", "Python", "Bash")
+)
+
+ggplot(d, aes(language, time, fill = language, group = version)) +
+  geom_col(position = position_dodge(0.9)) + 
+  facet_grid(
+    ~language + version, 
+    scales = "free_x", 
+    labeller = label_wrap_gen(multi_line = FALSE), 
+    switch = "x"
+  ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_blank()) + 
+  labs(
+    title = "Performance of sort functions by language", 
+    y = "Time [s]", 
+    x = "Language, Version"
+  ) + 
+  scale_fill_brewer(palette = "Set1")
+```
+
+It's true - Rust does pretty well, even with my terrible coding. My R implementation (the sensible one) isn't too bad - perhaps over _many_ strings it would be a bit slow. Surprisingly, the Julia implementations are actually quite slow. I don't have a good explanation for that. I'm using Julia 1.5.0 which is slightly out of date, so perhaps that needs an update. The Python implementation does particularly well - I really should learn more python. The syntax there isn't the worst, either. Oh, no - do I like that?
+
+The big winner, though, is the simplest of all - Bash crushes the rest of the languages with a 2 liner, and calling it doesn't involve compiling anything.
+
+As I said, I'm not particularly interested in optimizing any of these - this is how they compare as written.
+
+In summary, I learned some Rust - enough to actually manipulate some data. I'll keep trying and hopefully some day I'll be semi literate in it.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
