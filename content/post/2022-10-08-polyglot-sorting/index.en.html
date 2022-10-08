@@ -124,7 +124,7 @@ s %&gt;% read.delim(
     mutate(res = paste(V1, V2, sep = &quot;-&quot;)) %&gt;%
     pull()</code></pre>
 <pre class="bg-success"><code>## [1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot;</code></pre>
-<p>Why stop there? I know other langugages! Okay, the Python and Julia examples I found in other Tweets.</p>
+<p>Why stop there? I know other languages! Okay, the Python and Julia examples I found in other Tweets.</p>
 <p>In Julia, two options were offered. <a href="https://twitter.com/ArturoErdely/status/1570795178050584581?s=20&amp;t=tYK7rDueMPTXSBmbjtolow">This one</a></p>
 <pre class="julia"><code>strings = String[&quot;aa-2&quot;, &quot;ab-100&quot;, &quot;aa-10&quot;, &quot;ba-25&quot;, &quot;ab-3&quot;];
 print(join.(sort(split.(strings, &quot;-&quot;), by = x -&gt; (x[1], parse(Int, x[2]))), &quot;-&quot;))</code></pre>
@@ -142,7 +142,8 @@ strings = [&quot;aa-2&quot;, &quot;ab-100&quot;, &quot;aa-10&quot;, &quot;ba-25&
 
 print(sorted(strings, key=parts))</code></pre>
 <pre class="bg-success"><code>## [&#39;aa-2&#39;, &#39;aa-10&#39;, &#39;ab-3&#39;, &#39;ab-100&#39;, &#39;ba-25&#39;]</code></pre>
-<p>Lastly, I remembered that there’s a <code>sort</code> function in bash that can do natural sorting with the <code>-V</code> flag. That came together okay</p>
+<p>I actually really like this one - it’s the approach I wanted to use for R; provide <code>sort</code> with a function returning the keys to use. Alas.</p>
+<p>Lastly, I remembered that there’s a <code>sort</code> function in bash that can do natural sorting with the <code>-V</code> flag. I’m reminded of <a href="https://leancrew.com/all-this/2011/12/more-shell-less-egg/">this anecdote (“More shell, less egg”)</a> about using a very simple bash script when it’s possible. That came together okay</p>
 <pre class="bash"><code>#!/bin/bash 
 
 v=(&quot;aa-2&quot; &quot;ab-100&quot; &quot;aa-10&quot; &quot;ba-25&quot; &quot;ab-3&quot;)
@@ -152,6 +153,129 @@ echo
 
 exit 0</code></pre>
 <pre class="bg-success"><code>## aa-2 aa-10 ab-3 ab-100 ba-25</code></pre>
+<p>By the way, aside from the Rust example, all of these were run directly in the Rmd source of this post with knitr’s powerful engines… multi-language support FTW!</p>
+<p>So, how do all these compare? I haven’t tuned any of these for performance; they’re how I would have written them as a developer trying to achieve something. Sure, if performance was an issue, I’d do some optimization, but I was curious just how the performance compares ‘out of the box’.</p>
+<p>Mainly for my own posterity, I’ll add how I tracked this. I wrote the relevant code for each language in a file with suffix/filetype appropriate to each language. <a href="https://github.com/jonocarroll/polyglot_sort">They’re all here</a>, in case anyone is interested. Then I wanted to run each of them a few times, keeping track of the timing in a file. The solution I went with was to echo into a file (appending each time) both the input and output, with e.g.</p>
+<pre><code>echo &quot;Rust (optimised/release)&quot; &gt;&gt; timing
+{time cargo run --release} &gt;&gt; timing 2&gt;&amp;1
+{time cargo run --release} &gt;&gt; timing 2&gt;&amp;1
+{time cargo run --release} &gt;&gt; timing 2&gt;&amp;1</code></pre>
+<p>(yes, trivial to loop 3 times, but whatever).</p>
+<p>Doing this for all the languages (with both versions for R and Julia) I get</p>
+<pre><code>Rust (optimized/release)
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+cargo run --release  0.04s user 0.02s system 99% cpu 0.066 total
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+cargo run --release  0.07s user 0.01s system 99% cpu 0.087 total
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+cargo run --release  0.06s user 0.02s system 98% cpu 0.084 total
+
+R1
+[1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot; 
+Rscript sort1.R  0.15s user 0.05s system 102% cpu 0.197 total
+[1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot; 
+Rscript sort1.R  0.17s user 0.05s system 102% cpu 0.206 total
+[1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot; 
+Rscript sort1.R  0.16s user 0.05s system 103% cpu 0.202 total
+
+R2
+[1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot; 
+Rscript sort2.R  0.72s user 0.05s system 100% cpu 0.774 total
+[1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot; 
+Rscript sort2.R  0.67s user 0.06s system 100% cpu 0.720 total
+[1] &quot;aa-2&quot;   &quot;aa-10&quot;  &quot;ab-3&quot;   &quot;ab-100&quot; &quot;ba-25&quot; 
+Rscript sort2.R  0.69s user 0.04s system 99% cpu 0.737 total
+
+Python
+[&#39;aa-2&#39;, &#39;aa-10&#39;, &#39;ab-3&#39;, &#39;ab-100&#39;, &#39;ba-25&#39;]
+python3 sort.py  0.03s user 0.00s system 98% cpu 0.032 total
+[&#39;aa-2&#39;, &#39;aa-10&#39;, &#39;ab-3&#39;, &#39;ab-100&#39;, &#39;ba-25&#39;]
+python3 sort.py  0.02s user 0.01s system 98% cpu 0.034 total
+[&#39;aa-2&#39;, &#39;aa-10&#39;, &#39;ab-3&#39;, &#39;ab-100&#39;, &#39;ba-25&#39;]
+python3 sort.py  0.03s user 0.02s system 98% cpu 0.059 total
+
+Julia1
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+julia sort1.jl  1.10s user 0.68s system 236% cpu 0.750 total
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+julia sort1.jl  1.14s user 0.64s system 233% cpu 0.765 total
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+julia sort1.jl  1.13s user 0.62s system 241% cpu 0.725 total
+
+Julia2
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+julia sort2.jl  0.97s user 0.64s system 270% cpu 0.596 total
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+julia sort2.jl  1.00s user 0.58s system 259% cpu 0.607 total
+[&quot;aa-2&quot;, &quot;aa-10&quot;, &quot;ab-3&quot;, &quot;ab-100&quot;, &quot;ba-25&quot;]
+julia sort2.jl  0.96s user 0.63s system 276% cpu 0.578 total
+
+Bash
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.01s user 0.00s system 109% cpu 0.013 total
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.00s user 0.01s system 108% cpu 0.015 total
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.01s user 0.00s system 99% cpu 0.009 total</code></pre>
+<p>This wouldn’t be much of a coding/benchmark post without a plot, so I also did a visual comparison</p>
+<pre class="r"><code>library(ggplot2)
+d &lt;- tibble::tribble(
+  ~language, ~version, ~run, ~time,
+  &quot;Rust&quot;, &quot;&quot;, 1, 0.066,
+  &quot;Rust&quot;, &quot;&quot;, 2, 0.087,
+  &quot;Rust&quot;, &quot;&quot;, 3, 0.084,
+  &quot;R&quot;, &quot;1&quot;, 1, 0.197,
+  &quot;R&quot;, &quot;1&quot;, 2, 0.206,
+  &quot;R&quot;, &quot;1&quot;, 3, 0.202,
+  &quot;R&quot;, &quot;2&quot;, 1, 0.774,
+  &quot;R&quot;, &quot;2&quot;, 2, 0.720,
+  &quot;R&quot;, &quot;2&quot;, 3, 0.737,
+  &quot;Julia&quot;, &quot;1&quot;, 1, 0.750,
+  &quot;Julia&quot;, &quot;1&quot;, 2, 0.756,
+  &quot;Julia&quot;, &quot;1&quot;, 3, 0.725,
+  &quot;Julia&quot;, &quot;2&quot;, 1, 0.596,
+  &quot;Julia&quot;, &quot;2&quot;, 2, 0.607,
+  &quot;Julia&quot;, &quot;2&quot;, 3, 0.578,
+  &quot;Python&quot;, &quot;&quot;, 1, 0.032,
+  &quot;Python&quot;, &quot;&quot;, 2, 0.034,
+  &quot;Python&quot;, &quot;&quot;, 3, 0.059,
+  &quot;Bash&quot;, &quot;&quot;, 1, 0.013,
+  &quot;Bash&quot;, &quot;&quot;, 2, 0.015,
+  &quot;Bash&quot;, &quot;&quot;, 3, 0.009
+)
+
+d$language &lt;- factor(
+  d$language, 
+  levels = c(&quot;Rust&quot;, &quot;R&quot;, &quot;Julia&quot;, &quot;Python&quot;, &quot;Bash&quot;)
+)
+
+ggplot(d, aes(language, time, fill = language, group = version)) +
+  geom_col(position = position_dodge(0.9)) + 
+  facet_grid(
+    ~language + version, 
+    scales = &quot;free_x&quot;, 
+    labeller = label_wrap_gen(multi_line = FALSE), 
+    switch = &quot;x&quot;
+  ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_blank()) + 
+  labs(
+    title = &quot;Performance of sort functions by language&quot;, 
+    y = &quot;Time [s]&quot;, 
+    x = &quot;Language, Version&quot;
+  ) + 
+  scale_fill_brewer(palette = &quot;Set1&quot;)</code></pre>
+<p><img src="staticunnamed-chunk-9-1.png" width="100%" /></p>
+<p>It’s true - Rust does pretty well, even with my terrible coding. My R implementation (the sensible one) isn’t too bad - perhaps over <em>many</em> strings it would be a bit slow. Surprisingly, the Julia implementations are actually quite slow. I don’t have a good explanation for that. I’m using Julia 1.5.0 which is slightly out of date, so perhaps that needs an update. The Python implementation does particularly well - I really should learn more python. The syntax there isn’t the worst, either. Oh, no - do I like that?</p>
+<p>The big winner, though, is the simplest of all - Bash crushes the rest of the languages with a 2 liner, and calling it doesn’t involve compiling anything.</p>
+<p>As I said, I’m not particularly interested in optimizing any of these - this is how they compare as written.</p>
+<p>In summary, I learned some Rust - enough to actually manipulate some data. I’ll keep trying and hopefully some day I’ll be semi literate in it.</p>
 <br />
 <details>
 <summary>
@@ -170,69 +294,78 @@ exit 0</code></pre>
 ##  date     2022-10-08                  
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
-##  package     * version date       lib source        
-##  assertthat    0.2.1   2019-03-21 [3] CRAN (R 4.0.1)
-##  blogdown      1.8     2022-02-16 [1] CRAN (R 4.1.2)
-##  bookdown      0.24    2021-09-02 [1] CRAN (R 4.1.2)
-##  brio          1.1.1   2021-01-20 [3] CRAN (R 4.0.3)
-##  bslib         0.3.1   2021-10-06 [1] CRAN (R 4.1.2)
-##  cachem        1.0.3   2021-02-04 [3] CRAN (R 4.0.3)
-##  callr         3.7.0   2021-04-20 [1] CRAN (R 4.1.2)
-##  cli           3.2.0   2022-02-14 [1] CRAN (R 4.1.2)
-##  crayon        1.5.0   2022-02-14 [1] CRAN (R 4.1.2)
-##  DBI           1.1.1   2021-01-15 [3] CRAN (R 4.0.3)
-##  desc          1.4.1   2022-03-06 [1] CRAN (R 4.1.2)
-##  devtools      2.4.3   2021-11-30 [1] CRAN (R 4.1.2)
-##  digest        0.6.27  2020-10-24 [3] CRAN (R 4.0.3)
-##  dplyr       * 1.0.8   2022-02-08 [1] CRAN (R 4.1.2)
-##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.1.2)
-##  evaluate      0.14    2019-05-28 [3] CRAN (R 4.0.1)
-##  fansi         0.4.2   2021-01-15 [3] CRAN (R 4.0.3)
-##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.0.3)
-##  fs            1.5.0   2020-07-31 [3] CRAN (R 4.0.2)
-##  generics      0.1.0   2020-10-31 [3] CRAN (R 4.0.3)
-##  glue          1.6.1   2022-01-22 [1] CRAN (R 4.1.2)
-##  here          1.0.1   2020-12-13 [1] CRAN (R 4.1.2)
-##  htmltools     0.5.2   2021-08-25 [1] CRAN (R 4.1.2)
-##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.1.2)
-##  jsonlite      1.7.2   2020-12-09 [3] CRAN (R 4.0.3)
-##  JuliaCall     0.17.4  2021-05-16 [1] CRAN (R 4.1.2)
-##  knitr         1.37    2021-12-16 [1] CRAN (R 4.1.2)
-##  lattice       0.20-41 2020-04-02 [4] CRAN (R 4.0.0)
-##  lifecycle     1.0.1   2021-09-24 [1] CRAN (R 4.1.2)
-##  magrittr      2.0.1   2020-11-17 [3] CRAN (R 4.0.3)
-##  Matrix        1.3-2   2021-01-06 [4] CRAN (R 4.0.4)
-##  memoise       2.0.0   2021-01-26 [3] CRAN (R 4.0.3)
-##  pillar        1.7.0   2022-02-01 [1] CRAN (R 4.1.2)
-##  pkgbuild      1.2.0   2020-12-15 [3] CRAN (R 4.0.3)
-##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
-##  pkgload       1.2.4   2021-11-30 [1] CRAN (R 4.1.2)
-##  png           0.1-7   2013-12-03 [3] CRAN (R 4.0.2)
-##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
-##  processx      3.5.2   2021-04-30 [1] CRAN (R 4.1.2)
-##  ps            1.5.0   2020-12-05 [3] CRAN (R 4.0.3)
-##  purrr         0.3.4   2020-04-17 [3] CRAN (R 4.0.1)
-##  R6            2.5.0   2020-10-28 [3] CRAN (R 4.0.2)
-##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
-##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
-##  reticulate    1.24    2022-01-26 [1] CRAN (R 4.1.2)
-##  rlang         1.0.1   2022-02-03 [1] CRAN (R 4.1.2)
-##  rmarkdown     2.13    2022-03-10 [1] CRAN (R 4.1.2)
-##  rprojroot     2.0.2   2020-11-15 [3] CRAN (R 4.0.3)
-##  rstudioapi    0.13    2020-11-12 [3] CRAN (R 4.0.3)
-##  sass          0.4.0   2021-05-12 [1] CRAN (R 4.1.2)
-##  sessioninfo   1.1.1   2018-11-05 [3] CRAN (R 4.0.1)
-##  stringi       1.5.3   2020-09-09 [3] CRAN (R 4.0.2)
-##  stringr       1.4.0   2019-02-10 [3] CRAN (R 4.0.1)
-##  testthat      3.1.2   2022-01-20 [1] CRAN (R 4.1.2)
-##  tibble        3.1.6   2021-11-07 [1] CRAN (R 4.1.2)
-##  tidyselect    1.1.2   2022-02-21 [1] CRAN (R 4.1.2)
-##  usethis       2.1.5   2021-12-09 [1] CRAN (R 4.1.2)
-##  utf8          1.1.4   2018-05-24 [3] CRAN (R 4.0.2)
-##  vctrs         0.3.8   2021-04-29 [1] CRAN (R 4.1.2)
-##  withr         2.5.0   2022-03-03 [1] CRAN (R 4.1.2)
-##  xfun          0.30    2022-03-02 [1] CRAN (R 4.1.2)
-##  yaml          2.2.1   2020-02-01 [3] CRAN (R 4.0.1)
+##  package      * version date       lib source        
+##  assertthat     0.2.1   2019-03-21 [3] CRAN (R 4.0.1)
+##  blogdown       1.8     2022-02-16 [1] CRAN (R 4.1.2)
+##  bookdown       0.24    2021-09-02 [1] CRAN (R 4.1.2)
+##  brio           1.1.1   2021-01-20 [3] CRAN (R 4.0.3)
+##  bslib          0.3.1   2021-10-06 [1] CRAN (R 4.1.2)
+##  cachem         1.0.3   2021-02-04 [3] CRAN (R 4.0.3)
+##  callr          3.7.0   2021-04-20 [1] CRAN (R 4.1.2)
+##  cli            3.2.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  colorspace     2.0-0   2020-11-11 [3] CRAN (R 4.0.3)
+##  crayon         1.5.0   2022-02-14 [1] CRAN (R 4.1.2)
+##  DBI            1.1.1   2021-01-15 [3] CRAN (R 4.0.3)
+##  desc           1.4.1   2022-03-06 [1] CRAN (R 4.1.2)
+##  devtools       2.4.3   2021-11-30 [1] CRAN (R 4.1.2)
+##  digest         0.6.27  2020-10-24 [3] CRAN (R 4.0.3)
+##  dplyr        * 1.0.8   2022-02-08 [1] CRAN (R 4.1.2)
+##  ellipsis       0.3.2   2021-04-29 [1] CRAN (R 4.1.2)
+##  evaluate       0.14    2019-05-28 [3] CRAN (R 4.0.1)
+##  fansi          0.4.2   2021-01-15 [3] CRAN (R 4.0.3)
+##  farver         2.0.3   2020-01-16 [3] CRAN (R 4.0.1)
+##  fastmap        1.1.0   2021-01-25 [3] CRAN (R 4.0.3)
+##  fs             1.5.0   2020-07-31 [3] CRAN (R 4.0.2)
+##  generics       0.1.0   2020-10-31 [3] CRAN (R 4.0.3)
+##  ggplot2      * 3.3.5   2021-06-25 [1] CRAN (R 4.1.2)
+##  glue           1.6.1   2022-01-22 [1] CRAN (R 4.1.2)
+##  gtable         0.3.0   2019-03-25 [3] CRAN (R 4.0.1)
+##  here           1.0.1   2020-12-13 [1] CRAN (R 4.1.2)
+##  highr          0.8     2019-03-20 [3] CRAN (R 4.0.1)
+##  htmltools      0.5.2   2021-08-25 [1] CRAN (R 4.1.2)
+##  jquerylib      0.1.4   2021-04-26 [1] CRAN (R 4.1.2)
+##  jsonlite       1.7.2   2020-12-09 [3] CRAN (R 4.0.3)
+##  JuliaCall      0.17.4  2021-05-16 [1] CRAN (R 4.1.2)
+##  knitr          1.37    2021-12-16 [1] CRAN (R 4.1.2)
+##  labeling       0.4.2   2020-10-20 [3] CRAN (R 4.0.2)
+##  lattice        0.20-41 2020-04-02 [4] CRAN (R 4.0.0)
+##  lifecycle      1.0.1   2021-09-24 [1] CRAN (R 4.1.2)
+##  magrittr       2.0.1   2020-11-17 [3] CRAN (R 4.0.3)
+##  Matrix         1.3-2   2021-01-06 [4] CRAN (R 4.0.4)
+##  memoise        2.0.0   2021-01-26 [3] CRAN (R 4.0.3)
+##  munsell        0.5.0   2018-06-12 [3] CRAN (R 4.0.1)
+##  pillar         1.7.0   2022-02-01 [1] CRAN (R 4.1.2)
+##  pkgbuild       1.2.0   2020-12-15 [3] CRAN (R 4.0.3)
+##  pkgconfig      2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
+##  pkgload        1.2.4   2021-11-30 [1] CRAN (R 4.1.2)
+##  png            0.1-7   2013-12-03 [3] CRAN (R 4.0.2)
+##  prettyunits    1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx       3.5.2   2021-04-30 [1] CRAN (R 4.1.2)
+##  ps             1.5.0   2020-12-05 [3] CRAN (R 4.0.3)
+##  purrr          0.3.4   2020-04-17 [3] CRAN (R 4.0.1)
+##  R6             2.5.0   2020-10-28 [3] CRAN (R 4.0.2)
+##  RColorBrewer   1.1-2   2014-12-07 [3] CRAN (R 4.0.1)
+##  Rcpp           1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes        2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  reticulate     1.24    2022-01-26 [1] CRAN (R 4.1.2)
+##  rlang          1.0.1   2022-02-03 [1] CRAN (R 4.1.2)
+##  rmarkdown      2.13    2022-03-10 [1] CRAN (R 4.1.2)
+##  rprojroot      2.0.2   2020-11-15 [3] CRAN (R 4.0.3)
+##  rstudioapi     0.13    2020-11-12 [3] CRAN (R 4.0.3)
+##  sass           0.4.0   2021-05-12 [1] CRAN (R 4.1.2)
+##  scales         1.1.1   2020-05-11 [3] CRAN (R 4.0.1)
+##  sessioninfo    1.1.1   2018-11-05 [3] CRAN (R 4.0.1)
+##  stringi        1.5.3   2020-09-09 [3] CRAN (R 4.0.2)
+##  stringr        1.4.0   2019-02-10 [3] CRAN (R 4.0.1)
+##  testthat       3.1.2   2022-01-20 [1] CRAN (R 4.1.2)
+##  tibble         3.1.6   2021-11-07 [1] CRAN (R 4.1.2)
+##  tidyselect     1.1.2   2022-02-21 [1] CRAN (R 4.1.2)
+##  usethis        2.1.5   2021-12-09 [1] CRAN (R 4.1.2)
+##  utf8           1.1.4   2018-05-24 [3] CRAN (R 4.0.2)
+##  vctrs          0.3.8   2021-04-29 [1] CRAN (R 4.1.2)
+##  withr          2.5.0   2022-03-03 [1] CRAN (R 4.1.2)
+##  xfun           0.30    2022-03-02 [1] CRAN (R 4.1.2)
+##  yaml           2.2.1   2020-02-01 [3] CRAN (R 4.0.1)
 ## 
 ## [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
 ## [2] /usr/local/lib/R/site-library

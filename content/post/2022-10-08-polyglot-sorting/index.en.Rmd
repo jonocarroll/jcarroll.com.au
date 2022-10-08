@@ -27,7 +27,9 @@ knitr::opts_chunk$set(
   class.output  = "bg-success",
   class.message = "bg-info text-info",
   class.warning = "bg-warning text-warning",
-  class.error   = "bg-danger text-danger"
+  class.error   = "bg-danger text-danger",
+  fig.path = "static",
+  out.width = "100%"
 )
 ```
 
@@ -166,7 +168,7 @@ s %>% read.delim(
     pull()
 ```
 
-Why stop there? I know other langugages! Okay, the Python and Julia examples I found in other Tweets.
+Why stop there? I know other languages! Okay, the Python and Julia examples I found in other Tweets.
 
 In Julia, two options were offered. [This one](https://twitter.com/ArturoErdely/status/1570795178050584581?s=20&t=tYK7rDueMPTXSBmbjtolow)
 
@@ -194,7 +196,9 @@ strings = ["aa-2", "ab-100", "aa-10", "ba-25", "ab-3"]
 print(sorted(strings, key=parts))
 ```
 
-Lastly, I remembered that there's a `sort` function in bash that can do natural sorting with the `-V` flag. That came together okay
+I actually really like this one - it's the approach I wanted to use for R; provide `sort` with a function returning the keys to use. Alas.
+
+Lastly, I remembered that there's a `sort` function in bash that can do natural sorting with the `-V` flag. I'm reminded of [this anecdote ("More shell, less egg")](https://leancrew.com/all-this/2011/12/more-shell-less-egg/) about using a very simple bash script when it's possible. That came together okay
 
 ```{bash}
 #!/bin/bash 
@@ -206,6 +210,147 @@ echo
 
 exit 0
 ```
+
+By the way, aside from the Rust example, all of these were run directly in the Rmd source of this post with knitr's powerful engines... multi-language support FTW!
+
+So, how do all these compare? I haven't tuned any of these for performance; they're how I would have written them as a developer trying to achieve something. Sure, if performance was an issue, I'd do some optimization, but I was curious just how the performance compares 'out of the box'.
+
+Mainly for my own posterity, I'll add how I tracked this. I wrote the relevant code for each language in a file with suffix/filetype appropriate to each language. [They're all here](https://github.com/jonocarroll/polyglot_sort), in case anyone is interested. Then I wanted to run each of them a few times, keeping track of the timing in a file. The solution I went with was to echo into a file (appending each time) both the input and output, with e.g.
+
+```
+echo "Rust (optimised/release)" >> timing
+{time cargo run --release} >> timing 2>&1
+{time cargo run --release} >> timing 2>&1
+{time cargo run --release} >> timing 2>&1
+```
+
+(yes, trivial to loop 3 times, but whatever).
+
+Doing this for all the languages (with both versions for R and Julia) I get 
+
+```
+Rust (optimized/release)
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+cargo run --release  0.04s user 0.02s system 99% cpu 0.066 total
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+cargo run --release  0.07s user 0.01s system 99% cpu 0.087 total
+    Finished release [optimized] target(s) in 0.00s
+     Running `target/release/sort`
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+cargo run --release  0.06s user 0.02s system 98% cpu 0.084 total
+
+R1
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort1.R  0.15s user 0.05s system 102% cpu 0.197 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort1.R  0.17s user 0.05s system 102% cpu 0.206 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort1.R  0.16s user 0.05s system 103% cpu 0.202 total
+
+R2
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort2.R  0.72s user 0.05s system 100% cpu 0.774 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort2.R  0.67s user 0.06s system 100% cpu 0.720 total
+[1] "aa-2"   "aa-10"  "ab-3"   "ab-100" "ba-25" 
+Rscript sort2.R  0.69s user 0.04s system 99% cpu 0.737 total
+
+Python
+['aa-2', 'aa-10', 'ab-3', 'ab-100', 'ba-25']
+python3 sort.py  0.03s user 0.00s system 98% cpu 0.032 total
+['aa-2', 'aa-10', 'ab-3', 'ab-100', 'ba-25']
+python3 sort.py  0.02s user 0.01s system 98% cpu 0.034 total
+['aa-2', 'aa-10', 'ab-3', 'ab-100', 'ba-25']
+python3 sort.py  0.03s user 0.02s system 98% cpu 0.059 total
+
+Julia1
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort1.jl  1.10s user 0.68s system 236% cpu 0.750 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort1.jl  1.14s user 0.64s system 233% cpu 0.765 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort1.jl  1.13s user 0.62s system 241% cpu 0.725 total
+
+Julia2
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort2.jl  0.97s user 0.64s system 270% cpu 0.596 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort2.jl  1.00s user 0.58s system 259% cpu 0.607 total
+["aa-2", "aa-10", "ab-3", "ab-100", "ba-25"]
+julia sort2.jl  0.96s user 0.63s system 276% cpu 0.578 total
+
+Bash
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.01s user 0.00s system 109% cpu 0.013 total
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.00s user 0.01s system 108% cpu 0.015 total
+aa-2 aa-10 ab-3 ab-100 ba-25 
+./sort.sh  0.01s user 0.00s system 99% cpu 0.009 total
+```
+
+This wouldn't be much of a coding/benchmark post without a plot, so I also did a visual comparison
+
+```{r}
+library(ggplot2)
+d <- tibble::tribble(
+  ~language, ~version, ~run, ~time,
+  "Rust", "", 1, 0.066,
+  "Rust", "", 2, 0.087,
+  "Rust", "", 3, 0.084,
+  "R", "1", 1, 0.197,
+  "R", "1", 2, 0.206,
+  "R", "1", 3, 0.202,
+  "R", "2", 1, 0.774,
+  "R", "2", 2, 0.720,
+  "R", "2", 3, 0.737,
+  "Julia", "1", 1, 0.750,
+  "Julia", "1", 2, 0.756,
+  "Julia", "1", 3, 0.725,
+  "Julia", "2", 1, 0.596,
+  "Julia", "2", 2, 0.607,
+  "Julia", "2", 3, 0.578,
+  "Python", "", 1, 0.032,
+  "Python", "", 2, 0.034,
+  "Python", "", 3, 0.059,
+  "Bash", "", 1, 0.013,
+  "Bash", "", 2, 0.015,
+  "Bash", "", 3, 0.009
+)
+
+d$language <- factor(
+  d$language, 
+  levels = c("Rust", "R", "Julia", "Python", "Bash")
+)
+
+ggplot(d, aes(language, time, fill = language, group = version)) +
+  geom_col(position = position_dodge(0.9)) + 
+  facet_grid(
+    ~language + version, 
+    scales = "free_x", 
+    labeller = label_wrap_gen(multi_line = FALSE), 
+    switch = "x"
+  ) + 
+  theme_minimal() +
+  theme(axis.text.x = element_blank()) + 
+  labs(
+    title = "Performance of sort functions by language", 
+    y = "Time [s]", 
+    x = "Language, Version"
+  ) + 
+  scale_fill_brewer(palette = "Set1")
+```
+
+It's true - Rust does pretty well, even with my terrible coding. My R implementation (the sensible one) isn't too bad - perhaps over _many_ strings it would be a bit slow. Surprisingly, the Julia implementations are actually quite slow. I don't have a good explanation for that. I'm using Julia 1.5.0 which is slightly out of date, so perhaps that needs an update. The Python implementation does particularly well - I really should learn more python. The syntax there isn't the worst, either. Oh, no - do I like that?
+
+The big winner, though, is the simplest of all - Bash crushes the rest of the languages with a 2 liner, and calling it doesn't involve compiling anything.
+
+As I said, I'm not particularly interested in optimizing any of these - this is how they compare as written.
+
+In summary, I learned some Rust - enough to actually manipulate some data. I'll keep trying and hopefully some day I'll be semi literate in it.
 
 <br />
 <details>
