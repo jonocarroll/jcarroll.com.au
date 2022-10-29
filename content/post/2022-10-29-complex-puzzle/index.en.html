@@ -1,7 +1,7 @@
 ---
 title: The Most Complex Puzzle I've Ever Solved
 author: Jonathan Carroll
-date: '2022-10-28'
+date: '2022-10-29'
 slug: complex-puzzle
 categories:
   - R
@@ -19,12 +19,12 @@ editor_options:
 <p>Don’t show me puzzles, unless you want to be responsible for me staying up too
 late solving them. I’m far too easily <a href="https://xkcd.com/356/">nerd-sniped</a>. This
 one was certainly the most complex I’ve ever solved. Quite complicated too,
-but definitely <em>complex</em> (you’ll see).</p>
+but definitely the most <em>complex</em> (you’ll see).</p>
 <!--more-->
 <p>Don’t show me puzzles, unless you want to be responsible for me staying up too
 late solving them. I’m far too easily <a href="https://xkcd.com/356/">nerd-sniped</a>. This
 one was certainly the most complex I’ve ever solved. Quite complicated too,
-but definitely <em>complex</em> (you’ll see).</p>
+but definitely the most <em>complex</em> (you’ll see).</p>
 <p>A few days ago a colleague of mine pointed me to <a href="https://fivethirtyeight.com/features/can-you-stay-awake-for-50-hours-and-solve-150-puzzles/">this FiveThirtyEight article</a>, which isn’t new (2018), but does feature someone else we both work with
 as the author of the first puzzle. Brandon is a mathematician-turned-computational-biologist/geneticist and a top-level MIT puzzler.</p>
 <p>The puzzle in the article consists of this image (you may want to save and enlarge, yourself)</p>
@@ -34,7 +34,8 @@ as the author of the first puzzle. Brandon is a mathematician-turned-computation
 </div>
 <p>and the clue:</p>
 <blockquote>
-<p>Ugh! Dad says the computer will hurt my eyes, but I doubt that’s his prime concern. Time to see what requires such complex security.</p>
+<p>Ugh! Dad says the computer will hurt my eyes, but I doubt that’s his prime concern.
+Time to see what requires such complex security.</p>
 </blockquote>
 <p>How could I possibly pass up an opportunity to solve such a cool puzzle?</p>
 <p>I played with a few ideas, but can’t say I made any progress. My colleague also
@@ -55,12 +56,13 @@ This will be a positive, real integer. The alternative means that <span class="m
 can write the absolute value of the other (which will be prime) as <span class="math inline">\(4n + 3\)</span> for some non-negative <span class="math inline">\(n\)</span>.</p>
 <p>Working with complex numbers in R is actually very well supported. It’s not something
 you’d work with a lot in the vast majority of data science (“the average number of
-sprockets produced in the first quarter was <span class="math inline">\(2n + 3i\)</span>”?) but R has <code>complex</code> as an
-atomic type.</p>
-<p>Okay, with that in mind, we can generate a bunch of Gaussian Primes. In (mostly)
-base R, of course. First, we’re going to need a way to determine if an integer is
+sprockets produced in the first quarter was <span class="math inline">\(2 + 3i\)</span>”?) but R has <code>complex</code> as an
+atomic type and many functions support operations on this.</p>
+<p>Okay, with that in mind, we can generate a bunch of Gaussian Primes. In base R,
+of course. First, we’re going to need a way to determine if an integer is
 a prime number. We’re not worried about performance, so let’s just try to divide
-our target number <span class="math inline">\(n\)</span> by every number smaller than <span class="math inline">\(\sqrt(n)\)</span> (greater than 1); if anything divides cleanly, it’s not a prime number. That can be implemented
+our target number <span class="math inline">\(n\)</span> by every number smaller than <span class="math inline">\(\sqrt n\)</span> (greater than 1);
+if anything divides cleanly (the result is an integer) it’s not a prime number. That can be implemented
 (shamelessly stolen from <a href="https://stackoverflow.com/a/19767707/4168169">StackOverflow</a>)
 as</p>
 <pre class="r"><code>is.prime &lt;- function(n) n == 2L || all(n %% 2L:max(2,floor(sqrt(n))) != 0)</code></pre>
@@ -91,7 +93,7 @@ isGPv &lt;- Vectorize(isGP)</code></pre>
 <pre class="bg-success"><code>## [1] TRUE</code></pre>
 <p>Now we can build a grid of integers on the complex plane and mark which are
 Gaussian Primes. For the sake of this puzzle, we’ll limit to 250 integers in
-each direction</p>
+each positive direction</p>
 <pre class="r"><code>x &lt;- expand.grid(real = 0:249, im = 0:249)
 x$complex &lt;- x$real + (x$im)*1i
 x$isGP &lt;- isGPv(x$complex)
@@ -145,29 +147,39 @@ d &lt;- as.data.frame(idx)
 d$col &lt;- 250 - d$col 
 # start at 0
 d$row &lt;- d$row - 1 
-d$color &lt;- cols
+d$color &lt;- paste0(&quot;#&quot;, cols)
 head(d)</code></pre>
-<pre class="bg-success"><code>##   row col  color
-## 1  57 178 0000ff
-## 2  47 140 cccc00
-## 3  46 125 ff0000
-## 4  60 109 0000ff
-## 5  15 104 0000ff
-## 6  58 103 ff0000</code></pre>
+<pre class="bg-success"><code>##   row col   color
+## 1  57 178 #0000ff
+## 2  47 140 #cccc00
+## 3  46 125 #ff0000
+## 4  60 109 #0000ff
+## 5  15 104 #0000ff
+## 6  58 103 #ff0000</code></pre>
 <p>These colours can be identified just by entering them into a search engine,
 or by using one of the <a href="https://github.com/rstudio/rstudio/issues/5424">very recent RStudio builds</a></p>
-<pre class="r"><code>known_colors &lt;- c(red = &quot;ff0000&quot;, orange = &quot;ff9919&quot;, yellow = &quot;cccc00&quot;,
-                  green = &quot;00ff00&quot;, blue = &quot;0000ff&quot;, purple = &quot;7f00cc&quot;)
+<pre class="r"><code>known_colors &lt;- c(red = &quot;#ff0000&quot;, 
+                  orange = &quot;#ff9919&quot;, 
+                  yellow = &quot;#cccc00&quot;,
+                  green = &quot;#00ff00&quot;, 
+                  blue = &quot;#0000ff&quot;, 
+                  purple = &quot;#7f00cc&quot;
+)
 
 d$colorname &lt;- names(known_colors)[match(d$color, known_colors)]
 head(d)</code></pre>
-<pre class="bg-success"><code>##   row col  color colorname
-## 1  57 178 0000ff      blue
-## 2  47 140 cccc00    yellow
-## 3  46 125 ff0000       red
-## 4  60 109 0000ff      blue
-## 5  15 104 0000ff      blue
-## 6  58 103 ff0000       red</code></pre>
+<pre class="bg-success"><code>##   row col   color colorname
+## 1  57 178 #0000ff      blue
+## 2  47 140 #cccc00    yellow
+## 3  46 125 #ff0000       red
+## 4  60 109 #0000ff      blue
+## 5  15 104 #0000ff      blue
+## 6  58 103 #ff0000       red</code></pre>
+<p>This looks fantastic in the recent RStudio versions, FYI</p>
+<div class="figure">
+<img src="images/rstudiocolours.png" alt="" />
+<p class="caption">Appropriate colour highlighting in RStudio</p>
+</div>
 <p>Now comes the hard part (and I’ll gladly admit I’d never have figured this out
 without seeing a solution first) - if we assume the coloured pixels represent
 <strong>complex</strong> numbers, and we can factor those into the product of two Gaussian
@@ -194,7 +206,7 @@ are divisors of the original Gaussian number.</p></li>
 </ol>
 </blockquote>
 </blockquote>
-<p>This translates to: Given the norm of norm <span class="math inline">\(N\)</span> of a Gaussian Prime, the factors of
+<p>This translates to: Given the norm <span class="math inline">\(N\)</span> of a Gaussian Prime, the factors of
 <span class="math inline">\(N\)</span> (denoted <span class="math inline">\(p\)</span>) will either be <span class="math inline">\(1 \pm i\)</span>, or if <span class="math inline">\(p\)</span> is of the form <span class="math inline">\(p = m^2 + n^2\)</span>
 then candidates are <span class="math inline">\(m \pm ni\)</span>.</p>
 <p>So, we’ll need a function to operate on the norm of our Gaussian Prime. The norm
@@ -206,20 +218,20 @@ itself is defined as</p>
 <pre class="r"><code>complexnorm(3 + 4i)</code></pre>
 <pre class="bg-success"><code>## [1] 25</code></pre>
 <p>We can implement the approach above as</p>
-<pre class="r"><code>norm_factors &lt;- function(n) {
+<pre class="r"><code>norm_factors &lt;- function(N) {
 
-  ## N(n) %% 2 == 0
-  if (n %% 2 == 0) {
-    if (divides(n, (1+1i))) return(1+1i)
-    if (divides(n, (1-1i))) return(1-1i)
+  ## N %% 2 == 0
+  if (N %% 2 == 0) {
+    if (divides(N, (1+1i))) return(1+1i)
+    if (divides(N, (1-1i))) return(1-1i)
 
-    ## N(n) %% 4 == 3
-  } else if (n %% 4 == 3) {
+    ## N %% 4 == 3
+  } else if (N %% 4 == 3) {
     return(NULL)
 
-    ## N(n) %% 4 == 1
-  } else if (n %% 4 == 1) {
-    return(sos(n))
+    ## N %% 4 == 1
+  } else if (N %% 4 == 1) {
+    return(sos(N))
 
     ## something&#39;s wrong
   } else {
@@ -287,7 +299,7 @@ be implemented as</p>
     round(opts[2]) + round(opts[1])*1i,
     round(opts[2]) - round(opts[1])*1i)
 }</code></pre>
-<p>This enumerates all the combinations of integers <span class="math inline">\(i\)</span> up to <span class="math inline">\(\sqrt(p)\)</span> and checks
+<p>This enumerates all the combinations of integers <span class="math inline">\(i\)</span> up to <span class="math inline">\(\sqrt p\)</span> and checks
 if the sum of any two squares is equal to the input <span class="math inline">\(p\)</span>. If so, those are returned
 as candidates of the form <span class="math inline">\(m \pm ni\)</span>.</p>
 <p>In order to use the above approach of <code>norm_factors</code> we need to find the prime
@@ -344,13 +356,13 @@ d$factor_pairs &lt;- sapply(seq_len(nrow(d)),
                            list(unique(GP_factors(d$complex[x])))
                          })
 head(d)</code></pre>
-<pre class="bg-success"><code>##   row col  color colorname complex factor_pairs
-## 1  57 178 0000ff      blue 57+178i 10+9i, 12+7i
-## 2  47 140 cccc00    yellow 47+140i  8+7i, 12+7i
-## 3  46 125 ff0000       red 46+125i  8+7i, 11+6i
-## 4  60 109 0000ff      blue 60+109i  8+7i, 11+4i
-## 5  15 104 0000ff      blue 15+104i  6+5i, 10+9i
-## 6  58 103 ff0000       red 58+103i  8+5i, 11+6i</code></pre>
+<pre class="bg-success"><code>##   row col   color colorname complex factor_pairs
+## 1  57 178 #0000ff      blue 57+178i 10+9i, 12+7i
+## 2  47 140 #cccc00    yellow 47+140i  8+7i, 12+7i
+## 3  46 125 #ff0000       red 46+125i  8+7i, 11+6i
+## 4  60 109 #0000ff      blue 60+109i  8+7i, 11+4i
+## 5  15 104 #0000ff      blue 15+104i  6+5i, 10+9i
+## 6  58 103 #ff0000       red 58+103i  8+5i, 11+6i</code></pre>
 <p>Now we just extract the real and imaginary parts of those pairs</p>
 <pre class="r"><code>d$factor1 &lt;- sapply(d$factor_pairs, `[[`, 1)
 d$factor2 &lt;- sapply(d$factor_pairs, `[[`, 2)
@@ -359,13 +371,13 @@ d$y1 &lt;- sapply(d$factor1, Im)
 d$x2 &lt;- sapply(d$factor2, Re)
 d$y2 &lt;- sapply(d$factor2, Im)
 head(d)</code></pre>
-<pre class="bg-success"><code>##   row col  color colorname complex factor_pairs factor1 factor2 x1 y1 x2 y2
-## 1  57 178 0000ff      blue 57+178i 10+9i, 12+7i   10+9i   12+7i 10  9 12  7
-## 2  47 140 cccc00    yellow 47+140i  8+7i, 12+7i    8+7i   12+7i  8  7 12  7
-## 3  46 125 ff0000       red 46+125i  8+7i, 11+6i    8+7i   11+6i  8  7 11  6
-## 4  60 109 0000ff      blue 60+109i  8+7i, 11+4i    8+7i   11+4i  8  7 11  4
-## 5  15 104 0000ff      blue 15+104i  6+5i, 10+9i    6+5i   10+9i  6  5 10  9
-## 6  58 103 ff0000       red 58+103i  8+5i, 11+6i    8+5i   11+6i  8  5 11  6</code></pre>
+<pre class="bg-success"><code>##   row col   color colorname complex factor_pairs factor1 factor2 x1 y1 x2 y2
+## 1  57 178 #0000ff      blue 57+178i 10+9i, 12+7i   10+9i   12+7i 10  9 12  7
+## 2  47 140 #cccc00    yellow 47+140i  8+7i, 12+7i    8+7i   12+7i  8  7 12  7
+## 3  46 125 #ff0000       red 46+125i  8+7i, 11+6i    8+7i   11+6i  8  7 11  6
+## 4  60 109 #0000ff      blue 60+109i  8+7i, 11+4i    8+7i   11+4i  8  7 11  4
+## 5  15 104 #0000ff      blue 15+104i  6+5i, 10+9i    6+5i   10+9i  6  5 10  9
+## 6  58 103 #ff0000       red 58+103i  8+5i, 11+6i    8+5i   11+6i  8  5 11  6</code></pre>
 <p>Looping over the different colors as groups, we can draw segments on our image
 joining the two Gaussian Prime factors. The segments are all in one corner of
 the plot, so I’ve zoomed in to the first dozen pixels square. I’ve also faded the
@@ -396,7 +408,7 @@ suppressMessages({ # replacing fill scale
 <p>And, finally, printing the result as a nice reveal, we can plot all of those at once</p>
 <pre class="r"><code>cowplot::plot_grid(plotlist = gglist, nrow = 2)</code></pre>
 <p><img src="images/answer-1.png" width="100%" />
-This spells out “BOTNET” which is the answer to the puzzle! And what a puzzle!</p>
+This spells out <strong>“BOTNET”</strong> which is the answer to the puzzle! And what a puzzle!</p>
 <p>I had a lot of fun solving this - I’m not sure if there was an easier way, and I
 definitely couldn’t have made it this far without a significant hint, but I’m
 very pleased that I could solve the entire thing in (mostly) base R.</p>
@@ -417,8 +429,8 @@ very pleased that I could solve the entire thing in (mostly) base R.</p>
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2022-10-28
-##  pandoc   2.19.2 @ /usr/lib/rstudio/bin/quarto/bin/tools/ (via rmarkdown)
+##  date     2022-10-29
+##  pandoc   2.19.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
 ##  package     * version date (UTC) lib source
