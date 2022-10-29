@@ -1,0 +1,517 @@
+---
+title: The Most Complex Puzzle I've Ever Solved
+author: Jonathan Carroll
+date: '2022-10-29'
+slug: complex-puzzle
+categories:
+  - R
+tags:
+  - R
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>Don’t show me puzzles, unless you want to be responsible for me staying up too
+late solving them. I’m far too easily <a href="https://xkcd.com/356/">nerd-sniped</a>. This
+one was certainly the most complex I’ve ever solved. Quite complicated too,
+but definitely the most <em>complex</em> (you’ll see).</p>
+<!--more-->
+<p>Don’t show me puzzles, unless you want to be responsible for me staying up too
+late solving them. I’m far too easily <a href="https://xkcd.com/356/">nerd-sniped</a>. This
+one was certainly the most complex I’ve ever solved. Quite complicated too,
+but definitely the most <em>complex</em> (you’ll see).</p>
+<p>A few days ago a colleague of mine pointed me to <a href="https://fivethirtyeight.com/features/can-you-stay-awake-for-50-hours-and-solve-150-puzzles/">this FiveThirtyEight article</a>, which isn’t new (2018), but does feature someone else we both work with
+as the author of the first puzzle. Brandon is a mathematician-turned-computational-biologist/geneticist and a top-level MIT puzzler.</p>
+<p>The puzzle in the article consists of this image (you may want to save and enlarge, yourself)</p>
+<div class="figure">
+<img src="images/puzzle.png" width="250" height="250" alt="" />
+<p class="caption">Studies in two-factor authentication</p>
+</div>
+<p>and the clue:</p>
+<blockquote>
+<p>Ugh! Dad says the computer will hurt my eyes, but I doubt that’s his prime concern.
+Time to see what requires such complex security.</p>
+</blockquote>
+<p>How could I possibly pass up an opportunity to solve such a cool puzzle?</p>
+<p>I played with a few ideas, but can’t say I made any progress. My colleague also
+pointed me to a solution from the MIT puzzles website (I won’t spoil anything just yet)
+after which things started to make a lot more sense.</p>
+<p>The critical words in the clue are “prime” and “complex”… we’re going to be dealing
+with <a href="https://en.wikipedia.org/wiki/Gaussian_integer#Gaussian_primes">Gaussian Primes</a>; a special case of <a href="https://en.wikipedia.org/wiki/Gaussian_integer">Gaussian Integers</a>.</p>
+<p>I would say “math warning” but if math scares you, you probably could do with some scaring.</p>
+<p>A Gaussian Integer is a complex number (with a <em>real</em> and an <em>imaginary</em> part)
+<span class="math inline">\(z = a + bi\)</span> where both <span class="math inline">\(a\)</span> and <span class="math inline">\(b\)</span> are integers. A Gaussian Integer is a
+Gaussian Prime</p>
+<blockquote>
+<p>“if and only if either its norm is a prime number, or it is the
+product of a unit (<span class="math inline">\(\pm 1\)</span>, <span class="math inline">\(\pm i\)</span>) and a prime number of the form <span class="math inline">\(4n + 3\)</span>”</p>
+</blockquote>
+<p>The first part of this requires that the norm (<span class="math inline">\(a^2 + b^2\)</span>) is itself a prime number.
+This will be a positive, real integer. The alternative means that <span class="math inline">\(a=0\)</span> or <span class="math inline">\(b=0\)</span> and we
+can write the absolute value of the other (which will be prime) as <span class="math inline">\(4n + 3\)</span> for some non-negative <span class="math inline">\(n\)</span>.</p>
+<p>Working with complex numbers in R is actually very well supported. It’s not something
+you’d work with a lot in the vast majority of data science (“the average number of
+sprockets produced in the first quarter was <span class="math inline">\(2 + 3i\)</span>”?) but R has <code>complex</code> as an
+atomic type and many functions support operations on this.</p>
+<p>Okay, with that in mind, we can generate a bunch of Gaussian Primes. In base R,
+of course. First, we’re going to need a way to determine if an integer is
+a prime number. We’re not worried about performance, so let’s just try to divide
+our target number <span class="math inline">\(n\)</span> by every number smaller than <span class="math inline">\(\sqrt n\)</span> (greater than 1);
+if anything divides cleanly (the result is an integer) it’s not a prime number. That can be implemented
+(shamelessly stolen from <a href="https://stackoverflow.com/a/19767707/4168169">StackOverflow</a>)
+as</p>
+<pre class="r"><code>is.prime &lt;- function(n) n == 2L || all(n %% 2L:max(2,floor(sqrt(n))) != 0)</code></pre>
+<p>Sanity check:</p>
+<pre class="r"><code>is.prime(7)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is.prime(131)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is.prime(100)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<p>Next we’ll need a way to tell if a number is a Gaussian Prime. Implementing the
+definition above, and vectorizing it, involves working with the real (<code>Re()</code>) and
+imaginary (<code>Im()</code>) parts of a complex number</p>
+<pre class="r"><code>isGP &lt;- function(n) {
+  (Re(n) != 0 &amp;&amp; Im(n) != 0 &amp;&amp; is.prime(Re(n)^2+Im(n)^2)) ||
+    (Re(n) == 0 &amp;&amp; is.prime(Im(n)) &amp;&amp; abs(Im(n)) %% 4 == 3) ||
+    (Im(n) == 0 &amp;&amp; is.prime(Re(n)) &amp;&amp; abs(Re(n)) %% 4 == 3)
+}
+isGPv &lt;- Vectorize(isGP)</code></pre>
+<p>Sanity check:</p>
+<pre class="r"><code>isGP(-5-4i)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>isGP(3)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>isGP(1 + 3i)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>isGP(3 + 20i) # https://planetmath.org/gaussianprime</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>Now we can build a grid of integers on the complex plane and mark which are
+Gaussian Primes. For the sake of this puzzle, we’ll limit to 250 integers in
+each positive direction</p>
+<pre class="r"><code>x &lt;- expand.grid(real = 0:249, im = 0:249)
+x$complex &lt;- x$real + (x$im)*1i
+x$isGP &lt;- isGPv(x$complex)
+head(x)</code></pre>
+<pre class="bg-success"><code>##   real im complex  isGP
+## 1    0  0    0+0i FALSE
+## 2    1  0    1+0i FALSE
+## 3    2  0    2+0i FALSE
+## 4    3  0    3+0i  TRUE
+## 5    4  0    4+0i FALSE
+## 6    5  0    5+0i FALSE</code></pre>
+<p>I’m <em>solving</em> this in base R, but we can use a package for visualising things…</p>
+<pre class="r"><code>library(ggplot2)
+gg &lt;- ggplot(x, aes(real, im, fill = isGP)) +
+  geom_tile() +
+  scale_fill_manual(
+    values = c(`TRUE` = &quot;black&quot;, `FALSE` = &quot;white&quot;), guide = &quot;none&quot;
+  ) +
+  theme_void() + 
+  theme(aspect.ratio = 1)
+gg</code></pre>
+<p><img src="images/gg-1.png" width="100%" /></p>
+<p>Careful inspection shows that this does match the puzzle image, except that the
+puzzle version has some additional coloured pixels… Interesting.</p>
+<p>Reading the puzzle image (fetched directly, because Chrome wants to give me a .webp and
+maybe I’m getting too old to deal with that) in as pixel data into three channels
+(R, G, B) (yes, one external package, fine)</p>
+<pre class="r"><code>img &lt;- &quot;puzzle.png&quot;
+# download.file(&quot;https://fivethirtyeight.com/wp-content/uploads/2018/01/puzzle1.png&quot;, img)
+img &lt;- png::readPNG(img)</code></pre>
+<p>we can rescale these to 8-bit numbers, convert to hex, then combine into hex colours</p>
+<pre class="r"><code>img &lt;- list(
+  red = img[,,1]*255, 
+  green = img[,,2]*255, 
+  blue = img[,,3]*255
+)
+img &lt;- lapply(img, as.hexmode)
+img &lt;- matrix(
+  do.call(paste0, img), 
+  nrow = 250, ncol = 250, 
+  byrow = TRUE
+)
+# identify the locations of pixels 
+#  that are not black or white
+idx &lt;- which(! img == &quot;000000&quot; &amp; ! img == &quot;ffffff&quot;, arr.ind = TRUE)
+cols &lt;- img[idx]
+
+d &lt;- as.data.frame(idx)
+# image reads with (0,0) top left
+#  so flip it
+d$col &lt;- 250 - d$col 
+# start at 0
+d$row &lt;- d$row - 1 
+d$color &lt;- paste0(&quot;#&quot;, cols)
+head(d)</code></pre>
+<pre class="bg-success"><code>##   row col   color
+## 1  57 178 #0000ff
+## 2  47 140 #cccc00
+## 3  46 125 #ff0000
+## 4  60 109 #0000ff
+## 5  15 104 #0000ff
+## 6  58 103 #ff0000</code></pre>
+<p>These colours can be identified just by entering them into a search engine,
+or by using one of the <a href="https://github.com/rstudio/rstudio/issues/5424">very recent RStudio builds</a></p>
+<pre class="r"><code>known_colors &lt;- c(red = &quot;#ff0000&quot;, 
+                  orange = &quot;#ff9919&quot;, 
+                  yellow = &quot;#cccc00&quot;,
+                  green = &quot;#00ff00&quot;, 
+                  blue = &quot;#0000ff&quot;, 
+                  purple = &quot;#7f00cc&quot;
+)
+
+d$colorname &lt;- names(known_colors)[match(d$color, known_colors)]
+head(d)</code></pre>
+<pre class="bg-success"><code>##   row col   color colorname
+## 1  57 178 #0000ff      blue
+## 2  47 140 #cccc00    yellow
+## 3  46 125 #ff0000       red
+## 4  60 109 #0000ff      blue
+## 5  15 104 #0000ff      blue
+## 6  58 103 #ff0000       red</code></pre>
+<p>This looks fantastic in the recent RStudio versions, FYI</p>
+<div class="figure">
+<img src="images/rstudiocolours.png" alt="" />
+<p class="caption">Appropriate colour highlighting in RStudio</p>
+</div>
+<p>Now comes the hard part (and I’ll gladly admit I’d never have figured this out
+without seeing a solution first) - if we assume the coloured pixels represent
+<strong>complex</strong> numbers, and we can factor those into the product of two Gaussian
+<strong>Prime</strong>s (remember the clue?) then we can do <em>something</em> with those. So, how
+do we find the factors? Multiplying two numbers, even complex numbers is pretty
+straightforward. Figuring out which two prime factors a number has (even a regular
+integer) is the <a href="https://en.wikipedia.org/wiki/Integer_factorization#Prime_decomposition">foundation of cryptographic keys</a>.</p>
+<p>More searching turns up <a href="https://www.alpertron.com.ar/GAUSSIAN.HTM">this resource</a>
+which details an approach:</p>
+<blockquote>
+<p>There are three cases:</p>
+<blockquote>
+<ol style="list-style-type: decimal">
+<li><p>The prime factor p of the norm is 2: This means that the factor of the
+Gaussian integer is 1+i or 1-i.</p></li>
+<li><p>The prime factor p of the norm is multiple of 4 plus 3: this value cannot
+be expressed as a sum of two squares, so p is not a norm, but p2
+is. Since p2 = p2 + 02, and there is no prime norm that divides p2, the number
+p + 0i is a Gaussian prime, and the repeated factor p must be discarded.</p></li>
+<li><p>The prime factor p of the norm is multiple of 4 plus 1: this number can be
+expressed as a sum of two squares, by using the methods explained in the sum
+of squares page. If p = m2 + n2, then you can check whether m + ni or m − ni
+are divisors of the original Gaussian number.</p></li>
+</ol>
+</blockquote>
+</blockquote>
+<p>This translates to: Given the norm <span class="math inline">\(N\)</span> of a Gaussian Prime, the factors of
+<span class="math inline">\(N\)</span> (denoted <span class="math inline">\(p\)</span>) will either be <span class="math inline">\(1 \pm i\)</span>, or if <span class="math inline">\(p\)</span> is of the form <span class="math inline">\(p = m^2 + n^2\)</span>
+then candidates are <span class="math inline">\(m \pm ni\)</span>.</p>
+<p>So, we’ll need a function to operate on the norm of our Gaussian Prime. The norm
+itself is defined as</p>
+<pre class="r"><code>complexnorm &lt;- function(z) {
+  Re(z)^2 + Im(z)^2
+}</code></pre>
+<p>Sanity check:</p>
+<pre class="r"><code>complexnorm(3 + 4i)</code></pre>
+<pre class="bg-success"><code>## [1] 25</code></pre>
+<p>We can implement the approach above as</p>
+<pre class="r"><code>norm_factors &lt;- function(N) {
+
+  ## N %% 2 == 0
+  if (N %% 2 == 0) {
+    if (divides(N, (1+1i))) return(1+1i)
+    if (divides(N, (1-1i))) return(1-1i)
+
+    ## N %% 4 == 3
+  } else if (N %% 4 == 3) {
+    return(NULL)
+
+    ## N %% 4 == 1
+  } else if (N %% 4 == 1) {
+    return(sos(N))
+
+    ## something&#39;s wrong
+  } else {
+    stop(&quot;this shouldn&#39;t happen&quot;)
+  }
+}</code></pre>
+<p>There are a couple of undefined functions here (R is fine with this; it’s lazy).</p>
+<p>We need a way to tell if two complex numbers are “neatly” divisible, in the sense
+that they produce a Gaussian Integer. I’ve called that <code>divides()</code> and an
+implementation could be</p>
+<pre class="r"><code>divides &lt;- function(x, y) {
+  z &lt;- x / y
+  (intish(Re(z)) &amp;&amp; intish(Im(z)))
+}</code></pre>
+<p>This relies on being able to say that a real, floating-point value looks like an
+integer. This is an annoying part of working with numbers - sometimes, especially
+if you’re doing maths, numbers aren’t precisely representable in the computer as
+you hope. The classic example is</p>
+<pre class="r"><code>0.1 + 0.2 == 0.3</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<p>Why doesn’t that work? Looks simple enough. Let’s print more digits</p>
+<pre class="r"><code>print(0.1 + 0.2, digits = 20)</code></pre>
+<pre class="bg-success"><code>## [1] 0.30000000000000004441</code></pre>
+<p>This is so common, there’s even a website: <a href="https://0.30000000000000004.com/" class="uri">https://0.30000000000000004.com/</a></p>
+<p>So, can’t we just use R’s <code>is.integer()</code>? Would I be going through this if we could?</p>
+<pre class="r"><code>is.integer(3) # entered as a numeric value</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>is.integer(3L) # entered as an integer</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>so, if we have a not-entered-as-an-integer, it’s not an integer. What about trying
+to round-trip through <code>as.integer()</code> and comparing to the original? If <code>x</code> and
+<code>as.integer(x)</code> are the same, it’s an integer, right?</p>
+<pre class="r"><code>as.integer(3)        # makes sense</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<pre class="r"><code>as.integer(3.000001) # so far so good</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<pre class="r"><code>as.integer(3.999999) # oh, no</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<p>so, if our value is ever so slightly under the integer, it will be rounded all
+the way down to the next integer. Okay, so, how can we do this? <code>round()</code> rounds
+towards integers, so let’s check if the absolute difference between <code>x</code> and <code>round(x)</code>
+is very small</p>
+<pre class="r"><code>intish &lt;- function(x) {
+  abs(round(x) - x) &lt; 1e-7
+}</code></pre>
+<p>Sanity check:</p>
+<pre class="r"><code># 43 + 80i = (8 + 3i)(8 + 7i)
+divides(43 + 80i, 8 + 3i)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>divides(43 + 80i, 8 + 7i)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>divides(43 + 80i, 5 + 5i)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<p>The other missing function is for the last condition of <code>norm_factors()</code>,
+when the factor can be represented as the sum of two squares, so <code>sos()</code> could
+be implemented as</p>
+<pre class="r"><code>sos &lt;- function(p) {
+  s &lt;- sqrt(p)
+  i &lt;- seq_len(ceiling(s))
+  g &lt;- expand.grid(i, i)
+  g$sos &lt;- g[, 1]^2 + g[, 2]^2
+  opts &lt;- unlist(g[g$sos == p, c(1, 2)][1, ])
+  c(round(opts[1]) + round(opts[2])*1i,
+    round(opts[1]) - round(opts[2])*1i,
+    round(opts[2]) + round(opts[1])*1i,
+    round(opts[2]) - round(opts[1])*1i)
+}</code></pre>
+<p>This enumerates all the combinations of integers <span class="math inline">\(i\)</span> up to <span class="math inline">\(\sqrt p\)</span> and checks
+if the sum of any two squares is equal to the input <span class="math inline">\(p\)</span>. If so, those are returned
+as candidates of the form <span class="math inline">\(m \pm ni\)</span>.</p>
+<p>In order to use the above approach of <code>norm_factors</code> we need to find the prime
+factors of the norm of a Gaussian Prime. We will then test each of those with
+this approach.</p>
+<p>Finding the prime factors of a regular integer is a little more straightforward
+(for very small integers, less than thousands; for integers with thousands of <em>digits</em>
+we get into public-key cryptography spaces). In this case, we just enumerate the
+integers, check if the input is divisible, and take those that are prime (according
+to our earlier definition)</p>
+<pre class="r"><code>all_prime_factors &lt;- function(x) {
+  div &lt;- seq_len(x)
+  f &lt;- div[x %% div == 0]
+  f[sapply(f, is.prime)]
+}</code></pre>
+<p>Again, it’s <a href="https://stackoverflow.com/q/6424856/4168169">StackOverflow</a> to the
+rescue here. In case JD Long is reading this, you may be pleased to see that
+yes, your musings are still being read (and leveraged) over a decade later.</p>
+<p>Sanity check:</p>
+<pre class="r"><code>all_prime_factors(325)</code></pre>
+<pre class="bg-success"><code>## [1]  1  5 13</code></pre>
+<p>Now we can put that all together into a function that finds the factors of
+a Gaussian Prime</p>
+<pre class="r"><code>GP_factors &lt;- function(n) {
+  # get all prime factors of the norm of n
+  allf &lt;- all_prime_factors(complexnorm(n))
+  # get all candidate factors of those
+  tests &lt;- lapply(allf, norm_factors)
+  # flatten into a vector of candidates
+  tests &lt;- unlist(tests)
+  # remove anything that didn&#39;t work
+  tests &lt;- tests[!is.na(tests)]
+  # check if n can be divided by any candidates and keep those
+  tests &lt;- tests[sapply(tests, function(x) divides(n, x))]
+  # check if we have a Gaussian Prime and keep those
+  tests &lt;- tests[isGPv(tests)]
+  # only find positive real and imaginary elements
+  res &lt;- tests[sapply(tests, function(x) Re(x) &gt; 0 &amp;&amp; Im(x) &gt; 0)]
+
+  # the factors should be the candidate and n / candidate
+  # rounded to integers just to be sure
+  unique(unname(c(round(res), round(n / res))))
+}</code></pre>
+<p>but does it work? How about the example from earlier…</p>
+<p>Sanity check:</p>
+<pre class="r"><code># 43 + 80i = (8 + 3i)(8 + 7i)
+GP_factors(43 + 80i)</code></pre>
+<pre class="bg-success"><code>## [1] 8+3i 8+7i</code></pre>
+<p>That. Is. So. Satisfying!</p>
+<p>Applying this to our coloured points (converted back to complex)</p>
+<pre class="r"><code>d$complex &lt;- d$row + d$col*1i
+d$factor_pairs &lt;- sapply(seq_len(nrow(d)),
+                         function(x) {
+                           list(unique(GP_factors(d$complex[x])))
+                         })
+head(d)</code></pre>
+<pre class="bg-success"><code>##   row col   color colorname complex factor_pairs
+## 1  57 178 #0000ff      blue 57+178i 10+9i, 12+7i
+## 2  47 140 #cccc00    yellow 47+140i  8+7i, 12+7i
+## 3  46 125 #ff0000       red 46+125i  8+7i, 11+6i
+## 4  60 109 #0000ff      blue 60+109i  8+7i, 11+4i
+## 5  15 104 #0000ff      blue 15+104i  6+5i, 10+9i
+## 6  58 103 #ff0000       red 58+103i  8+5i, 11+6i</code></pre>
+<p>Now we just extract the real and imaginary parts of those pairs</p>
+<pre class="r"><code>d$factor1 &lt;- sapply(d$factor_pairs, `[[`, 1)
+d$factor2 &lt;- sapply(d$factor_pairs, `[[`, 2)
+d$x1 &lt;- sapply(d$factor1, Re)
+d$y1 &lt;- sapply(d$factor1, Im)
+d$x2 &lt;- sapply(d$factor2, Re)
+d$y2 &lt;- sapply(d$factor2, Im)
+head(d)</code></pre>
+<pre class="bg-success"><code>##   row col   color colorname complex factor_pairs factor1 factor2 x1 y1 x2 y2
+## 1  57 178 #0000ff      blue 57+178i 10+9i, 12+7i   10+9i   12+7i 10  9 12  7
+## 2  47 140 #cccc00    yellow 47+140i  8+7i, 12+7i    8+7i   12+7i  8  7 12  7
+## 3  46 125 #ff0000       red 46+125i  8+7i, 11+6i    8+7i   11+6i  8  7 11  6
+## 4  60 109 #0000ff      blue 60+109i  8+7i, 11+4i    8+7i   11+4i  8  7 11  4
+## 5  15 104 #0000ff      blue 15+104i  6+5i, 10+9i    6+5i   10+9i  6  5 10  9
+## 6  58 103 #ff0000       red 58+103i  8+5i, 11+6i    8+5i   11+6i  8  5 11  6</code></pre>
+<p>Looping over the different colors as groups, we can draw segments on our image
+joining the two Gaussian Prime factors. The segments are all in one corner of
+the plot, so I’ve zoomed in to the first dozen pixels square. I’ve also faded the
+Gaussian Primes to make the solution a bit clearer</p>
+<pre class="r"><code>gglist &lt;- list()
+suppressMessages({ # replacing fill scale
+  for (col in names(known_colors)) {
+    dcol &lt;- d[d$colorname == col, ]
+    gglist[[col]] &lt;- gg +
+      geom_segment(data = dcol,
+                   aes(x = x1, y = y1,
+                       xend = x2, yend = y2,
+                       col = colorname),
+                   size = 1.5,
+                   inherit.aes = FALSE) +
+      coord_cartesian(xlim = c(0, 12), ylim = c(0, 12)) +
+      scale_color_manual(values =
+                           setNames(d$colorname, d$colorname),
+                         guide = &quot;none&quot;) +
+      scale_fill_manual(
+        values = c(`TRUE` = &quot;grey90&quot;, `FALSE` = &quot;white&quot;), 
+        guide = &quot;none&quot;
+      ) +
+      theme_void() +
+      theme(aspect.ratio = 1)
+  }
+})</code></pre>
+<p>And, finally, printing the result as a nice reveal, we can plot all of those at once</p>
+<pre class="r"><code>cowplot::plot_grid(plotlist = gglist, nrow = 2)</code></pre>
+<p><img src="images/answer-1.png" width="100%" />
+This spells out <strong>“BOTNET”</strong> which is the answer to the puzzle! And what a puzzle!</p>
+<p>I had a lot of fun solving this - I’m not sure if there was an easier way, and I
+definitely couldn’t have made it this far without a significant hint, but I’m
+very pleased that I could solve the entire thing in (mostly) base R.</p>
+<p>As always, comments, critiques, and suggestions are welcome both here and on
+<a href="https://twitter.com/carroll_jono/">Twitter</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2022-10-29
+##  pandoc   2.19.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  assertthat    0.2.1   2019-03-21 [3] CRAN (R 4.0.1)
+##  blogdown      1.13    2022-09-24 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.4.0   2022-07-16 [3] CRAN (R 4.2.1)
+##  cachem        1.0.6   2021-08-19 [3] CRAN (R 4.2.0)
+##  callr         3.7.2   2022-08-22 [3] CRAN (R 4.2.1)
+##  cli           3.4.1   2022-09-23 [3] CRAN (R 4.2.1)
+##  colorspace    2.0-3   2022-02-21 [3] CRAN (R 4.2.0)
+##  cowplot       1.1.1   2020-12-30 [1] CRAN (R 4.1.2)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  DBI           1.1.3   2022-06-18 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.29  2021-12-01 [3] CRAN (R 4.2.0)
+##  dplyr         1.0.10  2022-09-01 [3] CRAN (R 4.2.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.17    2022-10-07 [3] CRAN (R 4.2.1)
+##  fansi         1.0.3   2022-03-24 [3] CRAN (R 4.2.0)
+##  farver        2.1.1   2022-07-06 [3] CRAN (R 4.2.1)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.2.0)
+##  fs            1.5.2   2021-12-08 [3] CRAN (R 4.1.2)
+##  generics      0.1.3   2022-07-05 [3] CRAN (R 4.2.1)
+##  ggplot2     * 3.3.6   2022-05-03 [3] CRAN (R 4.2.0)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  gtable        0.3.1   2022-09-01 [3] CRAN (R 4.2.1)
+##  highr         0.9     2021-04-16 [3] CRAN (R 4.1.1)
+##  htmltools     0.5.3   2022-07-18 [3] CRAN (R 4.2.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.2   2022-10-02 [3] CRAN (R 4.2.1)
+##  knitr         1.40    2022-08-24 [3] CRAN (R 4.2.1)
+##  labeling      0.4.2   2020-10-20 [3] CRAN (R 4.2.0)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  munsell       0.5.0   2018-06-12 [3] CRAN (R 4.0.1)
+##  pillar        1.8.1   2022-08-19 [3] CRAN (R 4.2.1)
+##  pkgbuild      1.3.1   2021-12-20 [1] CRAN (R 4.1.2)
+##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  png           0.1-7   2013-12-03 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.7.0   2022-07-07 [3] CRAN (R 4.2.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.1   2022-06-18 [3] CRAN (R 4.2.1)
+##  purrr         0.3.5   2022-10-06 [3] CRAN (R 4.2.1)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.6   2022-09-24 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.17    2022-10-07 [3] CRAN (R 4.2.1)
+##  rstudioapi    0.14    2022-08-22 [3] CRAN (R 4.2.1)
+##  sass          0.4.2   2022-07-16 [3] CRAN (R 4.2.1)
+##  scales        1.2.1   2022-08-20 [3] CRAN (R 4.2.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.8   2022-07-11 [3] CRAN (R 4.2.1)
+##  stringr       1.4.1   2022-08-20 [3] CRAN (R 4.2.1)
+##  tibble        3.1.7   2022-05-03 [3] CRAN (R 4.2.0)
+##  tidyselect    1.1.2   2022-02-21 [3] CRAN (R 4.1.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  utf8          1.2.2   2021-07-24 [3] CRAN (R 4.2.0)
+##  vctrs         0.4.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  withr         2.5.0   2022-03-03 [3] CRAN (R 4.2.0)
+##  xfun          0.33    2022-09-12 [3] CRAN (R 4.2.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.5   2022-02-21 [3] CRAN (R 4.2.0)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
