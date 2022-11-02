@@ -57,6 +57,7 @@ rssLimit = 50
   gitlab = "jonocarroll"
   bitbucket = "jonocarroll"
   twitter = "carroll_jono"
+  mastodon = "jonocarroll@fosstodon.org"
   #reddit = "username"
   linkedin = "carrolljonathan"
   #xing = "username"
@@ -72,7 +73,7 @@ rssLimit = 50
   paypal = "jonocarroll"
   #telegram = "username"
   #500px = "username"
-
+  
 [permalinks]
     post = "/:year/:month/:day/:slug/"
 
