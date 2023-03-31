@@ -316,7 +316,8 @@ console.log(str.split("b").map(b => atob(b)));
 ```
 providing the rest of the second block of output and the next separator.
 
-The next lines set up a `Date` object and extract parts
+The next lines set up a `Date` object and extracts part of the string representation 
+(local timezone, but it's just taking the `"19"` from `"1997"`)
 ```
 const datetime = new Date(1997, 7, 24);
 res.push(
@@ -455,21 +456,28 @@ With all that in place, it's time to run all of the code! If I do that, I get...
 
 which is fitting, and thoroughly satisfying to finally produce.
 
+I also ran this code (with my corrections, minus the `atob` and `btoa`
+definitions) over on [jsfiddle.net/](https://jsfiddle.net/) and it seems to give
+the right solution, which makes me think perhaps it really is an error in the
+code or how it was printed.
+
 What an adventure! I learned a lot of javascript (how to run it with `node` and
 in a browser for debugging), played with
 [tesseract](https://github.com/tesseract-ocr/tesseract), and learned about
 entering unicode. I'm sending this to Eric Yoon for comment and will update if I 
 hear anything.
 
-As a side note for this post, you'll notice that the code blocks are all nicely 
-rendered as usual - in this case they're the actual javascript from the easter egg code. 
-{knitr} _does_ have a way to evaluate javascript in code chunks with the `node` engine, but 
-that essentially runs `node -e 'CODE'` on each chunk independently, so you can't define 
-a variable in one chunk then reference it in another. That wasn't sufficient for this 
-exploration. I did find an (old) [implementation](https://github.com/yihui/runr/pull/18) 
-that uses [{V8}](https://github.com/jeroen/V8) in Yihui's (already experimental) 
-[{runr}](https://github.com/yihui/runr), but it was written for a much older 
-version of {knitr} and was out of date. 
+As a side note for this post, you'll notice that the code blocks are all nicely
+rendered as usual - in this case they're the actual javascript from the easter
+egg code. [{knitr}](https://yihui.org/knitr/) _does_ have a way to evaluate
+javascript in code chunks with the `node` engine, but that essentially runs
+`node -e 'CODE'` on each chunk independently, so you can't define a variable in
+one chunk then reference it in another. That wasn't sufficient for this
+exploration. I did find an (old)
+[implementation](https://github.com/yihui/runr/pull/18) that uses
+[{V8}](https://github.com/jeroen/V8) in Yihui's (already experimental)
+[{runr}](https://github.com/yihui/runr), but it was written for a much older
+version of [{knitr}](https://yihui.org/knitr/) and was out of date.
 
 So, of course the thing to do was ~~just hardcode the output~~SHAVE A YAK AND UPDATE 
 THE IMPLEMENTATION. If you'd like to have javascript code chunks in your Rmd, I've made 

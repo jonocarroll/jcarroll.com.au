@@ -195,7 +195,8 @@ res = res.concat(str.split(&quot;b&quot;).map(b =&gt; atob(b)));</code></pre>
 ##   &#39;0&#39;
 ## ]</code></pre>
 <p>providing the rest of the second block of output and the next separator.</p>
-<p>The next lines set up a <code>Date</code> object and extract parts</p>
+<p>The next lines set up a <code>Date</code> object and extracts part of the string representation
+(local timezone, but it’s just taking the <code>"19"</code> from <code>"1997"</code>)</p>
 <pre><code>const datetime = new Date(1997, 7, 24);
 res.push(
     datetime.toString().slice(11, 13) +
@@ -294,20 +295,26 @@ the “right” solution with</p>
 </details>
 <p></br></p>
 <p>which is fitting, and thoroughly satisfying to finally produce.</p>
+<p>I also ran this code (with my corrections, minus the <code>atob</code> and <code>btoa</code>
+definitions) over on <a href="https://jsfiddle.net/">jsfiddle.net/</a> and it seems to give
+the right solution, which makes me think perhaps it really is an error in the
+code or how it was printed.</p>
 <p>What an adventure! I learned a lot of javascript (how to run it with <code>node</code> and
 in a browser for debugging), played with
 <a href="https://github.com/tesseract-ocr/tesseract">tesseract</a>, and learned about
 entering unicode. I’m sending this to Eric Yoon for comment and will update if I
 hear anything.</p>
 <p>As a side note for this post, you’ll notice that the code blocks are all nicely
-rendered as usual - in this case they’re the actual javascript from the easter egg code.
-{knitr} <em>does</em> have a way to evaluate javascript in code chunks with the <code>node</code> engine, but
-that essentially runs <code>node -e 'CODE'</code> on each chunk independently, so you can’t define
-a variable in one chunk then reference it in another. That wasn’t sufficient for this
-exploration. I did find an (old) <a href="https://github.com/yihui/runr/pull/18">implementation</a>
-that uses <a href="https://github.com/jeroen/V8">{V8}</a> in Yihui’s (already experimental)
+rendered as usual - in this case they’re the actual javascript from the easter
+egg code. <a href="https://yihui.org/knitr/">{knitr}</a> <em>does</em> have a way to evaluate
+javascript in code chunks with the <code>node</code> engine, but that essentially runs
+<code>node -e 'CODE'</code> on each chunk independently, so you can’t define a variable in
+one chunk then reference it in another. That wasn’t sufficient for this
+exploration. I did find an (old)
+<a href="https://github.com/yihui/runr/pull/18">implementation</a> that uses
+<a href="https://github.com/jeroen/V8">{V8}</a> in Yihui’s (already experimental)
 <a href="https://github.com/yihui/runr">{runr}</a>, but it was written for a much older
-version of {knitr} and was out of date.</p>
+version of <a href="https://yihui.org/knitr/">{knitr}</a> and was out of date.</p>
 <p>So, of course the thing to do was <del>just hardcode the output</del>SHAVE A YAK AND UPDATE
 THE IMPLEMENTATION. If you’d like to have javascript code chunks in your Rmd, I’ve made
 <a href="https://github.com/stla/runr/pull/1/files">a pull request</a> to that original implementation
