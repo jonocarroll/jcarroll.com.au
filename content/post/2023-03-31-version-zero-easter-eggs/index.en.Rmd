@@ -452,12 +452,11 @@ With all that in place, it's time to run all of the code! If I do that, I get...
 
 ```
 </details>
-</br>
 
 which is fitting, and thoroughly satisfying to finally produce.
 
 I also ran this code (with my corrections, minus the `atob` and `btoa`
-definitions) over on [jsfiddle.net/](https://jsfiddle.net/) and it seems to give
+definitions) over on [jsfiddle.net](https://jsfiddle.net/) and it seems to give
 the right solution, which makes me think perhaps it really is an error in the
 code or how it was printed.
 
