@@ -1,0 +1,512 @@
+---
+title: Version Zero Easter Eggs
+author: Jonathan Carroll
+date: '2023-03-31'
+slug: version-zero-easter-eggs
+categories:
+  - javascript
+  - books
+tags:
+  - javascript
+  - books
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+knitr::knit_engines$set(V8 = runr:::V8engine) # remotes::install_github("jonocarroll/runr")
+```
+
+I've just finished reading ['Version
+Zero'](https://micro.blog/books/9780593190371) by David Yoon. I really enjoyed
+it. There's some (javascript) code on some separator pages between some of the
+chapters that is loosely tied into the plot and general theme of the book. I
+love solving puzzles, so what was I supposed to do, just leave it at that?
+
+<!--more-->
+
+I've just finished reading ['Version
+Zero'](https://micro.blog/books/9780593190371) by David Yoon. I really enjoyed
+it. There's some (javascript) code on some separator pages between some of the
+chapters that is loosely tied into the plot and general theme of the book. I
+love solving puzzles, so what was I supposed to do, just leave it at that?
+
+Incidentally, I've hooked my [reading list into my mini
+blog](https://jcarroll.xyz/reading/) so my 'Currently Reading' list is (ideally)
+up to date.
+
+I can't help myself when it comes to puzzles or easter eggs like this.
+[Decrypting the new Australian 50c coin puzzle](https://jcarroll.com.au/2022/09/01/asd_coin/) triggered a conversation
+with one of our top spy agencies. I learned a whole lot from solving this
+[Gaussian Primes puzzle](https://jcarroll.com.au/2022/10/29/complex-puzzle/).
+
+I very much enjoyed the book. I won't give away too much, but it does a great
+job of calmly building up a story, the characters, the plot and then ramping up
+the excitement. In the acknowledgements the author thanks his genius nephew Eric Yoon ([yoonicode.com](yoonicode.com) - what a great URL!) for the easter egg code.
+
+I figured I'd try to to run the code and see what it does. I wanted to carefully 
+read this - especially given the theme of the book - to make sure it wasn't going to 
+delete my networking setup or something. The first step was to get the code from the 
+(paper) pages into a computer. I looked around - web search, GitHub, Eric's site - and 
+couldn't find an online copy anywhere. I tried searching for a few other unique-looking 
+terms in the code but nothing. _Has no one written up a discussion about this easter egg?_ The 
+book is from 2021, so it's not *that* new. I came across it randomly walking the shelves 
+at my local library (credit to librarians for prominently featuring great suggestions!). Maybe 
+I've just overlooked a write up somewhere, but maybe I'm the first?
+
+I had a go at OCR via [tesseract](https://github.com/tesseract-ocr/tesseract)
+but since it's javascript and not a text language, it didn't have much luck.
+There are supposedly some language packs for tesseract but none of them helped
+with the images I have.
+
+So, with no digital copy of the code to pull in, I guess the only thing to do is
+to ~~forget about it and move on~~MANUALLY TYPE ALL 80-SOMETHING LINES IN. This
+was ... interesting, but not too bad, really. The choice of font in the book and
+somewhat
+low dpi meant that the difference between `(` and `{` was *very* subtle. Having a
+little bit of domain knowledge helps in this case. Entering the code was otherwise just a matter
+of typing until I got to this (or what looks something like this) line
+
+```
+subunit.push(btoa("ß]xëÏz×|ç¼Û¾v"));
+```
+
+Oh... No.
+
+My best guess was to use Google Docs' 'insert character' which lets you draw the symbol 
+you're looking for and gives some options.
+
+![Google Docs' insert character dialog](images/insertchar.png){width=300px}
+
+The next step was to actually confirm that I hadn't 
+made any transcription errors, which should show up if I try to run the code. I checked 
+that I could run a file of javascript code with `node` and it worked, sort of. It failed about 
+halfway through because a function wasn't defined - `btoa` and `atob` are [deprecated in Node](https://dev.to/2ezpz2plzme/btoa-replacement-in-nodejs-3k6g). I added some definitions 
+for `atob` and `btoa` and that was resolved
+
+```
+atob = a => Buffer.from(a, 'base64').toString('binary')
+btoa = b => Buffer.from(b, 'binary').toString('base64')
+```
+
+The code didn't run, though, because some values didn't convert to `BigInt`,
+probably because I'd entered them wrong.
+
+I carefully went through what I'd entered and did realise that there was only a subtle 
+difference between `1` (one) and `l` (lowercase `L`) and made some fixes.
+
+Apart from that, the code ran until it hit the `BigInt` conversion of a
+particular value and failed. I forced the code to skip over that value and got to
+an answer. The result of running the code is similar to the [Advent of Code 2022
+Day 10 Part Two
+puzzle](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day10.R
+- which I'm still yet to write up) which writes out `#` and spaces in lines to 
+spell out ASCII-art words. Clearly my code was broken, because I could see what it 
+was _supposed_ to spell out, and there were errors. 
+
+I figured I had to trace back through the result being built up and figure out 
+which values end up on which lines. Extra fun, because there's a `filter` in the 
+middle that removes some of the input. Sure enough, one of the offending lines was 
+the unicode-salad line above - great. The other seemed to be
+
+```
+const datetime = new Date(1997, 7, 24);
+```
+
+Super great - this is going to involve a timezone issue, isn't it?
+
+Back to the unicode, I searched again for this specific line (minus the unicode) and 
+actually did get a hit - Google Books has a copy of the (Czech?) translation of the 
+book and returns this line. Not precisely (something hasn't encoded correctly) and 
+not selectable in the book, but selectable in the [Google result for it](https://www.google.com/search?q=%22subunit.push%22+btoa). That wasn't much 
+help after all.
+
+Let's walk through the code and see how it works before we resolve it. A full
+copy (with my own annotations and fixes) is
+[here](https://github.com/jonocarroll/versionzero), if anyone else wants to not
+have to type all of it in.
+
+```
+const VERSION_NUMBER = 0;
+const AGENT = "BLACK HALO";
+const year = 0x2018;
+const enc = [
+    021, 024, 015, 015,
+    026, -031, 030, 016,
+    034, 027, 021, 034,
+    021, 014, 025, -022,
+    017, 016, 032, 027
+];
+let res = ["You are infinite"];
+RANDOM_SEED = 20879976793454946324n;
+```
+```{V8, echo = FALSE}
+VERSION_NUMBER = 0;
+AGENT = "BLACK HALO";
+year = 0x2018;
+enc = [
+    021, 024, 015, 015,
+    026, -031, 030, 016,
+    034, 027, 021, 034,
+    021, 014, 025, -022,
+    017, 016, 032, 027
+];
+res = ["You are infinite"];
+RANDOM_SEED = 20879976793454946324n;
+```
+
+So far so good. Some constants and the start of a result `res` - an array
+containing some text.
+
+```
+if (VERSION_NUMBER % 2 < 1) res.shift();
+```
+
+With `VERSION_NUMBER == 0` this just drops the first (and only) value of `res`, so 
+we're back to an empty result.
+
+```
+res.push(enc.map((i, idx) => {
+    return String.fromCharCode(
+        AGENT.charCodeAt(
+            idx % AGENT.length
+        ) - i
+    );
+}).reduce((i, j) => {
+    return i.toString() + j.toString();
+}));
+res[0]
+```
+```{node, eval = FALSE, class.source = "bg-success"}
+## 18465903081007629328
+```
+This does some math on the characters of `AGENT` and produces what will eventually 
+be the _second_ line of actual output (currently the first).
+
+```
+res.unshift(atob("MzU3NzU1MDM2NTgxMDMzNTg0OTU="));
+res[0]
+```
+```{node, echo = FALSE}
+atob = a => Buffer.from(a, 'base64').toString('binary')
+console.log(atob("MzU3NzU1MDM2NTgxMDMzNTg0OTU="));
+```
+
+This becomes the _first_ line of output due to the `unshift`.
+
+```
+res.push(
+    (8939935261623587079n << 2n).toString() 
+);
+res.push((RANDOM_SEED & 0x18C445CAC40447832n | 0n).toString());
+res.push("" + (151845383424178857009896n / BigInt(year)));
+```
+```{node, echo = FALSE, class.source = "bg-success"}
+console.log((8939935261623587079n << 2n).toString())
+console.log((20879976793454946324n & 0x18C445CAC40447832n | 0n).toString())
+console.log("" + (151845383424178857009896n / BigInt(0x2018)))
+```
+
+become the third, fourth, and fifth line of the output.
+
+The next lines set up something to be used later, 
+
+```
+let as_json = {
+    coordinates: '{"x": 2, "y": 5}',
+    tolerance: 0.1,
+    subunit: [2 ** 8]
+};
+const c = JSON.parse(as_json.coordinates);
+```
+```{node, echo = FALSE, class.source = "bg-success"}
+as_json = {
+    coordinates: '{"x": 2, "y": 5}',
+    tolerance: 0.1,
+    subunit: [2 ** 8]
+};
+console.log(as_json);
+console.log(JSON.parse(as_json.coordinates));
+```
+
+Then adds a separator of `0` to the result
+
+```
+res.push((z => `value: ${z}`.slice(7))((x => x >>> 42)(3 ** 5)));
+```
+```{node, echo = FALSE, class.source = "bg-success"}
+console.log((z => `value: ${z}`.slice(7))((x => x >>> 42)(3 ** 5)));
+```
+
+The next part is a bit of a red herring since it sets up a `subunit` object 
+```
+let subunit = as_json["subunit"];
+eval("subunit" + `${String.fromCharCode(46)}pop()`);
+```
+but the `eval` results in 
+```{node, echo = FALSE, class.source = "bg-success"}
+console.log("subunit" + `${String.fromCharCode(46)}pop()`);
+```
+so that is back to empty.
+
+This adds some data to `subunit`
+
+```
+subunit.push(69 + 114 + 105 + 99 + 32 + 89 + 111 + 111 + 110);
+```
+```{node, echo = FALSE, class.source = "bg-success"}
+console.log(69 + 114 + 105 + 99 + 32 + 89 + 111 + 111 + 110);
+```
+but again it's overwritten with
+
+```
+subunit[0] = Math.round(euclidianDistance(c.x, c.y, 48, 1967.46095)) + "4568824394612736"; 
+[...]
+/**
+    * @returns the distance between 2d point (x, y) and (x1, y1)
+    */
+function euclidianDistance(x, y, x1, y1) {
+    return Math.sqrt(((x - x1) ** 2) + ((y - y1) ** 2));
+}
+```
+```{node, echo = FALSE, class.source = "bg-success"}
+let as_json = {
+    coordinates: '{"x": 2, "y": 5}',
+    tolerance: 0.1,
+    subunit: [2 ** 8]
+};
+const c = JSON.parse(as_json.coordinates);
+function euclidianDistance(x, y, x1, y1) {
+    return Math.sqrt(((x - x1) ** 2) + ((y - y1) ** 2));
+}
+console.log(Math.round(euclidianDistance(c.x, c.y, 48, 1967.46095)) + "4568824394612736");
+```
+
+This is the first line of the second block of output.
+
+The next line of output _should_ come from the code that I have as
+
+```
+subunit.push(btoa("ß]xëÏz×|ç¼Û¾v"));
+res = res.concat(subunit);
+```
+but that produces
+```{node, echo = FALSE, class.source = "bg-success"}
+btoa = b => Buffer.from(b, 'binary').toString('base64')
+console.log(btoa("ß]xëÏz×|ç¼Û¾v"));
+```
+which doesn't convert to `BigInt` at all. We'll come back to that.
+
+```
+const str = "MjQyNDI4NzczNDQ0MjgwNjQ3Njg=bMTk2MTc2ODAxMTY0MTIzMTc2OTY=bMTk2MzQ1Njg0OTI2MDgzODkxMjA=bMA=="; 
+res = res.concat(str.split("b").map(b => atob(b)));
+```
+splits up the `str` at the letter `b` and runs `atob` over the pieces
+```{node, echo = FALSE}
+atob = a => Buffer.from(a, 'base64').toString('binary')
+const str = "MjQyNDI4NzczNDQ0MjgwNjQ3Njg=bMTk2MTc2ODAxMTY0MTIzMTc2OTY=bMTk2MzQ1Njg0OTI2MDgzODkxMjA=bMA=="; 
+console.log(str.split("b").map(b => atob(b)));
+```
+providing the rest of the second block of output and the next separator.
+
+The next lines set up a `Date` object and extract parts
+```
+const datetime = new Date(1997, 7, 24);
+res.push(
+    datetime.toString().slice(11, 13) +
+        (
+            634601705079659136n +
+            BigInt(datetime.getTime())
+        )
+);
+```
+```{node, echo = FALSE}
+const datetime = new Date(1997, 7, 24);
+console.log(datetime.toString().slice(11, 13) +
+        (
+            634601705079659136n +
+            BigInt(datetime.getTime())
+        ));
+```
+which *looks* okay, but gives the wrong value on the first line of the last
+block - another one to come back to.
+
+The next lines were fun to enter and validate (not) 
+
+```
+res = res.concat(
+    [
+        "Mjg4NDIxOTU1MjI5NzAyMDYyMDg=", /** block 3, line 2 */
+        "MTVkIGhlcnJpbmcgZ2V0IHJla3Q=", 
+        "MTEwNTI5MDA1Mjk2MDU5NzY2MTM0",
+        "MjQyMzA1MjI2OTg2ODIzNjM5MDQ=", /** block 3, line 3 */
+        "SG9wZSB5b3UgbGlrZSBSZWdleCE=", 
+        "MTk1MjA0NjkyMDUyODYzMDQ0MDM=",
+        "MjE5MjQ2NjY0OTUzMjkxMjQzNTI=", /** block 3, line 4 */
+        "MjYwMjg2MDQ4NjAyODMwNTUxMDI=",
+        "MTk2MzQ2MDI1OTM2MDc1MTUxMzY=", /** block 3, line 5 */
+        "TG92ZSwgUGlsb3QuIDwzICA8MyA=", 
+        "MzA0NTgyNTg0Mzk1NzM4OTU3OTM5"
+    ].filter( 
+       i => i.match(/M[j|T].+[QUINOA][x12][DjTLMNOP]{2}[^aeiou]\*?.{1,5}[a-zA-Z5]+=/g) 
+    ).map(atob)
+).map((i, j) => {
+    if(j > 5 && j < 12 && j != 7) {
+        return BigInt(i) & BigInt(31775n << 50n);
+    }
+    return i;
+});
+```
+This involves filtering some entries from the big block of encoded text, 
+running the remaining ones through `atob`, then doing some math on these combined
+with all the other values from `res` (effectively only updating the second block of values).
+
+While debugging this, I found another easter egg hidden within - one that wouldn't 
+be found just by running the code itself. Some of the lines filtered out by the regex 
+convert to plaintext!
+
+```
+atob("MTVkIGhlcnJpbmcgZ2V0IHJla3Q=")
+atob("SG9wZSB5b3UgbGlrZSBSZWdleCE=")
+atob("TG92ZSwgUGlsb3QuIDwzICA8MyA=")
+```
+```{node, echo = FALSE}
+atob = a => Buffer.from(a, 'base64').toString('binary')
+console.log(atob("MTVkIGhlcnJpbmcgZ2V0IHJla3Q="));
+console.log(atob("SG9wZSB5b3UgbGlrZSBSZWdleCE="));
+console.log(atob("TG92ZSwgUGlsb3QuIDwzICA8MyA="));
+```
+Niiiiice!
+
+The final lines of code take these values, convert to binary, and print a `#` for 
+each `1` (and a space otherwise)
+
+```
+for (const i of res) {
+    const bin = BigInt(i).toString(2);
+    let ln = "";
+    for (const j of bin) ln += j == "0" ? " " : "#";
+    console.log(ln);
+}
+```
+
+If you do that, a message (slightly corrupted) appears. 
+
+I decided to work backwards, since I was fairly sure what the 'right' solution
+should be. Taking those lines (manually corrected), converting them all the way
+back through the processing in reverse, I could see what the 'right' code should
+be. 
+
+The unicode line that produces what I think is the "right" solution is
+
+```
+subunit.push(btoa("ß]xëÏyÓm¼÷\x8DùÓ}ú"));
+```
+
+The characters are mainly close but not perfect, so maybe a `LOCALE` issue? Something 
+to do with Linux (which I'm on) vs Windows?
+
+The date line seems to be off by exactly 16 hours and 30 minutes which is
+disturbingly likely to be a timezone issue. I'm at GMT+10:30 (Adelaide, South
+Australia) at the moment. StackOverflow seems to have a lot of [angry
+comments](https://stackoverflow.com/questions/9756120/how-do-i-get-a-utc-timestamp-in-javascript)
+regarding whether or not this is an issue for `Date()`. I seem to be able to get
+the "right" solution with
+
+```
+const datetime = new Date(1997, 7, 24, 16, 30);
+```
+
+With all that in place, it's time to run all of the code! If I do that, I get...
+
+</br>
+<details>
+  <summary> <b> &laquo; Click to reveal! &raquo; </b>  </summary>
+  
+```
+#####     #####     #####     #####     #####     #   #     #####
+#         #   #     #   #     #           #       #   #     #    
+#####     #   #     #####     #  ##       #       #   #     ###  
+#         #   #     # #       #   #       #        # #      #    
+#         #####     #  ##     #####     #####       #       #####
+ 
+#   #     #####                                                  
+## ##     #                                                      
+# # #     ###                                                    
+#   #     #                                                      
+#   #     #####                                                  
+ 
+#   #     #####     #####     #         #         #####          
+##  #     #   #     #         #         #         #              
+# # #     #   #     ###       #         #         ###            
+#  ##     #   #     #         #         #         #              
+#   #     #####     #####     #####     #####     #####          
+
+```
+</details>
+</br>
+
+which is fitting, and thoroughly satisfying to finally produce.
+
+What an adventure! I learned a lot of javascript (how to run it with `node` and
+in a browser for debugging), played with
+[tesseract](https://github.com/tesseract-ocr/tesseract), and learned about
+entering unicode. I'm sending this to Eric Yoon for comment and will update if I 
+hear anything.
+
+As a side note for this post, you'll notice that the code blocks are all nicely 
+rendered as usual - in this case they're the actual javascript from the easter egg code. 
+{knitr} _does_ have a way to evaluate javascript in code chunks with the `node` engine, but 
+that essentially runs `node -e 'CODE'` on each chunk independently, so you can't define 
+a variable in one chunk then reference it in another. That wasn't sufficient for this 
+exploration. I did find an (old) [implementation](https://github.com/yihui/runr/pull/18) 
+that uses [{V8}](https://github.com/jeroen/V8) in Yihui's (already experimental) 
+[{runr}](https://github.com/yihui/runr), but it was written for a much older 
+version of {knitr} and was out of date. 
+
+So, of course the thing to do was ~~just hardcode the output~~SHAVE A YAK AND UPDATE 
+THE IMPLEMENTATION. If you'd like to have javascript code chunks in your Rmd, I've made 
+[a pull request](https://github.com/stla/runr/pull/1/files) to that original implementation 
+and have [my own fork](https://github.com/jonocarroll/runr).
+
+It seems to work okay, with the exception that it doesn't pull in `Buffer` so my 
+custom `atob` function doesn't work, and it doesn't have another. It's also going 
+wrong in terms of the persistent context in that the `const` and `let` directives 
+are being seen multiple times and it doesn't like that. Otherwise, variables persist
+across chunks just fine - these chunks are fully live:
+
+Define a variable `x`
+
+```{V8}
+x = 1 + 5;
+```
+
+Then continue the block
+
+```{V8}
+x + 12
+```
+
+So, that's working.
+
+As always, leave a comment if you have one, or find me on [Mastodon](https://fosstodon.org/@jonocarroll) (I'm much 
+less on Twitter these days). If you have a correction or annotation to add to 
+the code it's [here](https://github.com/jonocarroll/versionzero).
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
