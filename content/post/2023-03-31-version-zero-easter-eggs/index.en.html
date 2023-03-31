@@ -1,0 +1,418 @@
+---
+title: Version Zero Easter Eggs
+author: Jonathan Carroll
+date: '2023-03-31'
+slug: version-zero-easter-eggs
+categories:
+  - javascript
+  - books
+tags:
+  - javascript
+  - books
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>I’ve just finished reading <a href="https://micro.blog/books/9780593190371">‘Version
+Zero’</a> by David Yoon. I really enjoyed
+it. There’s some (javascript) code on some separator pages between some of the
+chapters that is loosely tied into the plot and general theme of the book. I
+love solving puzzles, so what was I supposed to do, just leave it at that?</p>
+<!--more-->
+<p>I’ve just finished reading <a href="https://micro.blog/books/9780593190371">‘Version
+Zero’</a> by David Yoon. I really enjoyed
+it. There’s some (javascript) code on some separator pages between some of the
+chapters that is loosely tied into the plot and general theme of the book. I
+love solving puzzles, so what was I supposed to do, just leave it at that?</p>
+<p>Incidentally, I’ve hooked my <a href="https://jcarroll.xyz/reading/">reading list into my mini
+blog</a> so my ‘Currently Reading’ list is (ideally)
+up to date.</p>
+<p>I can’t help myself when it comes to puzzles or easter eggs like this.
+<a href="https://jcarroll.com.au/2022/09/01/asd_coin/">Decrypting the new Australian 50c coin puzzle</a> triggered a conversation
+with one of our top spy agencies. I learned a whole lot from solving this
+<a href="https://jcarroll.com.au/2022/10/29/complex-puzzle/">Gaussian Primes puzzle</a>.</p>
+<p>I very much enjoyed the book. I won’t give away too much, but it does a great
+job of calmly building up a story, the characters, the plot and then ramping up
+the excitement. In the acknowledgements the author thanks his genius nephew Eric Yoon (<a href="yoonicode.com">yoonicode.com</a> - what a great URL!) for the easter egg code.</p>
+<p>I figured I’d try to to run the code and see what it does. I wanted to carefully
+read this - especially given the theme of the book - to make sure it wasn’t going to
+delete my networking setup or something. The first step was to get the code from the
+(paper) pages into a computer. I looked around - web search, GitHub, Eric’s site - and
+couldn’t find an online copy anywhere. I tried searching for a few other unique-looking
+terms in the code but nothing. <em>Has no one written up a discussion about this easter egg?</em> The
+book is from 2021, so it’s not <em>that</em> new. I came across it randomly walking the shelves
+at my local library (credit to librarians for prominently featuring great suggestions!). Maybe
+I’ve just overlooked a write up somewhere, but maybe I’m the first?</p>
+<p>I had a go at OCR via <a href="https://github.com/tesseract-ocr/tesseract">tesseract</a>
+but since it’s javascript and not a text language, it didn’t have much luck.
+There are supposedly some language packs for tesseract but none of them helped
+with the images I have.</p>
+<p>So, with no digital copy of the code to pull in, I guess the only thing to do is
+to <del>forget about it and move on</del>MANUALLY TYPE ALL 80-SOMETHING LINES IN. This
+was … interesting, but not too bad, really. The choice of font in the book and
+somewhat
+low dpi meant that the difference between <code>(</code> and <code>{</code> was <em>very</em> subtle. Having a
+little bit of domain knowledge helps in this case. Entering the code was otherwise just a matter
+of typing until I got to this (or what looks something like this) line</p>
+<pre><code>subunit.push(btoa(&quot;ß]xëÏz×|ç¼Û¾v&quot;));</code></pre>
+<p>Oh… No.</p>
+<p>My best guess was to use Google Docs’ ‘insert character’ which lets you draw the symbol
+you’re looking for and gives some options.</p>
+<div class="figure">
+<img src="images/insertchar.png" width="300" alt="" />
+<p class="caption">Google Docs’ insert character dialog</p>
+</div>
+<p>The next step was to actually confirm that I hadn’t
+made any transcription errors, which should show up if I try to run the code. I checked
+that I could run a file of javascript code with <code>node</code> and it worked, sort of. It failed about
+halfway through because a function wasn’t defined - <code>btoa</code> and <code>atob</code> are <a href="https://dev.to/2ezpz2plzme/btoa-replacement-in-nodejs-3k6g">deprecated in Node</a>. I added some definitions
+for <code>atob</code> and <code>btoa</code> and that was resolved</p>
+<pre><code>atob = a =&gt; Buffer.from(a, &#39;base64&#39;).toString(&#39;binary&#39;)
+btoa = b =&gt; Buffer.from(b, &#39;binary&#39;).toString(&#39;base64&#39;)</code></pre>
+<p>The code didn’t run, though, because some values didn’t convert to <code>BigInt</code>,
+probably because I’d entered them wrong.</p>
+<p>I carefully went through what I’d entered and did realise that there was only a subtle
+difference between <code>1</code> (one) and <code>l</code> (lowercase <code>L</code>) and made some fixes.</p>
+<p>Apart from that, the code ran until it hit the <code>BigInt</code> conversion of a
+particular value and failed. I forced the code to skip over that value and got to
+an answer. The result of running the code is similar to the <a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day10.R%20-%20which%20I&#39;m%20still%20yet%20to%20write%20up">Advent of Code 2022
+Day 10 Part Two
+puzzle</a> which writes out <code>#</code> and spaces in lines to
+spell out ASCII-art words. Clearly my code was broken, because I could see what it
+was <em>supposed</em> to spell out, and there were errors.</p>
+<p>I figured I had to trace back through the result being built up and figure out
+which values end up on which lines. Extra fun, because there’s a <code>filter</code> in the
+middle that removes some of the input. Sure enough, one of the offending lines was
+the unicode-salad line above - great. The other seemed to be</p>
+<pre><code>const datetime = new Date(1997, 7, 24);</code></pre>
+<p>Super great - this is going to involve a timezone issue, isn’t it?</p>
+<p>Back to the unicode, I searched again for this specific line (minus the unicode) and
+actually did get a hit - Google Books has a copy of the (Czech?) translation of the
+book and returns this line. Not precisely (something hasn’t encoded correctly) and
+not selectable in the book, but selectable in the <a href="https://www.google.com/search?q=%22subunit.push%22+btoa">Google result for it</a>. That wasn’t much
+help after all.</p>
+<p>Let’s walk through the code and see how it works before we resolve it. A full
+copy (with my own annotations and fixes) is
+<a href="https://github.com/jonocarroll/versionzero">here</a>, if anyone else wants to not
+have to type all of it in.</p>
+<pre><code>const VERSION_NUMBER = 0;
+const AGENT = &quot;BLACK HALO&quot;;
+const year = 0x2018;
+const enc = [
+    021, 024, 015, 015,
+    026, -031, 030, 016,
+    034, 027, 021, 034,
+    021, 014, 025, -022,
+    017, 016, 032, 027
+];
+let res = [&quot;You are infinite&quot;];
+RANDOM_SEED = 20879976793454946324n;</code></pre>
+<pre class="bg-success"><code>## 0
+## BLACK HALO
+## 8216
+## 17,20,13,13,22,-25,24,14,28,23,17,28,17,12,21,-18,15,14,26,23
+## You are infinite
+## 20879976793454946324</code></pre>
+<p>So far so good. Some constants and the start of a result <code>res</code> - an array
+containing some text.</p>
+<pre><code>if (VERSION_NUMBER % 2 &lt; 1) res.shift();</code></pre>
+<p>With <code>VERSION_NUMBER == 0</code> this just drops the first (and only) value of <code>res</code>, so
+we’re back to an empty result.</p>
+<pre><code>res.push(enc.map((i, idx) =&gt; {
+    return String.fromCharCode(
+        AGENT.charCodeAt(
+            idx % AGENT.length
+        ) - i
+    );
+}).reduce((i, j) =&gt; {
+    return i.toString() + j.toString();
+}));
+res[0]</code></pre>
+<pre class="javascript bg-success"><code>## 18465903081007629328</code></pre>
+<p>This does some math on the characters of <code>AGENT</code> and produces what will eventually
+be the <em>second</em> line of actual output (currently the first).</p>
+<pre><code>res.unshift(atob(&quot;MzU3NzU1MDM2NTgxMDMzNTg0OTU=&quot;));
+res[0]</code></pre>
+<pre class="bg-success"><code>## 35775503658103358495</code></pre>
+<p>This becomes the <em>first</em> line of output due to the <code>unshift</code>.</p>
+<pre><code>res.push(
+    (8939935261623587079n &lt;&lt; 2n).toString() 
+);
+res.push((RANDOM_SEED &amp; 0x18C445CAC40447832n | 0n).toString());
+res.push(&quot;&quot; + (151845383424178857009896n / BigInt(year)));</code></pre>
+<pre class="bg-success"><code>## 35759741046494348316
+## 18465906380616247312
+## 18481667894861107231</code></pre>
+<p>become the third, fourth, and fifth line of the output.</p>
+<p>The next lines set up something to be used later,</p>
+<pre><code>let as_json = {
+    coordinates: &#39;{&quot;x&quot;: 2, &quot;y&quot;: 5}&#39;,
+    tolerance: 0.1,
+    subunit: [2 ** 8]
+};
+const c = JSON.parse(as_json.coordinates);</code></pre>
+<pre class="bg-success"><code>## { coordinates: &#39;{&quot;x&quot;: 2, &quot;y&quot;: 5}&#39;, tolerance: 0.1, subunit: [ 256 ] }
+## { x: 2, y: 5 }</code></pre>
+<p>Then adds a separator of <code>0</code> to the result</p>
+<pre><code>res.push((z =&gt; `value: ${z}`.slice(7))((x =&gt; x &gt;&gt;&gt; 42)(3 ** 5)));</code></pre>
+<pre class="bg-success"><code>## 0</code></pre>
+<p>The next part is a bit of a red herring since it sets up a <code>subunit</code> object</p>
+<pre><code>let subunit = as_json[&quot;subunit&quot;];
+eval(&quot;subunit&quot; + `${String.fromCharCode(46)}pop()`);</code></pre>
+<p>but the <code>eval</code> results in</p>
+<pre class="bg-success"><code>## subunit.pop()</code></pre>
+<p>so that is back to empty.</p>
+<p>This adds some data to <code>subunit</code></p>
+<pre><code>subunit.push(69 + 114 + 105 + 99 + 32 + 89 + 111 + 111 + 110);</code></pre>
+<pre class="bg-success"><code>## 840</code></pre>
+<p>but again it’s overwritten with</p>
+<pre><code>subunit[0] = Math.round(euclidianDistance(c.x, c.y, 48, 1967.46095)) + &quot;4568824394612736&quot;; 
+[...]
+/**
+    * @returns the distance between 2d point (x, y) and (x1, y1)
+    */
+function euclidianDistance(x, y, x1, y1) {
+    return Math.sqrt(((x - x1) ** 2) + ((y - y1) ** 2));
+}</code></pre>
+<pre class="bg-success"><code>## 19634568824394612736</code></pre>
+<p>This is the first line of the second block of output.</p>
+<p>The next line of output <em>should</em> come from the code that I have as</p>
+<pre><code>subunit.push(btoa(&quot;ß]xëÏz×|ç¼Û¾v&quot;));
+res = res.concat(subunit);</code></pre>
+<p>but that produces</p>
+<pre class="bg-success"><code>## 3114689613znvNu+dg==</code></pre>
+<p>which doesn’t convert to <code>BigInt</code> at all. We’ll come back to that.</p>
+<pre><code>const str = &quot;MjQyNDI4NzczNDQ0MjgwNjQ3Njg=bMTk2MTc2ODAxMTY0MTIzMTc2OTY=bMTk2MzQ1Njg0OTI2MDgzODkxMjA=bMA==&quot;; 
+res = res.concat(str.split(&quot;b&quot;).map(b =&gt; atob(b)));</code></pre>
+<p>splits up the <code>str</code> at the letter <code>b</code> and runs <code>atob</code> over the pieces</p>
+<pre class="bg-success"><code>## [
+##   &#39;24242877344428064768&#39;,
+##   &#39;19617680116412317696&#39;,
+##   &#39;19634568492608389120&#39;,
+##   &#39;0&#39;
+## ]</code></pre>
+<p>providing the rest of the second block of output and the next separator.</p>
+<p>The next lines set up a <code>Date</code> object and extracts part of the string representation
+(local timezone, but it’s just taking the <code>"19"</code> from <code>"1997"</code>)</p>
+<pre><code>const datetime = new Date(1997, 7, 24);
+res.push(
+    datetime.toString().slice(11, 13) +
+        (
+            634601705079659136n +
+            BigInt(datetime.getTime())
+        )
+);</code></pre>
+<pre class="bg-success"><code>## 19634602577426259136</code></pre>
+<p>which <em>looks</em> okay, but gives the wrong value on the first line of the last
+block - another one to come back to.</p>
+<p>The next lines were fun to enter and validate (not)</p>
+<pre><code>res = res.concat(
+    [
+        &quot;Mjg4NDIxOTU1MjI5NzAyMDYyMDg=&quot;, /** block 3, line 2 */
+        &quot;MTVkIGhlcnJpbmcgZ2V0IHJla3Q=&quot;, 
+        &quot;MTEwNTI5MDA1Mjk2MDU5NzY2MTM0&quot;,
+        &quot;MjQyMzA1MjI2OTg2ODIzNjM5MDQ=&quot;, /** block 3, line 3 */
+        &quot;SG9wZSB5b3UgbGlrZSBSZWdleCE=&quot;, 
+        &quot;MTk1MjA0NjkyMDUyODYzMDQ0MDM=&quot;,
+        &quot;MjE5MjQ2NjY0OTUzMjkxMjQzNTI=&quot;, /** block 3, line 4 */
+        &quot;MjYwMjg2MDQ4NjAyODMwNTUxMDI=&quot;,
+        &quot;MTk2MzQ2MDI1OTM2MDc1MTUxMzY=&quot;, /** block 3, line 5 */
+        &quot;TG92ZSwgUGlsb3QuIDwzICA8MyA=&quot;, 
+        &quot;MzA0NTgyNTg0Mzk1NzM4OTU3OTM5&quot;
+    ].filter( 
+       i =&gt; i.match(/M[j|T].+[QUINOA][x12][DjTLMNOP]{2}[^aeiou]\*?.{1,5}[a-zA-Z5]+=/g) 
+    ).map(atob)
+).map((i, j) =&gt; {
+    if(j &gt; 5 &amp;&amp; j &lt; 12 &amp;&amp; j != 7) {
+        return BigInt(i) &amp; BigInt(31775n &lt;&lt; 50n);
+    }
+    return i;
+});</code></pre>
+<p>This involves filtering some entries from the big block of encoded text,
+running the remaining ones through <code>atob</code>, then doing some math on these combined
+with all the other values from <code>res</code> (effectively only updating the second block of values).</p>
+<p>While debugging this, I found another easter egg hidden within - one that wouldn’t
+be found just by running the code itself. Some of the lines filtered out by the regex
+convert to plaintext!</p>
+<pre><code>atob(&quot;MTVkIGhlcnJpbmcgZ2V0IHJla3Q=&quot;)
+atob(&quot;SG9wZSB5b3UgbGlrZSBSZWdleCE=&quot;)
+atob(&quot;TG92ZSwgUGlsb3QuIDwzICA8MyA=&quot;)</code></pre>
+<pre class="bg-success"><code>## 15d herring get rekt
+## Hope you like Regex!
+## Love, Pilot. &lt;3  &lt;3</code></pre>
+<p>Niiiiice!</p>
+<p>The final lines of code take these values, convert to binary, and print a <code>#</code> for
+each <code>1</code> (and a space otherwise)</p>
+<pre><code>for (const i of res) {
+    const bin = BigInt(i).toString(2);
+    let ln = &quot;&quot;;
+    for (const j of bin) ln += j == &quot;0&quot; ? &quot; &quot; : &quot;#&quot;;
+    console.log(ln);
+}</code></pre>
+<p>If you do that, a message (slightly corrupted) appears.</p>
+<p>I decided to work backwards, since I was fairly sure what the ‘right’ solution
+should be. Taking those lines (manually corrected), converting them all the way
+back through the processing in reverse, I could see what the ‘right’ code should
+be.</p>
+<p>The unicode line that produces what I think is the “right” solution is</p>
+<pre><code>subunit.push(btoa(&quot;ß]xëÏyÓm¼÷\x8DùÓ}ú&quot;));</code></pre>
+<p>The characters are mainly close but not perfect, so maybe a <code>LOCALE</code> issue? Something
+to do with Linux (which I’m on) vs Windows?</p>
+<p>The date line seems to be off by exactly 16 hours and 30 minutes which is
+disturbingly likely to be a timezone issue. I’m at GMT+10:30 (Adelaide, South
+Australia) at the moment. StackOverflow seems to have a lot of <a href="https://stackoverflow.com/questions/9756120/how-do-i-get-a-utc-timestamp-in-javascript">angry
+comments</a>
+regarding whether or not this is an issue for <code>Date()</code>. I seem to be able to get
+the “right” solution with</p>
+<pre><code>const datetime = new Date(1997, 7, 24, 16, 30);</code></pre>
+<p>With all that in place, it’s time to run all of the code! If I do that, I get…</p>
+</br>
+<details>
+<summary>
+<b> « Click to reveal! » </b>
+</summary>
+<pre><code>#####     #####     #####     #####     #####     #   #     #####
+#         #   #     #   #     #           #       #   #     #    
+#####     #   #     #####     #  ##       #       #   #     ###  
+#         #   #     # #       #   #       #        # #      #    
+#         #####     #  ##     #####     #####       #       #####
+ 
+#   #     #####                                                  
+## ##     #                                                      
+# # #     ###                                                    
+#   #     #                                                      
+#   #     #####                                                  
+ 
+#   #     #####     #####     #         #         #####          
+##  #     #   #     #         #         #         #              
+# # #     #   #     ###       #         #         ###            
+#  ##     #   #     #         #         #         #              
+#   #     #####     #####     #####     #####     #####          
+</code></pre>
+</details>
+<p>which is fitting, and thoroughly satisfying to finally produce.</p>
+<p>I also ran this code (with my corrections, minus the <code>atob</code> and <code>btoa</code>
+definitions) over on <a href="https://jsfiddle.net/">jsfiddle.net</a> and it seems to give
+the right solution, which makes me think perhaps it really is an error in the
+code or how it was printed.</p>
+<p>What an adventure! I learned a lot of javascript (how to run it with <code>node</code> and
+in a browser for debugging), played with
+<a href="https://github.com/tesseract-ocr/tesseract">tesseract</a>, and learned about
+entering unicode. I’m sending this to Eric Yoon for comment and will update if I
+hear anything.</p>
+<p>As a side note for this post, you’ll notice that the code blocks are all nicely
+rendered as usual - in this case they’re the actual javascript from the easter
+egg code. <a href="https://yihui.org/knitr/">{knitr}</a> <em>does</em> have a way to evaluate
+javascript in code chunks with the <code>node</code> engine, but that essentially runs
+<code>node -e 'CODE'</code> on each chunk independently, so you can’t define a variable in
+one chunk then reference it in another. That wasn’t sufficient for this
+exploration. I did find an (old)
+<a href="https://github.com/yihui/runr/pull/18">implementation</a> that uses
+<a href="https://github.com/jeroen/V8">{V8}</a> in Yihui’s (already experimental)
+<a href="https://github.com/yihui/runr">{runr}</a>, but it was written for a much older
+version of <a href="https://yihui.org/knitr/">{knitr}</a> and was out of date.</p>
+<p>So, of course the thing to do was <del>just hardcode the output</del>SHAVE A YAK AND UPDATE
+THE IMPLEMENTATION. If you’d like to have javascript code chunks in your Rmd, I’ve made
+<a href="https://github.com/stla/runr/pull/1/files">a pull request</a> to that original implementation
+and have <a href="https://github.com/jonocarroll/runr">my own fork</a>.</p>
+<p>It seems to work okay, with the exception that it doesn’t pull in <code>Buffer</code> so my
+custom <code>atob</code> function doesn’t work, and it doesn’t have another. It’s also going
+wrong in terms of the persistent context in that the <code>const</code> and <code>let</code> directives
+are being seen multiple times and it doesn’t like that. Otherwise, variables persist
+across chunks just fine - these chunks are fully live:</p>
+<p>Define a variable <code>x</code></p>
+<pre class="v8"><code>x = 1 + 5;</code></pre>
+<pre class="bg-success"><code>## 6</code></pre>
+<p>Then continue the block</p>
+<pre class="v8"><code>x + 12</code></pre>
+<pre class="bg-success"><code>## 18</code></pre>
+<p>So, that’s working.</p>
+<p>As always, leave a comment if you have one, or find me on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> (I’m much
+less on Twitter these days). If you have a correction or annotation to add to
+the code it’s <a href="https://github.com/jonocarroll/versionzero">here</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-03-31
+##  pandoc   2.19.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.13    2022-09-24 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.4.1   2022-11-02 [3] CRAN (R 4.2.2)
+##  cachem        1.0.6   2021-08-19 [3] CRAN (R 4.2.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.4.1   2022-09-23 [3] CRAN (R 4.2.1)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  curl          4.3.3   2022-10-06 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.30  2022-10-18 [3] CRAN (R 4.2.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.18    2022-11-07 [3] CRAN (R 4.2.2)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.2.0)
+##  fs            1.5.2   2021-12-08 [3] CRAN (R 4.1.2)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.3   2022-07-18 [3] CRAN (R 4.2.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.3   2022-10-21 [3] CRAN (R 4.2.1)
+##  knitr         1.40    2022-08-24 [3] CRAN (R 4.2.1)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pkgbuild      1.3.1   2021-12-20 [1] CRAN (R 4.1.2)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.0   2022-10-26 [3] CRAN (R 4.2.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.2   2022-10-26 [3] CRAN (R 4.2.2)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.6   2022-09-24 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.18    2022-11-09 [3] CRAN (R 4.2.2)
+##  rstudioapi    0.14    2022-08-22 [3] CRAN (R 4.2.1)
+##  runr          0.0.7   2023-03-31 [1] local
+##  sass          0.4.2   2022-07-16 [3] CRAN (R 4.2.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.8   2022-07-11 [3] CRAN (R 4.2.1)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  V8          * 4.2.2   2022-11-03 [1] CRAN (R 4.1.2)
+##  vctrs         0.5.2   2023-01-23 [1] CRAN (R 4.1.2)
+##  xfun          0.34    2022-10-18 [3] CRAN (R 4.2.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.6   2022-10-18 [3] CRAN (R 4.2.1)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
