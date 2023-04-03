@@ -55,7 +55,7 @@ of `x` and the rest of a list, `xs`. The wildcard pattern `_` matching "whatever
 
 A `map` function definition (from [here][patternmatching]) is then
 
-```{haskell, eval = FALSE}
+```haskell
 map _ []     = []
 map f (x:xs) = f x : map f xs
 ```
