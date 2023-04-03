@@ -29,8 +29,7 @@ knitr::opts_chunk$set(
 I've been working my way through [Exercism][exercism] exercises in a variety of 
 languages because I strongly believe every language you learn something about teaches 
 you about all the others you know, and makes for useful comparisons between what 
-features they offer. I was^[in part due to a strong representation of 
-Haskell at my local Functional Programming Meetup] Learning Me a [Haskell][exercism_haskell] for Great Good 
+features they offer. I was Learning Me a [Haskell][exercism_haskell] for Great Good 
 (there's [a guide/book][lyahfgg] by that name) and something about [Pattern Matching][patternmatching]
 just seemed extremely familiar. 
 

@@ -22,14 +22,14 @@ slug: polyglot-overloading
 <p>I’ve been working my way through <a href="https://exercism.org/">Exercism</a> exercises in a variety of
 languages because I strongly believe every language you learn something about teaches
 you about all the others you know, and makes for useful comparisons between what
-features they offer. I was<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> Learning Me a <a href="https://exercism.org/tracks/haskell">Haskell</a> for Great Good
+features they offer. I was Learning Me a <a href="https://exercism.org/tracks/haskell">Haskell</a> for Great Good
 (there’s <a href="https://learnyouahaskell.github.io/introduction.html">a guide/book</a> by that name) and something about <a href="https://en.wikibooks.org/wiki/Haskell/Pattern_matching">Pattern Matching</a>
 just seemed extremely familiar.</p>
 <!--more-->
 <p>I’ve been working my way through <a href="https://exercism.org/">Exercism</a> exercises in a variety of
 languages because I strongly believe every language you learn something about teaches
 you about all the others you know, and makes for useful comparisons between what
-features they offer. I was<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a> Learning Me a <a href="https://exercism.org/tracks/haskell">Haskell</a> for Great Good
+features they offer. I was<a href="#fn1" class="footnote-ref" id="fnref1"><sup>1</sup></a> Learning Me a <a href="https://exercism.org/tracks/haskell">Haskell</a> for Great Good
 (there’s <a href="https://learnyouahaskell.github.io/introduction.html">a guide/book</a> by that name) and something about <a href="https://en.wikibooks.org/wiki/Haskell/Pattern_matching">Pattern Matching</a>
 just seemed extremely familiar.</p>
 <p>Pattern Matching is sort of like a <code>case</code> statement, but rather than just comparing literal
@@ -62,7 +62,7 @@ main = do
 25.0</code></pre>
 <p>Woo! A different function called depending on the input. I believe it might be possible to actually
 have optional arguments via the <code>Data.Maybe</code> package but I couldn’t get it to compile an example the way
-I wanted<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a>.</p>
+I wanted<a href="#fn2" class="footnote-ref" id="fnref2"><sup>2</sup></a>.</p>
 <p>Rust has <a href="https://doc.rust-lang.org/book/ch18-03-pattern-syntax.html">something similar</a> but more specific to a <code>case</code> statement; a <code>match</code> expression
 can take patterns as options and return whichever matches (example from <a href="https://google.github.io/comprehensive-rust/pattern-matching.html">here</a>)</p>
 <pre><code>fn main() {
@@ -82,8 +82,8 @@ or <code>Ok</code> and <code>Err</code> (see <a href="https://doc.rust-lang.org/
 very first programming ‘tricks’ I learned way back in the late 2000’s working on my PhD, using Fortran;
 “function overloading”. I wasn’t formally taught programming at all (an oversight, given how important
 it became to doing my research), so I just had to pick up bits and pieces from people who knew more.</p>
-<p>I had a bunch of integration routines<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a> which were slightly different depending on whether or not
-the limits were finite<a href="#fn5" class="footnote-ref" id="fnref5"><sup>5</sup></a>, so I had to call
+<p>I had a bunch of integration routines<a href="#fn3" class="footnote-ref" id="fnref3"><sup>3</sup></a> which were slightly different depending on whether or not
+the limits were finite<a href="#fn4" class="footnote-ref" id="fnref4"><sup>4</sup></a>, so I had to call
 the right one with various <code>if</code> statements. The ‘trick’ I was
 taught was to use <code>INTERFACE / MODULE PROCEDURE</code> <a href="https://www.intel.com/content/www/us/en/docs/fortran-compiler/developer-guide-reference/2023-0/module-procedure.html">blocks</a> to “dispatch” depending on the function
 signature, or at least the number of arguments. This meant that I could just call <code>integrate</code> regardless of
@@ -298,12 +298,10 @@ Leave a comment if you have one, or find me on <a href="https://fosstodon.org/@j
 <ol>
 <li id="fn1"><p>in part due to a strong representation of
 Haskell at my local Functional Programming Meetup<a href="#fnref1" class="footnote-back">↩︎</a></p></li>
-<li id="fn2"><p>in part due to a strong representation of
-Haskell at my local Functional Programming Meetup<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
-<li id="fn3"><p>I’m highly likely doing something wrong - I never wrote any Haskell before last week<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
-<li id="fn4"><p><a href="http://www.nrbook.com/a/bookf90pdf.html">Numerical Recipes in Fortran 90</a> was about the most
+<li id="fn2"><p>I’m highly likely doing something wrong - I never wrote any Haskell before last week<a href="#fnref2" class="footnote-back">↩︎</a></p></li>
+<li id="fn3"><p><a href="http://www.nrbook.com/a/bookf90pdf.html">Numerical Recipes in Fortran 90</a> was about the most
 important book we had for writing code, basically nothing else was trusted - getting a <em>digital</em> copy
-of the code was considered a sign of true power<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
-<li id="fn5"><p>what, you don’t have to integrate up to infinity in your code?<a href="#fnref5" class="footnote-back">↩︎</a></p></li>
+of the code was considered a sign of true power<a href="#fnref3" class="footnote-back">↩︎</a></p></li>
+<li id="fn4"><p>what, you don’t have to integrate up to infinity in your code?<a href="#fnref4" class="footnote-back">↩︎</a></p></li>
 </ol>
 </div>
