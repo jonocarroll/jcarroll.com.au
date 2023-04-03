@@ -4,7 +4,17 @@ author: Jonathan Carroll
 date: '2023-04-04'
 slug: polyglot-overloading
 categories:
+  - bash
+  - julia
+  - python
+  - R
+  - rust
 tags:
+  - bash
+  - julia
+  - python
+  - R
+  - rust
 type: ''
 subtitle: ''
 image: ''
