@@ -1,13 +1,8 @@
 ---
 title: TEST
 author: Jonathan Carroll
-date: '2023-04-04'
+date: '2023-04-02'
 slug: TEST
-categories: []
-tags: []
-type: ''
-subtitle: ''
-image: ''
 ---
 
 ```{r, setup, include = FALSE}
