@@ -4,17 +4,7 @@ author: Jonathan Carroll
 date: '2023-04-04'
 slug: polyglot-overloading
 categories:
-  - R
-  - julia
-  - haskell
-  - fortran
-  - rust
 tags:
-  - R
-  - julia
-  - haskell
-  - fortran
-  - rust
 type: ''
 subtitle: ''
 image: ''
