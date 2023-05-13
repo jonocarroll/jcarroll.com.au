@@ -70,6 +70,7 @@ rssLimit = 50
   #itchio = "username"
   #vk = "username"
   paypal = "jonocarroll"
+  mastodon = "fosstodon.org/jonocarroll"
   #telegram = "username"
   #500px = "username"
 
