@@ -119,3 +119,8 @@ rssLimit = 50
     name = "Tags"
     url = "tags"
     weight = 3
+
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.renderer]
+      unsafe = true
