@@ -8,5 +8,6 @@ options(
   blogdown.ext = ".Rmd",
   blogdown.yaml.empty = TRUE,
   blogdown.new_bundle = TRUE,
-  blogdown.title_case = TRUE
+  blogdown.title_case = TRUE,
+  blogdown.hugo.version = "0.112.3"
 )
