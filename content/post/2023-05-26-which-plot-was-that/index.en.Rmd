@@ -83,7 +83,7 @@ runApp(shinyApp(ui = ui, server = server))
 ```
 
 ![Listening to click events in plotly](images/p1.png){width=600px}
-
+ 
 There's a bit to break down here if you're not familiar with {shiny}; 
 
 * A user interface stored as `ui` which describes how the app should "look". In this 
