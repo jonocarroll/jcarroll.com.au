@@ -16,9 +16,6 @@ editor_options:
 ---
 
 ```{r, setup, include = FALSE}
-# library(shiny)
-# library(plotly)
-
 knitr::opts_chunk$set(
   class.output  = "bg-success",
   class.message = "bg-info text-info",
@@ -189,7 +186,7 @@ second plot...
                           x = ~ mpg,
                           type = "scatter",
                           mode = "markers") |>
-      add_markers(y = ~ drat)
+      add_markers(y = ~ drat)                   # <- an additional trace
 ```
 
 ![With one additional trace, it becomes difficult to determine which plot was clicked based on `curveNumber` alone](images/p3.png){width=600px}
