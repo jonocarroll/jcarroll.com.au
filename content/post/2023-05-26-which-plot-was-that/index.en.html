@@ -11,6 +11,8 @@ tags:
 type: ''
 subtitle: 'Plotly subplots and customdata'
 image: ''
+editor_options: 
+  chunk_output_type: console
 ---
 
 
@@ -19,16 +21,16 @@ image: ''
 it doesn’t quite work simply when using <code>subplot()</code>. This isn’t a post about a new
 feature, but I didn’t quickly find a resource for it so I’ll add my findings to
 make it easier for the next person.</p>
-<!-- more -->
+<!--more-->
 <p>Plotly has a nice way of making click-events available to the calling language, but
 it doesn’t quite work simply when using <code>subplot()</code>. This isn’t a post about a new
 feature, but I didn’t quickly find a resource for it so I’ll add my findings to
 make it easier for the next person.</p>
 <p><a href="https://plotly.com/graphing-libraries/">Plotly</a> (as a graphics library) is a
-javascript library that has been ported to R, python, Julia, and - surprising to me -
+JavaScript library that has been ported to R, Python, Julia, and - surprising to me -
 MATLAB and F#. It provides an interactive plotting framework that works really
 nicely for web-facing apps including R’s <a href="https://shiny.posit.co/">{shiny}</a>.</p>
-<p>I’m currently building an internal tool and wanted to add some click-event-based
+<p>I’m currently building an internal tool at work and wanted to add some click-event-based
 reactivity. Plotly supports that by registering an ‘event’ with a ‘source’ which
 can be listened to with an <code>event_data()</code> call. A simple shiny app demonstrating that
 might be</p>
@@ -62,11 +64,15 @@ server &lt;- function(input, output, session) {
 }
 
 runApp(shinyApp(ui = ui, server = server))</code></pre>
+<div class="float">
+<img src="images/p1.png" width="600" alt="Listening to click events in plotly" />
+<div class="figcaption">Listening to click events in plotly</div>
+</div>
 <p>There’s a bit to break down here if you’re not familiar with {shiny};</p>
 <ul>
 <li>A user interface stored as <code>ui</code> which describes how the app should “look”. In this
-extemely simple case, it’s some <code>plotly</code> output followed by some text.</li>
-<li>A server function which performs the ‘backend’ operations, writing to the components
+extremely simple case, it’s some <code>plotly</code> output followed by some text.</li>
+<li>A server function which performs the ‘backend’ operations, sending outputs to the components
 corresponding to the UI elements. In this case producing a <code>plotly</code> plot of the <code>mtcars</code>
 dataset with a ‘scatter’ plot of the <code>hp</code> column on the y-axis and the <code>mpg</code> column on
 the x-axis. The <code>source</code> argument specifies a ‘label’ for the event (defaulting to <code>"A"</code>
@@ -79,35 +85,26 @@ in the plot, and a message the console every time that happens.</li>
 a text output containing:</p>
 <ul>
 <li><code>curveNumber</code>: identifying the ‘trace’ number for that data. We only have one, so this
-will always be <code>0</code> (javascript starts counting at 0)</li>
+will always be <code>0</code> (JavaScript starts counting at 0)</li>
 <li><code>pointNumber</code>: ostensibly the index of the clicked point in the original dataset, though
 I believe that may not always be the case</li>
 <li><code>x</code> the x-coordinate of the clicked point</li>
 <li><code>y</code> the y-coordinate of the clicked point</li>
 </ul>
-<p>This is nice for interacting with the plot to, say, highlight a table containing the same
-data. With two of these plots side-by-side one can give each a unique <code>source</code> and “listen”
-to those independently.</p>
+<p>This is nice for interacting with the plot to, say, highlight a row in a table
+containing the same data. With two of these plots side-by-side one can give each
+a unique <code>source</code> and “listen” to those independently.</p>
 <p>If, however, we have several plots and want them to share a common x-axis (so that
 panning works across all of the plots) we need to “combine” the plots using
 <code>plotly::subplot()</code>. This doesn’t take a <code>source</code> argument itself, and when we provide a
 list of several plots, it produces a warning that</p>
 <pre class="r bg-warning"><code>Warning: Can only have one: source</code></pre>
-<p>How, then, do we identify which subplot was clicked?</p>
+<p><em>How, then, do we identify which subplot was clicked?</em></p>
 <p>If each subplot contained a single “trace”, then <code>curveNumber</code> would correspond
-to that trace and we could identify which subplot was clicked. A small example
-of such a setup might be</p>
-<pre class="r"><code>library(plotly)
-library(shiny)
-
-ui &lt;- basicPage(&quot;&quot;,
-                mainPanel(
-                  plotlyOutput(&quot;p&quot;),
-                  verbatimTextOutput(&quot;out&quot;)
-                )
-)
-
-server &lt;- function(input, output, session) {
+to that trace (in the order they were supplied to <code>subplot</code>) and we could identify
+which subplot was clicked. A small example of the server code
+(the UI would be the same) for such a setup might be</p>
+<pre class="r"><code>server &lt;- function(input, output, session) {
   output$p &lt;- renderPlotly({
     p1 &lt;- plotly::plot_ly(data = mtcars,
                           y = ~ hp,
@@ -145,6 +142,10 @@ server &lt;- function(input, output, session) {
     click_data
   })
 }</code></pre>
+<div class="float">
+<img src="images/p2.png" width="600" alt="Multiple traces - the second is “trace1” because JavaScript counts from 0" />
+<div class="figcaption">Multiple traces - the second is “trace1” because JavaScript counts from 0</div>
+</div>
 <p>Because <code>subplot</code> doesn’t take a <code>source</code> argument, the (single) source needs
 to be added into the resulting object by force with the <code>s$x$source</code> line. This works,
 and we can get click data back from each subplot. In theory, <code>curveNumber</code> identifies
@@ -155,42 +156,41 @@ changed… each different ‘color’ point you plot is a unique trace) then thi
 gets complicated.</p>
 <p>A minor update to the server, adding one additional “markers” trace to the
 second plot…</p>
-<pre><code class='language-r'><code>library(plotly)<br>library(shiny)<br><br>ui <- basicPage("",<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mainPanel(<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;plotlyOutput("p"),<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;verbatimTextOutput("out")<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;)<br>)<br><br>server <- function(input, output, session) {<br> &nbsp;output$p <- renderPlotly({<br> &nbsp;&nbsp;&nbsp;p1 <- plotly::plot_ly(data = mtcars,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y = ~ hp,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = ~ mpg,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type = "scatter",<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mode = "markers")<br><br> &nbsp;&nbsp;&nbsp;p2 <- plotly::plot_ly(data = mtcars,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y = ~ wt,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = ~ mpg,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type = "scatter",<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mode = "markers") |><br><span style="background-color:#ffff7f"> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;add_markers(y = ~ drat)</span><br><br> &nbsp;&nbsp;&nbsp;p3 <- plotly::plot_ly(data = mtcars,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;y = ~ disp,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;x = ~ mpg,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;type = "scatter",<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;mode = "markers")<br><br> &nbsp;&nbsp;&nbsp;s <- plotly::subplot(<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;list(p1, p2, p3),<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;shareX = TRUE,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;nrows = 3,<br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;heights = c(1, 1, 1)/3<br> &nbsp;&nbsp;&nbsp;) |><br> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;event_register("plotly_click")<br> &nbsp;&nbsp;&nbsp;s$x$source <- "click_src" # subplot does not take a `source` argument<br> &nbsp;&nbsp;&nbsp;s<br> &nbsp;})<br><br> &nbsp;output$out <- renderPrint({<br> &nbsp;&nbsp;&nbsp;click_data <- event_data("plotly_click", source = "click_src")<br> &nbsp;&nbsp;&nbsp;req(click_data)<br> &nbsp;&nbsp;&nbsp;message("CLICK!")<br> &nbsp;&nbsp;&nbsp;click_data<br> &nbsp;})<br>}</code></code></pre>
+<pre class="r"><code>    p2 &lt;- plotly::plot_ly(data = mtcars,
+                          y = ~ wt,
+                          x = ~ mpg,
+                          type = &quot;scatter&quot;,
+                          mode = &quot;markers&quot;) |&gt;
+      add_markers(y = ~ drat)</code></pre>
+<div class="float">
+<img src="images/p3.png" width="600" alt="With one additional trace, it becomes difficult to determine which plot was clicked based on curveNumber alone" />
+<div class="figcaption">With one additional trace, it becomes difficult to determine which plot was clicked based on <code>curveNumber</code> alone</div>
+</div>
 <p>So, how can we identify the subplot when we can’t count the traces? The solution
-appears to be to add another entry to the clickdata using <code>customdata</code>…</p>
-<pre class="r"><code>library(plotly)
-library(shiny)
-
-ui &lt;- basicPage(&quot;&quot;,
-                mainPanel(
-                  plotlyOutput(&quot;p&quot;),
-                  verbatimTextOutput(&quot;out&quot;)
-                )
-)
-
-server &lt;- function(input, output, session) {
+appears to be to add another entry to the click-data using <code>customdata</code>…</p>
+<pre class="r"><code>server &lt;- function(input, output, session) {
   output$p &lt;- renderPlotly({
     p1 &lt;- plotly::plot_ly(data = mtcars,
                           y = ~ hp,
                           x = ~ mpg,
                           type = &quot;scatter&quot;,
                           mode = &quot;markers&quot;,
-                          customdata = &quot;first_plot&quot;)
+                          customdata = &quot;first_plot&quot;)       # &lt;--
 
     p2 &lt;- plotly::plot_ly(data = mtcars,
                           y = ~ wt,
                           x = ~ mpg,
                           type = &quot;scatter&quot;,
                           mode = &quot;markers&quot;,
-                          customdata = &quot;second_plot&quot;) |&gt;
-      add_markers(y = ~ drat, customdata = &quot;second_plot&quot;)
+                          customdata = &quot;second_plot&quot;) |&gt;   # &lt;--
+      add_markers(y = ~ drat, customdata = &quot;second_plot&quot;)  # &lt;--
 
     p3 &lt;- plotly::plot_ly(data = mtcars,
                           y = ~ disp,
                           x = ~ mpg,
                           type = &quot;scatter&quot;,
                           mode = &quot;markers&quot;,
-                          customdata = &quot;third_plot&quot;)
+                          customdata = &quot;third_plot&quot;)       # &lt;--
 
     s &lt;- plotly::subplot(
       list(p1, p2, p3),
@@ -209,9 +209,11 @@ server &lt;- function(input, output, session) {
     message(&quot;CLICK!&quot;)
     click_data 
   })
-}
-
-runApp(shinyApp(ui = ui, server = server))</code></pre>
+}</code></pre>
+<div class="float">
+<img src="images/p4.png" width="600" alt="By adding some customdata it’s easy to determine which plot was clicked" />
+<div class="figcaption">By adding some <code>customdata</code> it’s easy to determine which plot was clicked</div>
+</div>
 <p>In this example I’ve added a single <code>customdata</code> value to each plot so it will be
 recycled across all of the data points in each plot. I’ve also added the same
 <code>"second_plot"</code> value to both of the traces in the second plot, but you could
@@ -223,7 +225,7 @@ how to identify which plot was clicked and it more or less gave the answers I’
 described here, with some (different) example code and all. It took a bit of
 prompting to get it to go further than just using the <code>curveNumber</code> but I was amazed
 that it really did produce a (more or less) working proof-of-concept with minimal
-refinement. I really need to jump straight to that more often instead of fiddling
+refinement. I definitely need to jump straight to that more often instead of fiddling
 around with solutions that <em>don’t</em> work for too long.</p>
 <p>Is there a better way to achieve this? Let me know! I’m pretty much not on the bird site
 any more but I can be found on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or
@@ -243,55 +245,39 @@ use the comments below.</p>
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2023-05-25
+##  date     2023-05-26
 ##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
 ##  package     * version date (UTC) lib source
-##  assertthat    0.2.1   2019-03-21 [3] CRAN (R 4.0.1)
 ##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
 ##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
 ##  bslib         0.4.1   2022-11-02 [3] CRAN (R 4.2.2)
 ##  cachem        1.0.6   2021-08-19 [3] CRAN (R 4.2.0)
 ##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
 ##  cli           3.4.1   2022-09-23 [3] CRAN (R 4.2.1)
-##  colorspace    2.0-3   2022-02-21 [3] CRAN (R 4.2.0)
 ##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
-##  data.table    1.14.4  2022-10-17 [3] CRAN (R 4.2.1)
-##  DBI           1.1.3   2022-06-18 [3] CRAN (R 4.2.1)
 ##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
 ##  digest        0.6.30  2022-10-18 [3] CRAN (R 4.2.1)
-##  dplyr         1.0.10  2022-09-01 [3] CRAN (R 4.2.1)
 ##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
 ##  evaluate      0.18    2022-11-07 [3] CRAN (R 4.2.2)
-##  fansi         1.0.3   2022-03-24 [3] CRAN (R 4.2.0)
 ##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.2.0)
-##  flair       * 0.0.2   2023-05-25 [1] Github (r-for-educators/flair@5658aae)
 ##  fs            1.5.2   2021-12-08 [3] CRAN (R 4.1.2)
-##  generics      0.1.3   2022-07-05 [3] CRAN (R 4.2.1)
-##  ggplot2     * 3.4.1   2023-02-10 [1] CRAN (R 4.1.2)
 ##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
-##  gtable        0.3.1   2022-09-01 [3] CRAN (R 4.2.1)
 ##  htmltools     0.5.3   2022-07-18 [3] CRAN (R 4.2.1)
 ##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
 ##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
-##  httr          1.4.4   2022-08-17 [3] CRAN (R 4.2.1)
 ##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
 ##  jsonlite      1.8.3   2022-10-21 [3] CRAN (R 4.2.1)
 ##  knitr         1.40    2022-08-24 [3] CRAN (R 4.2.1)
 ##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
-##  lazyeval      0.2.2   2019-03-15 [1] CRAN (R 4.1.2)
 ##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
 ##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
 ##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
 ##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
 ##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
-##  munsell       0.5.0   2018-06-12 [3] CRAN (R 4.0.1)
-##  pillar        1.8.1   2022-08-19 [3] CRAN (R 4.2.1)
 ##  pkgbuild      1.3.1   2021-12-20 [1] CRAN (R 4.1.2)
-##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
 ##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
-##  plotly      * 4.10.1  2022-11-07 [1] CRAN (R 4.1.2)
 ##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
 ##  processx      3.8.0   2022-10-26 [3] CRAN (R 4.2.1)
 ##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
@@ -305,20 +291,13 @@ use the comments below.</p>
 ##  rmarkdown     2.18    2022-11-09 [3] CRAN (R 4.2.2)
 ##  rstudioapi    0.14    2022-08-22 [3] CRAN (R 4.2.1)
 ##  sass          0.4.2   2022-07-16 [3] CRAN (R 4.2.1)
-##  scales        1.2.1   2022-08-20 [3] CRAN (R 4.2.1)
 ##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
-##  shiny       * 1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
 ##  stringi       1.7.8   2022-07-11 [3] CRAN (R 4.2.1)
 ##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
-##  tibble        3.1.8   2022-07-22 [3] CRAN (R 4.2.2)
-##  tidyr         1.3.0   2023-01-24 [1] CRAN (R 4.1.2)
-##  tidyselect    1.2.0   2022-10-10 [3] CRAN (R 4.2.1)
 ##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
 ##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
-##  utf8          1.2.2   2021-07-24 [3] CRAN (R 4.2.0)
 ##  vctrs         0.5.2   2023-01-23 [1] CRAN (R 4.1.2)
-##  viridisLite   0.4.1   2022-08-22 [3] CRAN (R 4.2.1)
-##  withr         2.5.0   2022-03-03 [3] CRAN (R 4.2.0)
 ##  xfun          0.34    2022-10-18 [3] CRAN (R 4.2.1)
 ##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
 ##  yaml          2.3.6   2022-10-18 [3] CRAN (R 4.2.1)
