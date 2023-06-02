@@ -23,8 +23,15 @@ to find a clear solution online (at least it was for me) so here's how I added t
 neat domain hints next to all the hyperlinks on my blog.
 
 I'm familiar with these from the [RWeekly](https://rweekly.org) site where hyperlinks 
-are annotated with the target domain - I find this really useful to see where a 
-link will take me. I hadn't looked into _how_ those were being added, but we 
+are annotated with the target domain - 
+
+<img src="images/rweekly.png" alt="Rweekly.org annotated hyperlinks" width="600px"/>
+
+<div class="figcaption">Rweekly.org annotated hyperlinks</div>
+
+I find this really useful to see where a link will take me. 
+
+I hadn't looked into _how_ those were being added, but we 
 certainly weren't doing it manually; we use regular markdown links like
 
 ```md
