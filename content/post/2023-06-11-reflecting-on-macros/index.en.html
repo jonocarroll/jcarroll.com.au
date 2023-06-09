@@ -1,7 +1,7 @@
 ---
 title: Reflecting on Macros
 author: Jonathan Carroll
-date: '2023-06-11'
+date: '2023-06-01'
 slug: reflecting-on-macros
 categories:
   - julia
@@ -40,7 +40,7 @@ like</p>
 <pre class="bg-success"><code>## function (x, na.rm = FALSE) 
 ## sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
 ##     na.rm = na.rm))
-## &lt;bytecode: 0x5619e9c8e1e0&gt;
+## &lt;bytecode: 0x557dd1fea1e0&gt;
 ## &lt;environment: namespace:stats&gt;</code></pre>
 <p>Trying to extract a “component” of that function results in the ever-classic error</p>
 <pre class="r"><code>sd[1]</code></pre>
