@@ -1,0 +1,414 @@
+---
+title: Reflecting on Macros
+author: Jonathan Carroll
+date: '2023-06-10'
+categories:
+  - julia
+  - R
+  - rust
+tags:
+  - julia
+  - R
+  - rust
+slug: reflecting-on-macros
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>I’ve been following the drama of the RustConf Keynote Fiasco (RKNF, per <a href="https://fasterthanli.me/articles/the-rustconf-keynote-fiasco-explained">@fasterthanlime</a>)
+from a great distance - I’m not involved in that community beyond starting to learn
+the language. But the controversial topic itself <a href="https://soasis.org/posts/a-mirror-for-rust-a-plan-for-generic-compile-time-introspection-in-rust/">Compile-Time Reflection</a> seemed like something interesting I could learn something about.</p>
+<!--more-->
+<p>I’ve been following the drama of the RustConf Keynote Fiasco (RKNF, per <a href="https://fasterthanli.me/articles/the-rustconf-keynote-fiasco-explained">@fasterthanlime</a>)
+from a great distance - I’m not involved in that community beyond starting to learn
+the language. But the controversial topic itself <a href="https://soasis.org/posts/a-mirror-for-rust-a-plan-for-generic-compile-time-introspection-in-rust/">Compile-Time Reflection</a> seemed like something interesting I could learn something about.</p>
+<p>A good start is usually a Wikipedia page, and I found one called <a href="https://en.wikipedia.org/wiki/Reflective_programming">“Reflective programming”</a> under the “MetaProgramming”
+category, where it defines</p>
+<blockquote>
+<p>reflection is the ability of a process to examine, introspect, and modify its own structure and behavior</p>
+</blockquote>
+<p>That sounds somewhat familiar from what metaprogramming I’ve read about. One of the
+great features of R is the ability to inspect and rewrite functions, for example,
+the body of the <code>sd()</code> function (calculating the standard deviation of the input) looks
+like</p>
+<pre class="r"><code>sd</code></pre>
+<pre class="bg-success"><code>## function (x, na.rm = FALSE) 
+## sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
+##     na.rm = na.rm))
+## &lt;bytecode: 0x55a797b52960&gt;
+## &lt;environment: namespace:stats&gt;</code></pre>
+<p>Trying to extract a “component” of that function results in the ever-classic error</p>
+<pre class="r"><code>sd[1]</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in sd[1]: object of type &#39;closure&#39; is not subsettable</code></pre>
+<p><em>However</em>, using <code>body()</code> we <em>can</em> get to the components of the function</p>
+<pre class="r"><code>body(sd)</code></pre>
+<pre class="bg-success"><code>## sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
+##     na.rm = na.rm))</code></pre>
+<pre class="r"><code>body(sd)[1]</code></pre>
+<pre class="bg-success"><code>## sqrt()</code></pre>
+<p>and we can even mess with it (meaninglessly, in this case)</p>
+<pre class="r"><code>vals &lt;- c(1, 3, 5, 7)
+sd(vals)</code></pre>
+<pre class="bg-success"><code>## [1] 2.581989</code></pre>
+<pre class="r"><code>my_sd &lt;- sd
+body(my_sd)[1] &lt;- call(&quot;log&quot;)
+my_sd # note that the function now (wrongly) uses log() instead of sqrt()</code></pre>
+<pre class="bg-success"><code>## function (x, na.rm = FALSE) 
+## log(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
+##     na.rm = na.rm))
+## &lt;environment: namespace:stats&gt;</code></pre>
+<pre class="r"><code>my_sd(vals)</code></pre>
+<pre class="bg-success"><code>## [1] 1.89712</code></pre>
+<p>The Wikipedia page lists the following example of reflection in R</p>
+<pre class="r"><code># Without reflection, assuming foo() returns an S3-type object that has method &quot;hello&quot;
+obj &lt;- foo()
+hello(obj)
+
+# With reflection
+class_name &lt;- &quot;foo&quot;
+generic_having_foo_method &lt;- &quot;hello&quot;
+obj &lt;- do.call(class_name, list())
+do.call(generic_having_foo_method, alist(obj))</code></pre>
+<p>Using a more concrete data object and class, e.g. <code>tibble::tibble</code> and <code>summary</code> might be
+clearer</p>
+<pre class="r"><code>library(tibble) # do.call doesn&#39;t like pkg::fun as a string
+
+# Without reflection
+obj &lt;- tibble(a = 1:2, b = 3:4)
+summary(obj)</code></pre>
+<pre class="bg-success"><code>##        a              b       
+##  Min.   :1.00   Min.   :3.00  
+##  1st Qu.:1.25   1st Qu.:3.25  
+##  Median :1.50   Median :3.50  
+##  Mean   :1.50   Mean   :3.50  
+##  3rd Qu.:1.75   3rd Qu.:3.75  
+##  Max.   :2.00   Max.   :4.00</code></pre>
+<pre class="r"><code># With reflection
+class_name &lt;- &quot;tibble&quot;
+generic_having_foo_method &lt;- &quot;summary&quot;
+obj &lt;- do.call(class_name, list(a = 1:2, b = 3:4))
+obj</code></pre>
+<pre class="bg-success"><code>## # A tibble: 2 × 2
+##       a     b
+##   &lt;int&gt; &lt;int&gt;
+## 1     1     3
+## 2     2     4</code></pre>
+<pre class="r"><code>do.call(generic_having_foo_method, alist(obj))</code></pre>
+<pre class="bg-success"><code>##        a              b       
+##  Min.   :1.00   Min.   :3.00  
+##  1st Qu.:1.25   1st Qu.:3.25  
+##  Median :1.50   Median :3.50  
+##  Mean   :1.50   Mean   :3.50  
+##  3rd Qu.:1.75   3rd Qu.:3.75  
+##  Max.   :2.00   Max.   :4.00</code></pre>
+<p>So, maybe it’s more to do with being able to use a string containing the “name” of
+a function and go and find that function, or just the ability to generate functions
+on-demand based on non-function objects (?). Please, let me know if there’s a more
+enlightening explanation.</p>
+<p>I still don’t think I understand that at all (more time required) but I did note in
+some additional research that “reflection” and “macros” are two very similar concepts. Now
+macros <em>are</em> something I’ve heard of at least, so I was off to do some more research.</p>
+<p>Unfortunately, web searches for the terms “reflection” and “macro” turn up a lot of
+macro-lens photography results.</p>
+<p>I’ve heard of macros in Julia where they’re used to “rewrite” an expression. <a href="https://jkrumbiegel.com/pages/2021-06-07-macros-for-beginners/">This</a> is a nice rundown
+of the process, as are the <a href="https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros">official docs</a>. These are
+used in many places. One up-and-coming place is the new <a href="https://github.com/TidierOrg/Tidier.jl">Tidier.jl</a> which implements the <a href="https://www.tidyverse.org/">tidyverse</a> (at least the most common <code>dplyr</code> and <code>purrr</code> parts)
+using macros (denoted with a <code>@</code> prefix)</p>
+<pre class="julia"><code>using Tidier
+using RDatasets
+
+movies = dataset(&quot;ggplot2&quot;, &quot;movies&quot;);
+
+@chain movies begin
+    @mutate(Budget = Budget / 1_000_000)
+    @filter(Budget &gt;= mean(skipmissing(Budget)))
+    @select(Title, Budget)
+    @slice(1:5)
+end</code></pre>
+<p>Rust uses macros for printing (amongst other things); <code>println!()</code> is a macro,
+apparently at least in part because it needs to be able to take an arbitrary
+number of args, so one can write</p>
+<pre class="rust"><code>&gt;&gt; println!(&quot;a = {}, b = {}, c = {}&quot;, 1, 2, 3)
+a = 1, b = 2, c = 3</code></pre>
+<p>Rust has a shorthand macro for creating a <a href="https://doc.rust-lang.org/std/macro.vec.html">new vector <code>vec!()</code></a></p>
+<pre class="rust"><code>&gt;&gt; let v = vec![2, 3, 4];</code></pre>
+<p>and also has the <a href="https://doc.rust-lang.org/std/macro.dbg.html">“debug macro” <code>dbg!()</code></a>
+which is super handy - it prints out the expression you wrap, plus the value, so
+you can inspect the current state with e.g.</p>
+<pre class="rust"><code>&gt;&gt; dbg!(&amp;v);
+[src/lib.rs:109] &amp;v = [
+    2,
+    3,
+    4,
+]</code></pre>
+<p>This last one would be great to have in R… as a side note, we could construct a
+simple version with {rlang}</p>
+<pre class="r"><code>dbg &lt;- function(x) {
+  ex &lt;- rlang::f_text(rlang::enquos(x)[[1]])
+  ret &lt;- rlang::eval_bare(x)
+  message(glue::glue(&quot;DEBUG: {ex} = {ret}&quot;))
+  ret
+}
+
+a &lt;- 1
+b &lt;- 3
+x &lt;- dbg(a + b)</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: a + b = 4</code></pre>
+<pre class="r"><code>y &lt;- dbg(2*x + 3)</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: 2 * x + 3 = 11</code></pre>
+<pre class="r"><code>z &lt;- 10 + dbg(y*2)</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: y * 2 = 22</code></pre>
+<p>In all of these examples of macros, the code that is <em>run</em> is different to the code you <em>write</em>
+because the macro makes some changes before executing.</p>
+<p>In R there isn’t a “proper” way to do this but we <em>do</em> have ways to manipulate code
+and we <em>do</em> have ways to retrieve “unparsed” input, e.g. <code>substitute()</code>. A quick look
+for “macros in R” turned up a function in a package that is more than 20 years old (I was
+only starting University when this came out and knew approximately 0 programming) and
+comes with a <a href="https://www.r-project.org/doc/Rnews/Rnews_2001-3.pdf">journal article</a>; <code>gtools::defmacro()</code> by <a href="https://fosstodon.org/@tslumley@wandering.shop">Thomas Lumley</a>
+has a construction for writing something that behaves like a macro.</p>
+<p>That article is from 2001 when R 1.3.1 was being released. The example code made me do a double-take</p>
+<pre class="r"><code>library(gtools)
+
+####
+# macro for replacing a specified missing value indicator with NA
+# within a dataframe
+###
+setNA &lt;- defmacro(df, var, values,
+  expr = {
+    df$var[df$var %in% values] &lt;- NA
+  }
+)
+
+# create example data using 999 as a missing value indicator
+d &lt;- data.frame(
+  Grp = c(&quot;Trt&quot;, &quot;Ctl&quot;, &quot;Ctl&quot;, &quot;Trt&quot;, &quot;Ctl&quot;, &quot;Ctl&quot;, &quot;Trt&quot;, &quot;Ctl&quot;, &quot;Trt&quot;, &quot;Ctl&quot;),
+  V1 = c(1, 2, 3, 4, 5, 6, 999, 8, 9, 10),
+  V2 = c(1, 1, 1, 1, 1, 2, 999, 2, 999, 999),
+  stringsAsFactors = TRUE
+)
+d</code></pre>
+<pre class="bg-success"><code>##    Grp  V1  V2
+## 1  Trt   1   1
+## 2  Ctl   2   1
+## 3  Ctl   3   1
+## 4  Trt   4   1
+## 5  Ctl   5   1
+## 6  Ctl   6   2
+## 7  Trt 999 999
+## 8  Ctl   8   2
+## 9  Trt   9 999
+## 10 Ctl  10 999</code></pre>
+<pre class="r"><code># Try it out
+setNA(d, V1, 999)
+setNA(d, V2, 999)
+d</code></pre>
+<pre class="bg-success"><code>##    Grp V1 V2
+## 1  Trt  1  1
+## 2  Ctl  2  1
+## 3  Ctl  3  1
+## 4  Trt  4  1
+## 5  Ctl  5  1
+## 6  Ctl  6  2
+## 7  Trt NA NA
+## 8  Ctl  8  2
+## 9  Trt  9 NA
+## 10 Ctl 10 NA</code></pre>
+<p>Wait - I thought… there’s no assignment in those last lines, but the data is
+being modified!?! Sure enough, the internals of <code>defmacro</code> make it clear that this
+is the case, but it seemed like magic. Essentially, this identifies what needs to
+happen, what it needs to happen to (via <code>substitute()</code>), and makes it happen in the <code>parent.frame()</code>. Neat! So, what else can we do with this?</p>
+<p>I thought about it for a while and realised what could be a [te|ho]rrific one…</p>
+<p>Just a couple of weeks ago, Danielle Navarro <a href="https://fosstodon.org/@djnavarro/110455537858873633">made a wish</a></p>
+<blockquote>
+<p>not for the first time I find myself wishing that push() and pop() were S3 generics in #rstats</p>
+</blockquote>
+<p>Now, if you’re not familiar with those, <code>pop(x)</code> removes the first element of a structure <code>x</code> (e.g. a vector) and returns that first value, leaving the original object <code>x</code> containing only the remaining elements, whereas <code>push(x, y)</code> inserts the value <code>y</code> as the first element of <code>x</code>, moving the remaining elements down the line. These show up more in object-oriented languages, but they
+don’t exist in R.</p>
+<p>If we define a vector <code>a</code> containing some values</p>
+<pre class="r"><code>a &lt;- c(3, 1, 4, 1, 5, 9)</code></pre>
+<p>and we wish to extract the first value, we can certainly do so with</p>
+<pre class="r"><code>a[1]</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<p>but, due to the nature of R, the vector <code>a</code> is unchanged</p>
+<pre class="r"><code>a</code></pre>
+<pre class="bg-success"><code>## [1] 3 1 4 1 5 9</code></pre>
+<p>Instead, we could remove the first value of <code>a</code> with</p>
+<pre class="r"><code>a[-1]</code></pre>
+<pre class="bg-success"><code>## [1] 1 4 1 5 9</code></pre>
+<p>but again, <code>a</code> remains unchanged - in order to modify <code>a</code> we must redefine it as e.g.</p>
+<pre class="r"><code>a &lt;- a[-1]
+a</code></pre>
+<pre class="bg-success"><code>## [1] 1 4 1 5 9</code></pre>
+<p>If we wanted to build a <code>pop()</code> function, we <em>could</em> use <code>substitute()</code> to figure out
+what the passed input object was, perform the extraction of the first element, and so on…</p>
+<p>But as we’ve just seen, there’s a better way to define that - a macro!</p>
+<pre class="r"><code>r_pop &lt;- gtools::defmacro(x, expr = {
+  ret &lt;- x[1]
+  x &lt;- x[-1]
+  ret
+})</code></pre>
+<p>Now, if we use that on a vector</p>
+<pre class="r"><code>a &lt;- c(3, 1, 4, 1, 5, 9)
+r_pop(a)</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<pre class="r"><code>a</code></pre>
+<pre class="bg-success"><code>## [1] 1 4 1 5 9</code></pre>
+<p>It works!!!</p>
+<p>Danielle wanted a Generic, though, so we can easily make <code>pop()</code> a Generic and add methods for
+some classes (which can be further extended).</p>
+<p>To that end, I present a brand new package; <a href="https://github.com/jonocarroll/weasel">{weasel}</a></p>
+<div class="float">
+<img src="images/hex-weasel.png" width="300" height="300" alt="pop() goes the {weasel}" />
+<div class="figcaption"><code>pop()</code> goes the {weasel}</div>
+</div>
+<p>This defines <code>pop()</code> and <code>push()</code> as Generics with methods defined for <code>vector</code>s, <code>list</code>s, and <code>data.frame</code>s</p>
+<pre class="r"><code>a &lt;- list(x = c(2, 3), y = c(&quot;foo&quot;, &quot;bar&quot;), z = c(3.1, 4.2, 6.9))
+a</code></pre>
+<pre class="bg-success"><code>## $x
+## [1] 2 3
+## 
+## $y
+## [1] &quot;foo&quot; &quot;bar&quot;
+## 
+## $z
+## [1] 3.1 4.2 6.9</code></pre>
+<pre class="r"><code>x &lt;- pop(a)
+a</code></pre>
+<pre class="bg-success"><code>## $y
+## [1] &quot;foo&quot; &quot;bar&quot;
+## 
+## $z
+## [1] 3.1 4.2 6.9</code></pre>
+<pre class="r"><code>x</code></pre>
+<pre class="bg-success"><code>## [1] 2 3</code></pre>
+<pre class="r"><code>a &lt;- data.frame(x = c(2, 3, 4), y = c(&quot;foo&quot;, &quot;bar&quot;, &quot;baz&quot;), z = c(3.1, 4.2, 6.9))
+a</code></pre>
+<pre class="bg-success"><code>##   x   y   z
+## 1 2 foo 3.1
+## 2 3 bar 4.2
+## 3 4 baz 6.9</code></pre>
+<pre class="r"><code>x &lt;- pop(a)
+a</code></pre>
+<pre class="bg-success"><code>##   x   y   z
+## 2 3 bar 4.2
+## 3 4 baz 6.9</code></pre>
+<pre class="r"><code>x</code></pre>
+<pre class="bg-success"><code>##   x   y   z
+## 1 2 foo 3.1</code></pre>
+<pre class="r"><code>a &lt;- c(1, 4, 1, 5, 9)
+a</code></pre>
+<pre class="bg-success"><code>## [1] 1 4 1 5 9</code></pre>
+<pre class="r"><code>push(a, 3)
+a</code></pre>
+<pre class="bg-success"><code>## [1] 3 1 4 1 5 9</code></pre>
+<pre class="r"><code>a &lt;- data.frame(y = c(&quot;foo&quot;, &quot;bar&quot;, &quot;baz&quot;), z = c(3.1, 4.2, 6.9))
+a</code></pre>
+<pre class="bg-success"><code>##     y   z
+## 1 foo 3.1
+## 2 bar 4.2
+## 3 baz 6.9</code></pre>
+<pre class="r"><code>push(a, data.frame(y = 99, z = 77))
+a</code></pre>
+<pre class="bg-success"><code>##     y    z
+## 1  99 77.0
+## 2 foo  3.1
+## 3 bar  4.2
+## 4 baz  6.9</code></pre>
+<p>I wrote this (simple) package as a bit of an exercise - I really don’t think you
+should actually use it for anything. The <em>“looks like it modifies in-place but actually
+doesn’t”</em> is really non-idiomatic for R. Nonetheless, I was really interested to see
+that <code>defmacro</code> can be used as a function definition that the dispatch machinery will respect. The only catch I’ve found so far is that I can’t use ellipses (<code>...</code>) in the function signature.</p>
+<p>I noticed that <a href="https://github.com/dirkschumacher">Dirk Schumacher</a> built a similar <a href="https://github.com/dirkschumacher/defmacro"><code>defmacro</code> package</a> more recently, but that appears
+to be more aimed at building macros to be expanded on package load (funnily enough, “compile-time macros” - we’ve come full circle). This seems like a great opportunity for “inlining”
+some functions. I’ll definitely be digging deeper into that one.</p>
+<p>Let me know if you have a better explanation of any of the concepts I’ve (badly) described here;
+I’m absolutely just learning and following <a href="https://jvns.ca/blog/2023/06/05/some-blogging-myths/">Julia Evans’ advice about blogging</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-06-10
+##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.4.1   2022-11-02 [3] CRAN (R 4.2.2)
+##  cachem        1.0.6   2021-08-19 [3] CRAN (R 4.2.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.4.1   2022-09-23 [3] CRAN (R 4.2.1)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.30  2022-10-18 [3] CRAN (R 4.2.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.18    2022-11-07 [3] CRAN (R 4.2.2)
+##  fansi         1.0.3   2022-03-24 [3] CRAN (R 4.2.0)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.2.0)
+##  fs            1.5.2   2021-12-08 [3] CRAN (R 4.1.2)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  gtools      * 3.9.4   2022-11-27 [1] CRAN (R 4.1.2)
+##  htmltools     0.5.3   2022-07-18 [3] CRAN (R 4.2.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.3   2022-10-21 [3] CRAN (R 4.2.1)
+##  knitr         1.40    2022-08-24 [3] CRAN (R 4.2.1)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pillar        1.8.1   2022-08-19 [3] CRAN (R 4.2.1)
+##  pkgbuild      1.3.1   2021-12-20 [1] CRAN (R 4.1.2)
+##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.0   2022-10-26 [3] CRAN (R 4.2.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.2   2022-10-26 [3] CRAN (R 4.2.2)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.6   2022-09-24 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.18    2022-11-09 [3] CRAN (R 4.2.2)
+##  rstudioapi    0.14    2022-08-22 [3] CRAN (R 4.2.1)
+##  sass          0.4.2   2022-07-16 [3] CRAN (R 4.2.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.8   2022-07-11 [3] CRAN (R 4.2.1)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  tibble      * 3.1.8   2022-07-22 [3] CRAN (R 4.2.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  utf8          1.2.2   2021-07-24 [3] CRAN (R 4.2.0)
+##  vctrs         0.5.2   2023-01-23 [1] CRAN (R 4.1.2)
+##  weasel      * 0.1.0   2023-06-09 [1] local
+##  xfun          0.34    2022-10-18 [3] CRAN (R 4.2.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.6   2022-10-18 [3] CRAN (R 4.2.1)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>

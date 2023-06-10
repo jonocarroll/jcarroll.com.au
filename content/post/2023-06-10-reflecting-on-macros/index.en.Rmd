@@ -1,0 +1,348 @@
+---
+title: Reflecting on Macros
+author: Jonathan Carroll
+date: '2023-06-10'
+categories:
+  - julia
+  - R
+  - rust
+tags:
+  - julia
+  - R
+  - rust
+slug: reflecting-on-macros
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+library(weasel)
+
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I've been following the drama of the RustConf Keynote Fiasco (RKNF, per [\@fasterthanlime](https://fasterthanli.me/articles/the-rustconf-keynote-fiasco-explained)) 
+from a great distance - I'm not involved in that community beyond starting to learn 
+the language. But the controversial topic itself [Compile-Time Reflection](https://soasis.org/posts/a-mirror-for-rust-a-plan-for-generic-compile-time-introspection-in-rust/) seemed like something interesting I could learn something about.
+
+<!--more-->
+
+I've been following the drama of the RustConf Keynote Fiasco (RKNF, per [\@fasterthanlime](https://fasterthanli.me/articles/the-rustconf-keynote-fiasco-explained)) 
+from a great distance - I'm not involved in that community beyond starting to learn 
+the language. But the controversial topic itself [Compile-Time Reflection](https://soasis.org/posts/a-mirror-for-rust-a-plan-for-generic-compile-time-introspection-in-rust/) seemed like something interesting I could learn something about.
+
+A good start is usually a Wikipedia page, and I found one called ["Reflective programming"](https://en.wikipedia.org/wiki/Reflective_programming) under the "MetaProgramming" 
+category, where it defines
+
+> reflection is the ability of a process to examine, introspect, and modify its own structure and behavior
+
+That sounds somewhat familiar from what metaprogramming I've read about. One of the 
+great features of R is the ability to inspect and rewrite functions, for example, 
+the body of the `sd()` function (calculating the standard deviation of the input) looks 
+like
+
+```{r}
+sd
+```
+
+Trying to extract a "component" of that function results in the ever-classic error
+
+```{r, error = TRUE}
+sd[1]
+```
+
+*However*, using `body()` we _can_ get to the components of the function
+
+```{r}
+body(sd)
+body(sd)[1]
+```
+
+and we can even mess with it (meaninglessly, in this case)
+
+```{r}
+vals <- c(1, 3, 5, 7)
+sd(vals)
+my_sd <- sd
+body(my_sd)[1] <- call("log")
+my_sd # note that the function now (wrongly) uses log() instead of sqrt()
+my_sd(vals)
+```
+
+The Wikipedia page lists the following example of reflection in R
+
+```r
+# Without reflection, assuming foo() returns an S3-type object that has method "hello"
+obj <- foo()
+hello(obj)
+
+# With reflection
+class_name <- "foo"
+generic_having_foo_method <- "hello"
+obj <- do.call(class_name, list())
+do.call(generic_having_foo_method, alist(obj))
+```
+
+Using a more concrete data object and class, e.g. `tibble::tibble` and `summary` might be 
+clearer
+
+```{r, warning = FALSE}
+library(tibble) # do.call doesn't like pkg::fun as a string
+
+# Without reflection
+obj <- tibble(a = 1:2, b = 3:4)
+summary(obj)
+
+# With reflection
+class_name <- "tibble"
+generic_having_foo_method <- "summary"
+obj <- do.call(class_name, list(a = 1:2, b = 3:4))
+obj
+do.call(generic_having_foo_method, alist(obj))
+```
+
+So, maybe it's more to do with being able to use a string containing the "name" of 
+a function and go and find that function, or just the ability to generate functions 
+on-demand based on non-function objects (?). Please, let me know if there's a more 
+enlightening explanation.
+
+I still don't think I understand that at all (more time required) but I did note in 
+some additional research that "reflection" and "macros" are two very similar concepts. Now 
+macros _are_ something I've heard of at least, so I was off to do some more research.
+
+Unfortunately, web searches for the terms "reflection" and "macro" turn up a lot of 
+macro-lens photography results. 
+
+I've heard of macros in Julia where they're used to "rewrite" an expression. [This](https://jkrumbiegel.com/pages/2021-06-07-macros-for-beginners/) is a nice rundown 
+of the process, as are the [official docs](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). These are 
+used in many places. One up-and-coming place is the new [Tidier.jl](https://github.com/TidierOrg/Tidier.jl) which implements the [tidyverse](https://www.tidyverse.org/) (at least the most common `dplyr` and `purrr` parts) 
+using macros (denoted with a `@` prefix)
+
+```julia
+using Tidier
+using RDatasets
+
+movies = dataset("ggplot2", "movies");
+
+@chain movies begin
+    @mutate(Budget = Budget / 1_000_000)
+    @filter(Budget >= mean(skipmissing(Budget)))
+    @select(Title, Budget)
+    @slice(1:5)
+end
+```
+
+Rust uses macros for printing (amongst other things); `println!()` is a macro, 
+apparently at least in part because it needs to be able to take an arbitrary 
+number of args, so one can write
+
+```rust
+>> println!("a = {}, b = {}, c = {}", 1, 2, 3)
+a = 1, b = 2, c = 3
+```
+
+Rust has a shorthand macro for creating a [new vector `vec!()`](https://doc.rust-lang.org/std/macro.vec.html)
+
+```rust
+>> let v = vec![2, 3, 4];
+```
+
+and also has the ["debug macro" `dbg!()`](https://doc.rust-lang.org/std/macro.dbg.html)
+which is super handy - it prints out the expression you wrap, plus the value, so 
+you can inspect the current state with e.g.
+
+```rust
+>> dbg!(&v);
+[src/lib.rs:109] &v = [
+    2,
+    3,
+    4,
+]
+```
+
+This last one would be great to have in R... as a side note, we could construct a 
+simple version with {rlang}
+
+```{r}
+dbg <- function(x) {
+  ex <- rlang::f_text(rlang::enquos(x)[[1]])
+  ret <- rlang::eval_bare(x)
+  message(glue::glue("DEBUG: {ex} = {ret}"))
+  ret
+}
+
+a <- 1
+b <- 3
+x <- dbg(a + b)
+y <- dbg(2*x + 3)
+z <- 10 + dbg(y*2)
+```
+
+In all of these examples of macros, the code that is _run_ is different to the code you _write_ 
+because the macro makes some changes before executing. 
+
+In R there isn't a "proper" way to do this but we _do_ have ways to manipulate code 
+and we _do_ have ways to retrieve "unparsed" input, e.g. `substitute()`. A quick look 
+for "macros in R" turned up a function in a package that is more than 20 years old (I was 
+only starting University when this came out and knew approximately 0 programming) and 
+comes with a [journal article](https://www.r-project.org/doc/Rnews/Rnews_2001-3.pdf); `gtools::defmacro()` by [Thomas Lumley](https://fosstodon.org/@tslumley@wandering.shop) 
+has a construction for writing something that behaves like a macro.
+
+That article is from 2001 when R 1.3.1 was being released. The example code made me do a double-take
+
+```{r}
+library(gtools)
+
+####
+# macro for replacing a specified missing value indicator with NA
+# within a dataframe
+###
+setNA <- defmacro(df, var, values,
+  expr = {
+    df$var[df$var %in% values] <- NA
+  }
+)
+
+# create example data using 999 as a missing value indicator
+d <- data.frame(
+  Grp = c("Trt", "Ctl", "Ctl", "Trt", "Ctl", "Ctl", "Trt", "Ctl", "Trt", "Ctl"),
+  V1 = c(1, 2, 3, 4, 5, 6, 999, 8, 9, 10),
+  V2 = c(1, 1, 1, 1, 1, 2, 999, 2, 999, 999),
+  stringsAsFactors = TRUE
+)
+d
+
+# Try it out
+setNA(d, V1, 999)
+setNA(d, V2, 999)
+d
+```
+
+Wait - I thought... there's no assignment in those last lines, but the data is 
+being modified!?! Sure enough, the internals of `defmacro` make it clear that this 
+is the case, but it seemed like magic. Essentially, this identifies what needs to 
+happen, what it needs to happen to (via `substitute()`), and makes it happen in the `parent.frame()`. Neat! So, what else can we do with this?
+
+I thought about it for a while and realised what could be a [te|ho]rrific one...
+
+Just a couple of weeks ago, Danielle Navarro [made a wish](https://fosstodon.org/@djnavarro/110455537858873633) 
+
+> not for the first time I find myself wishing that push() and pop() were S3 generics in #rstats
+
+Now, if you're not familiar with those, `pop(x)` removes the first element of a structure `x` (e.g. a vector) and returns that first value, leaving the original object `x` containing only the remaining elements, whereas `push(x, y)` inserts the value `y` as the first element of `x`, moving the remaining elements down the line. These show up more in object-oriented languages, but they 
+don't exist in R.
+
+If we define a vector `a` containing some values
+
+```{r}
+a <- c(3, 1, 4, 1, 5, 9)
+```
+
+and we wish to extract the first value, we can certainly do so with 
+
+```{r}
+a[1]
+```
+
+but, due to the nature of R, the vector `a` is unchanged
+
+```{r}
+a
+```
+
+Instead, we could remove the first value of `a` with
+
+```{r}
+a[-1]
+```
+
+but again, `a` remains unchanged - in order to modify `a` we must redefine it as e.g.
+
+```{r}
+a <- a[-1]
+a
+```
+
+If we wanted to build a `pop()` function, we _could_ use `substitute()` to figure out 
+what the passed input object was, perform the extraction of the first element, and so on... 
+
+But as we've just seen, there's a better way to define that - a macro!
+
+```{r}
+r_pop <- gtools::defmacro(x, expr = {
+  ret <- x[1]
+  x <- x[-1]
+  ret
+})
+```
+
+Now, if we use that on a vector
+
+```{r}
+a <- c(3, 1, 4, 1, 5, 9)
+r_pop(a)
+a
+```
+
+It works!!!
+
+Danielle wanted a Generic, though, so we can easily make `pop()` a Generic and add methods for 
+some classes (which can be further extended).
+
+To that end, I present a brand new package; [{weasel}](https://github.com/jonocarroll/weasel)
+
+![`pop()` goes the {weasel}](images/hex-weasel.png){width=300px height=300px}
+
+This defines `pop()` and `push()` as Generics with methods defined for `vector`s, `list`s, and `data.frame`s
+
+```{r}
+a <- list(x = c(2, 3), y = c("foo", "bar"), z = c(3.1, 4.2, 6.9))
+a
+x <- pop(a)
+a
+x
+
+a <- data.frame(x = c(2, 3, 4), y = c("foo", "bar", "baz"), z = c(3.1, 4.2, 6.9))
+a
+x <- pop(a)
+a
+x
+
+a <- c(1, 4, 1, 5, 9)
+a
+push(a, 3)
+a
+
+a <- data.frame(y = c("foo", "bar", "baz"), z = c(3.1, 4.2, 6.9))
+a
+push(a, data.frame(y = 99, z = 77))
+a
+```
+
+I wrote this (simple) package as a bit of an exercise - I really don't think you
+should actually use it for anything. The _"looks like it modifies in-place but actually 
+doesn't"_ is really non-idiomatic for R. Nonetheless, I was really interested to see 
+that `defmacro` can be used as a function definition that the dispatch machinery will respect. The only catch I've found so far is that I can't use ellipses (`...`) in the function signature.
+
+I noticed that [Dirk Schumacher](https://github.com/dirkschumacher) built a similar [`defmacro` package](https://github.com/dirkschumacher/defmacro) more recently, but that appears 
+to be more aimed at building macros to be expanded on package load (funnily enough, "compile-time macros" - we've come full circle). This seems like a great opportunity for "inlining" 
+some functions. I'll definitely be digging deeper into that one.
+
+Let me know if you have a better explanation of any of the concepts I've (badly) described here; 
+I'm absolutely just learning and following [Julia Evans' advice about blogging](https://jvns.ca/blog/2023/06/05/some-blogging-myths/).
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
