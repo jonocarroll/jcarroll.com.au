@@ -1,8 +1,7 @@
 ---
 title: Reflecting on Macros
 author: Jonathan Carroll
-date: '2023-06-01'
-slug: reflecting-on-macros
+date: '2023-06-10'
 categories:
   - julia
   - R
@@ -11,10 +10,8 @@ tags:
   - julia
   - R
   - rust
-type: ''
-subtitle: ''
-image: ''
-editor_options: 
+slug: reflecting-on-macros
+editor_options:
   chunk_output_type: console
 ---
 
@@ -124,7 +121,7 @@ macro-lens photography results.
 I've heard of macros in Julia where they're used to "rewrite" an expression. [This](https://jkrumbiegel.com/pages/2021-06-07-macros-for-beginners/) is a nice rundown 
 of the process, as are the [official docs](https://docs.julialang.org/en/v1/manual/metaprogramming/#man-macros). These are 
 used in many places. One up-and-coming place is the new [Tidier.jl](https://github.com/TidierOrg/Tidier.jl) which implements the [tidyverse](https://www.tidyverse.org/) (at least the most common `dplyr` and `purrr` parts) 
-using macros (denoted with a `\@` prefix)
+using macros (denoted with a `@` prefix)
 
 ```julia
 using Tidier
@@ -149,6 +146,46 @@ number of args, so one can write
 a = 1, b = 2, c = 3
 ```
 
+Rust has a shorthand macro for creating a [new vector `vec!()`](https://doc.rust-lang.org/std/macro.vec.html)
+
+```rust
+>> let v = vec![2, 3, 4];
+```
+
+and also has the ["debug macro" `dbg!()`](https://doc.rust-lang.org/std/macro.dbg.html)
+which is super handy - it prints out the expression you wrap, plus the value, so 
+you can inspect the current state with e.g.
+
+```rust
+>> dbg!(&v);
+[src/lib.rs:109] &v = [
+    2,
+    3,
+    4,
+]
+```
+
+This last one would be great to have in R... as a side note, we could construct a 
+simple version with {rlang}
+
+```{r}
+dbg <- function(x) {
+  ex <- rlang::f_text(rlang::enquos(x)[[1]])
+  ret <- rlang::eval_bare(x)
+  message(glue::glue("DEBUG: {ex} = {ret}"))
+  ret
+}
+
+a <- 1
+b <- 3
+x <- dbg(a + b)
+y <- dbg(2*x + 3)
+z <- 10 + dbg(y*2)
+```
+
+In all of these examples of macros, the code that is _run_ is different to the code you _write_ 
+because the macro makes some changes before executing. 
+
 In R there isn't a "proper" way to do this but we _do_ have ways to manipulate code 
 and we _do_ have ways to retrieve "unparsed" input, e.g. `substitute()`. A quick look 
 for "macros in R" turned up a function in a package that is more than 20 years old (I was 
@@ -156,7 +193,7 @@ only starting University when this came out and knew approximately 0 programming
 comes with a [journal article](https://www.r-project.org/doc/Rnews/Rnews_2001-3.pdf); `gtools::defmacro()` by [Thomas Lumley](https://fosstodon.org/@tslumley@wandering.shop) 
 has a construction for writing something that behaves like a macro.
 
-The example code made me do a double-take
+That article is from 2001 when R 1.3.1 was being released. The example code made me do a double-take
 
 ```{r}
 library(gtools)
