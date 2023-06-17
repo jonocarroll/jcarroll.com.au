@@ -4,13 +4,13 @@ author: Jonathan Carroll
 date: '2022-10-08'
 slug: polyglot-sorting
 categories:
-  - R
+  - rstats
   - python
   - julia
   - bash
   - rust
 tags:
-  - R
+  - rstats
   - julia
   - python
   - bash

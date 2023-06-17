@@ -6,13 +6,13 @@ categories:
   - fortran
   - haskell
   - julia
-  - R
+  - rstats
   - rust
 tags:
   - fortran
   - haskell
   - julia
-  - R
+  - rstats
   - rust
 slug: polyglot-overloading
 ---

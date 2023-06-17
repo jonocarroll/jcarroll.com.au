@@ -3,11 +3,8 @@ title: Which Plot Was That?
 author: Jonathan Carroll
 date: '2023-05-26'
 slug: which-plot-was-that
-categories:
-  - R
-tags:
-  - R
-  - plotly
+categories: [rstats]
+tags: [rstats, plotly]
 type: ''
 subtitle: 'Plotly subplots and customdata'
 image: ''

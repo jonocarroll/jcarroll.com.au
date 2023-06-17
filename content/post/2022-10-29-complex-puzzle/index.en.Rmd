@@ -4,9 +4,9 @@ author: Jonathan Carroll
 date: '2022-10-29'
 slug: complex-puzzle
 categories:
-  - R
+  - rstats
 tags:
-  - R
+  - rstats
 type: ''
 subtitle: ''
 image: ''
@@ -459,7 +459,7 @@ suppressMessages({ # replacing fill scale
                    aes(x = x1, y = y1,
                        xend = x2, yend = y2,
                        col = colorname),
-                   size = 1.5,
+                   linewidth = 1.5,
                    inherit.aes = FALSE) +
       coord_cartesian(xlim = c(0, 12), ylim = c(0, 12)) +
       scale_color_manual(values =
