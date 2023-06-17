@@ -4,11 +4,11 @@ author: Jonathan Carroll
 date: '2023-06-10'
 categories:
   - julia
-  - R
+  - rstats
   - rust
 tags:
   - julia
-  - R
+  - rstats
   - rust
 slug: reflecting-on-macros
 editor_options:
@@ -37,7 +37,7 @@ like</p>
 <pre class="bg-success"><code>## function (x, na.rm = FALSE) 
 ## sqrt(var(if (is.vector(x) || is.factor(x)) x else as.double(x), 
 ##     na.rm = na.rm))
-## &lt;bytecode: 0x55b87a1b9960&gt;
+## &lt;bytecode: 0x5647347e3980&gt;
 ## &lt;environment: namespace:stats&gt;</code></pre>
 <p>Trying to extract a “component” of that function results in the ever-classic error</p>
 <pre class="r"><code>sd[1]</code></pre>
@@ -340,7 +340,7 @@ I’m absolutely just learning and following <a href="https://jvns.ca/blog/2023/
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2023-06-10
+##  date     2023-06-17
 ##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
@@ -374,7 +374,7 @@ I’m absolutely just learning and following <a href="https://jvns.ca/blog/2023/
 ##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
 ##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
 ##  pillar        1.8.1   2022-08-19 [3] CRAN (R 4.2.1)
-##  pkgbuild      1.3.1   2021-12-20 [1] CRAN (R 4.1.2)
+##  pkgbuild      1.4.0   2022-11-27 [1] CRAN (R 4.1.2)
 ##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
 ##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
 ##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)

@@ -4,11 +4,11 @@ author: Jonathan Carroll
 date: '2023-06-10'
 categories:
   - julia
-  - R
+  - rstats
   - rust
 tags:
   - julia
-  - R
+  - rstats
   - rust
 slug: reflecting-on-macros
 editor_options:
