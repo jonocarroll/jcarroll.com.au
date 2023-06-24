@@ -29,6 +29,8 @@ body.dark {
 .switch {
   position: relative;
   display: inline-block;
+  margin-top: 10px;
+  margin-right: 10px;
   width: 60px;
   height: 34px;
 }
@@ -37,6 +39,7 @@ body.dark {
   opacity: 0;
   width: 0;
   height: 0;
+  transform: translateX(-26px);
 }
 
 .slider {
@@ -46,7 +49,7 @@ body.dark {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: lightblue;
+  background-color: skyblue;
   border-radius: 34px;
   transition: 0.6s;
 }
@@ -58,31 +61,42 @@ body.dark {
   width: 26px;
   left: 4px;
   bottom: 4px;
-  background-color: white;
+  background-color: #f9d71c;
   border-radius: 50%;
   transition: 0.4s;
 }
 
 input:checked + .slider {
-  background-color: #ffe51e;
+  background-color: #131862;
 }
 
 input:checked + .slider:before {
+  background-color: #131862;
   transform: translateX(26px);
+}
+
+input:checked + .slider .slider-icon {
+  stroke: white;
+  transform: translateX(-26px);
 }
 
 .slider-icon {
   transform: rotate(250deg);
+  stroke: skyblue;
   position: absolute;
   right: 6px;
   top: 7px;
 }
 
-.dark-mode .background {
+/*.dark-mode .background {
   background-color: #fff;
 }
 
 .dark-mode .overlay{
   background-color: rgba(255, 255, 255, 0);
   transition: all .18s ease-in;
+}*/
+
+.navbar-custom .nav:hover .navlinks-container {
+  background: #deecfe;
 }
