@@ -1,4 +1,4 @@
 [submodule "themes/beautifulhugo"]
 	path = themes/beautifulhugo
 	url = https://github.com/jonocarroll/beautifulhugo.git
-	branch = "darkmode"
+	branch = "testrebase"
