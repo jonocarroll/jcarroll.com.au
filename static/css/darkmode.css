@@ -1,0 +1,102 @@
+/* add a basic dark color combination */
+body.dark {
+  background-color: #222;
+  color: #f0f0f0;
+}
+
+/*
+    Copyright (c) 2020 - present, DITDOT Ltd. - MIT Licence
+    https://www.ditdot.hr/en
+    https://github.com/ditdot-dev/dark-mode-example
+*/
+
+.mode-switch {
+  grid-area: 2/3/3/5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  margin-bottom: .6em;
+}
+
+.mode-label {
+  font-size: 1rem;
+  margin-bottom: 16px;
+  visibility: var(--visibility);
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  margin-top: 10px;
+  margin-right: 10px;
+  width: 60px;
+  height: 34px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  transform: translateX(-26px);
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: skyblue;
+  border-radius: 34px;
+  transition: 0.6s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: #f9d71c;
+  border-radius: 50%;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #131862;
+}
+
+input:checked + .slider:before {
+  background-color: #131862;
+  transform: translateX(26px);
+}
+
+input:checked + .slider .slider-icon {
+  stroke: white;
+  transform: translateX(-26px);
+}
+
+.slider-icon {
+  transform: rotate(250deg);
+  stroke: skyblue;
+  position: absolute;
+  right: 6px;
+  top: 7px;
+}
+
+/*.dark-mode .background {
+  background-color: #fff;
+}
+
+.dark-mode .overlay{
+  background-color: rgba(255, 255, 255, 0);
+  transition: all .18s ease-in;
+}*/
+
+.navbar-custom .nav:hover .navlinks-container {
+  background: #deecfe;
+}
