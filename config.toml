@@ -58,6 +58,7 @@ rssLimit = 50
   gitlab = "jonocarroll"
   bitbucket = "jonocarroll"
   twitter = "carroll_jono"
+  mastodon = "fosstodon.org/@jonocarroll"
   #reddit = "username"
   linkedin = "carrolljonathan"
   #xing = "username"
