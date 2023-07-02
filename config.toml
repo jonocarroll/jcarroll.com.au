@@ -101,8 +101,8 @@ rssLimit = 50
 
 [[menu.main]]
     parent = "aboutme"
-    name = "CV"
-    url = "page/cv_jonathan_carroll"
+    name = "Curriculum Vitae"
+    url = "page/cv"
     weight = 2
 
 [[menu.main]]
