@@ -62,14 +62,18 @@ representing operations
       ⌈/∨⌊/
 ```
 
-I've seen APL solutions pop up in code-golf and they've just looked like madness, 
-which is fair. The linked video prompted me to look into some of their other videos 
-and they do a great job explaining the glyphs in APL and how they compare to other 
-languages. It turns out this madness is not nearly as hard to read as it looks. 
-The above glyphs represent "maximum" (⌈), "reduce" (/), "GCD" (∨), and "minimum" (⌊) 
-and those all correspond well to the problem statement. The function itself is ["point-free"](https://en.wikipedia.org/wiki/Tacit_programming) whereby the argument(s) 
-aren't specified at all; like saying `mean` rather than `mean(x)`. For the truly 
-adventurous: ['The Hideous Beauty of Point-Free Programming; An exercise in combinators using Haskell'](https://blog.devgenius.io/the-hideous-beauty-of-point-free-programming-e8608e3df09d)
+I've seen APL solutions pop up in codegolf and they've just looked like madness,
+which is probably fair. The linked video prompted me to look into some of their
+other videos and they do a great job explaining the glyphs in APL and how they
+compare to other languages. It turns out this madness is not nearly as hard to
+read as it looks. The above glyphs represent "maximum" (⌈), "reduce" (/), "GCD"
+(∨), and "minimum" (⌊) and those all correspond well to the problem statement.
+The function itself is
+["point-free"](https://en.wikipedia.org/wiki/Tacit_programming) whereby the
+argument(s) aren't specified at all; like saying `mean` rather than `mean(x)`.
+For the truly adventurous: ['The Hideous Beauty of Point-Free Programming; An
+exercise in combinators using
+Haskell'](https://blog.devgenius.io/the-hideous-beauty-of-point-free-programming-e8608e3df09d)
 
 I ended up diving deeper and deeper, and it all started to make more and more sense. 
 
