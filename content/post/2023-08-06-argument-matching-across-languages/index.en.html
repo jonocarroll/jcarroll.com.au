@@ -88,8 +88,8 @@ m</code></pre>
 ## [3,]    7    8    9</code></pre>
 <pre class="r"><code>m[i = 1, j = 2]</code></pre>
 <pre class="bg-success"><code>## [1] 2</code></pre>
-<pre class="r"><code>m[j = 2, i = 2]</code></pre>
-<pre class="bg-success"><code>## [1] 5</code></pre>
+<pre class="r"><code>m[j = 2, i = 1]</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
 <p><a href="https://fediscience.org/@tslumley/110670564210497040">Thomas Lumley</a>
 notes that</p>
 <blockquote>
@@ -233,8 +233,8 @@ rust_function(
           res
   }&#39;
 )</code></pre>
-<pre class="bg-info text-info"><code>## ℹ build directory: &#39;]8;;file:///tmp/RtmpDQq1uM/file1cbbd36b813b4/tmp/RtmpDQq1uM/file1cbbd36b813b4]8;;&#39;</code></pre>
-<pre class="bg-info text-info"><code>## ✔ Writing &#39;]8;;file:///tmp/RtmpDQq1uM/file1cbbd36b813b4/target/extendr_wrappers.R/tmp/RtmpDQq1uM/file1cbbd36b813b4/target/extendr_wrappers.R]8;;&#39;</code></pre>
+<pre class="bg-info text-info"><code>## ℹ build directory: &#39;]8;;file:///tmp/RtmpzaZSnS/file1cc12a50c2c42/tmp/RtmpzaZSnS/file1cc12a50c2c42]8;;&#39;</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Writing &#39;]8;;file:///tmp/RtmpzaZSnS/file1cc12a50c2c42/target/extendr_wrappers.R/tmp/RtmpzaZSnS/file1cc12a50c2c42/target/extendr_wrappers.R]8;;&#39;</code></pre>
 <p>This produces an R function that takes two arguments, <code>a</code> and <code>b</code> which I can call
 as if it was an R function</p>
 <pre class="r"><code>two_args(a = 42, b = &quot;forty-two&quot;)</code></pre>
@@ -251,7 +251,7 @@ other code internally</p>
 <pre class="r"><code>two_args</code></pre>
 <pre class="bg-success"><code>## function (a, b) 
 ## .Call(&quot;wrap__two_args&quot;, a, b, PACKAGE = &quot;librextendr1&quot;)
-## &lt;bytecode: 0x55ec5fbb1040&gt;</code></pre>
+## &lt;bytecode: 0x55d873cff7b8&gt;</code></pre>
 <p>I somewhat started out the idea for this blogpost as I was learning some Typescript and
 came across this <a href="https://github.com/gibbok/typescript-book#typescript-fundamental-comparison-rules">https://github.com/gibbok/typescript-book#typescript-fundamental-comparison-rules</a></p>
 <p><em>“Function parameters are compared by types, not by their names:”</em></p>

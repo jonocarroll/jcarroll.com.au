@@ -116,7 +116,7 @@ m <- matrix(1:9, 3, 3, byrow = TRUE)
 m
 
 m[i = 1, j = 2]
-m[j = 2, i = 2]
+m[j = 2, i = 1]
 ```
 
 
