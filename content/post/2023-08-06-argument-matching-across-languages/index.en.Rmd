@@ -31,14 +31,14 @@ knitr::opts_chunk$set(
 With Functional Programming, we write functions which take arguments and do something with 
 or based on those arguments. You might not think there's much to learn about given that 
 tiny description of "an argument to a function" but the syntax and mechanics of different 
-langugages is actually widely variable and intricate.
+languages is actually widely variable and intricate.
 
 <!--more-->
 
 With Functional Programming, we write functions which take arguments and do something with 
 or based on those arguments. You might not think there's much to learn about given that 
 tiny description of "an argument to a function" but the syntax and mechanics of different 
-langugages is actually widely variable and intricate.
+languages is actually widely variable and intricate.
 
 Let's say I have some function in R that takes three arguments, `x`, `y`, and `z`, 
 and just prints them out in a string in that order.

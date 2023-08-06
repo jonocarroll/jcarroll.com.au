@@ -24,12 +24,12 @@ editor_options:
 <p>With Functional Programming, we write functions which take arguments and do something with
 or based on those arguments. You might not think there’s much to learn about given that
 tiny description of “an argument to a function” but the syntax and mechanics of different
-langugages is actually widely variable and intricate.</p>
+languages is actually widely variable and intricate.</p>
 <!--more-->
 <p>With Functional Programming, we write functions which take arguments and do something with
 or based on those arguments. You might not think there’s much to learn about given that
 tiny description of “an argument to a function” but the syntax and mechanics of different
-langugages is actually widely variable and intricate.</p>
+languages is actually widely variable and intricate.</p>
 <p>Let’s say I have some function in R that takes three arguments, <code>x</code>, <code>y</code>, and <code>z</code>,
 and just prints them out in a string in that order.</p>
 <pre class="r"><code>r_fun &lt;- function(x, y, z) {
@@ -233,8 +233,8 @@ rust_function(
           res
   }&#39;
 )</code></pre>
-<pre class="bg-info text-info"><code>## ℹ build directory: &#39;]8;;file:///tmp/RtmpBsBRYt/file1cb2b27015ee57/tmp/RtmpBsBRYt/file1cb2b27015ee57]8;;&#39;</code></pre>
-<pre class="bg-info text-info"><code>## ✔ Writing &#39;]8;;file:///tmp/RtmpBsBRYt/file1cb2b27015ee57/target/extendr_wrappers.R/tmp/RtmpBsBRYt/file1cb2b27015ee57/target/extendr_wrappers.R]8;;&#39;</code></pre>
+<pre class="bg-info text-info"><code>## ℹ build directory: &#39;]8;;file:///tmp/RtmpDQq1uM/file1cbbd36b813b4/tmp/RtmpDQq1uM/file1cbbd36b813b4]8;;&#39;</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Writing &#39;]8;;file:///tmp/RtmpDQq1uM/file1cbbd36b813b4/target/extendr_wrappers.R/tmp/RtmpDQq1uM/file1cbbd36b813b4/target/extendr_wrappers.R]8;;&#39;</code></pre>
 <p>This produces an R function that takes two arguments, <code>a</code> and <code>b</code> which I can call
 as if it was an R function</p>
 <pre class="r"><code>two_args(a = 42, b = &quot;forty-two&quot;)</code></pre>
@@ -251,7 +251,7 @@ other code internally</p>
 <pre class="r"><code>two_args</code></pre>
 <pre class="bg-success"><code>## function (a, b) 
 ## .Call(&quot;wrap__two_args&quot;, a, b, PACKAGE = &quot;librextendr1&quot;)
-## &lt;bytecode: 0x55c5c3d52db8&gt;</code></pre>
+## &lt;bytecode: 0x55ec5fbb1040&gt;</code></pre>
 <p>I somewhat started out the idea for this blogpost as I was learning some Typescript and
 came across this <a href="https://github.com/gibbok/typescript-book#typescript-fundamental-comparison-rules">https://github.com/gibbok/typescript-book#typescript-fundamental-comparison-rules</a></p>
 <p><em>“Function parameters are compared by types, not by their names:”</em></p>
