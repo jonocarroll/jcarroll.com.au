@@ -1,0 +1,468 @@
+---
+title: Argument Matching Across Languages
+author: Jonathan Carroll
+date: '2023-08-06'
+categories:
+  - haskell
+  - julia
+  - rstats
+  - rust
+  - typescript
+tags:
+  - haskell
+  - julia
+  - rstats
+  - rust
+  - typescript
+slug: argument-matching-across-languages
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>With Functional Programming, we write functions which take arguments and do something with
+or based on those arguments. You might not think there’s much to learn about given that
+tiny description of “an argument to a function” but the syntax and mechanics of different
+langugages is actually widely variable and intricate.</p>
+<!--more-->
+<p>With Functional Programming, we write functions which take arguments and do something with
+or based on those arguments. You might not think there’s much to learn about given that
+tiny description of “an argument to a function” but the syntax and mechanics of different
+langugages is actually widely variable and intricate.</p>
+<p>Let’s say I have some function in R that takes three arguments, <code>x</code>, <code>y</code>, and <code>z</code>,
+and just prints them out in a string in that order.</p>
+<pre class="r"><code>r_fun &lt;- function(x, y, z) {
+  sprintf(&quot;arguments are: %s, %s, %s&quot;, x, y, z)
+}</code></pre>
+<p>Calling this function with good practices (specifying all the argument names in full)
+would look like this</p>
+<pre class="r"><code>r_fun(x = &quot;a&quot;, y = &quot;b&quot;, z = &quot;c&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;arguments are: a, b, c&quot;</code></pre>
+<p>I said “in full” because by default, R will happily do <em>partial</em> matching, so long
+as it can uniquely figure out which argument you mean</p>
+<pre class="r"><code>long_args &lt;- function(alphabet = &quot;a to z&quot;, altitude = 100) {
+  print(sprintf(&quot;alphabet: %s&quot;, alphabet))
+  print(sprintf(&quot;altitude: %d&quot;, altitude))
+}
+long_args(alphabet = &quot;[A-Z]&quot;, altitude = 50)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;alphabet: [A-Z]&quot;
+## [1] &quot;altitude: 50&quot;</code></pre>
+<p>In this case, both arguments start with <code>"al"</code> so it’s ambiguous up to there</p>
+<pre class="r"><code>long_args(al = &quot;letters&quot;)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in long_args(al = &quot;letters&quot;): argument 1 matches multiple formal arguments</code></pre>
+<p>but we only <em>need</em> to specify enough letters to disambiguate</p>
+<pre class="r"><code>long_args(alpha = &quot;LETTERS&quot;, alt = 200)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;alphabet: LETTERS&quot;
+## [1] &quot;altitude: 200&quot;</code></pre>
+<p>Relying on this behaviour is dangerous, and it’s recommended to turn on warnings
+when this happens with</p>
+<pre class="r"><code>options(warnPartialMatchArgs = TRUE)
+long_args(alpha = &quot;LETTERS&quot;, alt = 200)</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning in long_args(alpha = &quot;LETTERS&quot;, alt = 200): partial argument match of
+## &#39;alpha&#39; to &#39;alphabet&#39;</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning in long_args(alpha = &quot;LETTERS&quot;, alt = 200): partial argument match of
+## &#39;alt&#39; to &#39;altitude&#39;</code></pre>
+<pre class="bg-success"><code>## [1] &quot;alphabet: LETTERS&quot;
+## [1] &quot;altitude: 200&quot;</code></pre>
+<p>You don’t <em>have to</em> use argument names when calling the function, though - you can just rely on positional arguments</p>
+<pre class="r"><code>r_fun(&quot;a&quot;, &quot;b&quot;, &quot;c&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;arguments are: a, b, c&quot;</code></pre>
+<p>and this is <em>very</em> commonly done, despite it being less clear to what any of those
+refer, and runs the risk that the function changes argument ordering in an updated
+version. It works, though.</p>
+<p>Extensive sidenote: square-bracket matrix subsetting officially uses the (poorly? traditionally?)
+named arguments <code>i</code> and <code>j</code> as <code>[i, j]</code> but it actually entirely ignores them and uses
+positional arguments. The documentation (<code>?`[`</code>) does warn about this</p>
+<blockquote>
+<p>“Note that these operations do not match their index arguments in the standard way:
+argument names are ignored and positional matching only is used. So m[j = 2, i = 1] is
+equivalent to m[2, 1] and not to m[1, 2].”</p>
+</blockquote>
+<p>but it would be very easy to get bitten by it if one tried to use the names directly</p>
+<pre class="r"><code>m &lt;- matrix(1:9, 3, 3, byrow = TRUE)
+m</code></pre>
+<pre class="bg-success"><code>##      [,1] [,2] [,3]
+## [1,]    1    2    3
+## [2,]    4    5    6
+## [3,]    7    8    9</code></pre>
+<pre class="r"><code>m[i = 1, j = 2]</code></pre>
+<pre class="bg-success"><code>## [1] 2</code></pre>
+<pre class="r"><code>m[j = 2, i = 2]</code></pre>
+<pre class="bg-success"><code>## [1] 5</code></pre>
+<p><a href="https://fediscience.org/@tslumley/110670564210497040">Thomas Lumley</a>
+notes that</p>
+<blockquote>
+<p>“it used to be that no primitive functions did argument matching by name.”/” and “-’
+and switch() and some others still don’t. I’m not sure why”[” wasn’t changed in 2.11
+when a bunch of primitives got normal argument matching.”</p>
+</blockquote>
+<p>Worse still, perhaps - the <code>seq()</code> function creates a sequence of values. It has the
+formal arguments with defaults <code>from = 1</code> and <code>to = 1</code> so you can calculate</p>
+<pre class="r"><code>seq(from = 2, to = 5)</code></pre>
+<pre class="bg-success"><code>## [1] 2 3 4 5</code></pre>
+<p>or you can leverage the default of <code>from = 1</code></p>
+<pre class="r"><code>seq(to = 5)</code></pre>
+<pre class="bg-success"><code>## [1] 1 2 3 4 5</code></pre>
+<p>However, there are <strong>five</strong> “forms” in which
+you can provide arguments to this function and they behave differently. If you <em>only</em>
+specify the first argument unnamed, it treats this as <code>to</code> despite the first argument being <code>from</code></p>
+<pre class="r"><code>seq(5)</code></pre>
+<pre class="bg-success"><code>## [1] 1 2 3 4 5</code></pre>
+<p>which is extra strange, because if you <em>do</em> specify <code>to</code> with its ostensibly default value <code>1</code>, the sequence is backwards</p>
+<pre class="r"><code>seq(5, to = 1)</code></pre>
+<pre class="bg-success"><code>## [1] 5 4 3 2 1</code></pre>
+<p>Back to our function - a feature that makes R really neat is that you can specify
+the named arguments in <em>any order</em></p>
+<pre class="r"><code>r_fun(z = &quot;c&quot;, x = &quot;a&quot;, y = &quot;b&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;arguments are: a, b, c&quot;</code></pre>
+<p>If you don’t specify them by name, R will default to positions, so specifying just
+one (e.g. <code>z</code>) but leaving the rest unspecified, R will presume you want the others
+in positional order</p>
+<pre class="r"><code>r_fun(z = &quot;c&quot;, &quot;a&quot;, &quot;b&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;arguments are: a, b, c&quot;</code></pre>
+<p>Where it gets really interesting is you can go <em>back</em> to named arguments further along
+and again, R will figure out that you mean the remaining unnamed argument</p>
+<pre class="r"><code>r_fun(z = &quot;c&quot;, &quot;b&quot;, x = &quot;a&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;arguments are: a, b, c&quot;</code></pre>
+<p>This only holds if the function <em>doesn’t</em> use the ellipses <code>...</code> which
+captures “any other arguments” when calling the function, often to be passed
+on to another function. If the function signature has <code>...</code> then all the
+unnamed arguments are captured. This example function just
+combines any other arguments into a comma-separated string, if there
+are any (tested with the under-documented <code>...length()</code> which returns the number
+of arguments captured via <code>...</code>)</p>
+<pre class="r"><code>dot_f &lt;- function(a = 1, b = 2, ...) {
+  print(sprintf(&quot;named arguments: %s, %s&quot;, a, b))
+  if (...length()) {
+    print(sprintf(&quot;additional arguments: %s&quot;, toString(list(...))))
+  }
+}</code></pre>
+<p>You can call this with just the named arguments</p>
+<pre class="r"><code>dot_f(a = 3, b = 4)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 3, 4&quot;</code></pre>
+<p>or you can add more argument (no name required)</p>
+<pre class="r"><code>dot_f(a = 3, b = 4, 5)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 3, 4&quot;
+## [1] &quot;additional arguments: 5&quot;</code></pre>
+<p>As before, none of the names are really required, and we can add as
+many as we want</p>
+<pre class="r"><code>dot_f(3, 4, 5, 6, 7)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 3, 4&quot;
+## [1] &quot;additional arguments: 5, 6, 7&quot;</code></pre>
+<p>We <em>can</em> name them if we want</p>
+<pre class="r"><code>dot_f(a = 3, b = 4, blah = 5)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 3, 4&quot;
+## [1] &quot;additional arguments: 5&quot;</code></pre>
+<p>but here be danger, because those names can be <em>anything</em> and aren’t matched
+to the actual function, so this works (say, I misspelled an argument name <code>a</code> as <code>A</code>)</p>
+<pre class="r"><code>dot_f(A = 3, B = 4, 5)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 5, 2&quot;
+## [1] &quot;additional arguments: 3, 4&quot;</code></pre>
+<p>Notice that the additional arguments are the ones I named (not those in
+the function definition); the <code>5</code> has been positionally matched to <code>a</code>; and <code>b</code>
+has taken its default value of <code>2</code> because no other arguments were provided.</p>
+<p>We can still mix up the ordering of positions, provided everything else matches up</p>
+<pre class="r"><code>dot_f(3, b = 4, 5)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 3, 4&quot;
+## [1] &quot;additional arguments: 5&quot;</code></pre>
+<pre class="r"><code>dot_f(3, b = 4, 5, a = 2)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;named arguments: 2, 4&quot;
+## [1] &quot;additional arguments: 3, 5&quot;</code></pre>
+<p>The flexibility in all of this is what encouraged Joe Cheng to use R as an
+interface to HTML in the form of shiny, what he calls
+<a href="https://youtu.be/HpqLXB_TnpI?t=1723">“a bizzarely good host language”</a> (should link
+to the right timestamp) and he notes that other languages don’t let you do
+this sort of mixing up of named and positional arguments.</p>
+<p>Okay, that’s R - weird and fun, but a lot of flexibility.</p>
+<p>I saw <a href="https://thoughtbot.com/blog/rust-doesn-t-have-named-arguments-so-what">this post</a> mentioned in the <code>#rust</code> hashtag on Mastodon and had a look - it surprised me
+at first because I thought “what do you mean Rust doesn’t have named arguments?”…</p>
+<p>I’ve become so used to the inline help from VSCode when I’m writing Rust that I
+didn’t realise I wasn’t using named arguments.</p>
+<p>Here’s a function I wrote for my <a href="https://github.com/jonocarroll/rps.rs">toy rock-paper-scissors game in Rust</a></p>
+<pre class="rust"><code>fn play(a: Throw, b: Throw) -&gt; GameResult {
+    let result = match a.cmp(&amp;b) {
+        Ordering::Equal =&gt; GameResult::Tie,
+        Ordering::Greater =&gt; GameResult::YouWin,
+        Ordering::Less =&gt; GameResult::YouLose,
+    };
+
+    println!(&quot;{} {}&quot;, &quot;Result:&quot;.purple().bold(), result);
+
+    result
+}</code></pre>
+<p>It has arguments <code>a</code> and <code>b</code> because I did a terrible job naming them - I knew
+exactly how I planned to use them, so bad luck to anyone else.</p>
+<p>Calling that function further down in the code I have</p>
+<pre class="rust"><code>let user = val.user();
+let computer = Throw::computer();
+play(user, computer);</code></pre>
+<p>BUT what I see in the editor has the argument names, unless I switch off
+hints (which I have bound to holding Ctrl+Alt at the moment)</p>
+<div class="float">
+<img src="images/typehints_opt.gif" alt="Toggling inlay hints in VSCode" />
+<div class="figcaption">Toggling inlay hints in VSCode</div>
+</div>
+<p>So, I can’t just rearrange arguments in Rust?</p>
+<p>If I define a function with two arguments</p>
+<pre class="rust"><code>&gt;&gt; fn two_args(a: f64, b: &amp;str) -&gt; String {
+        let res = format!(&quot;all arguments: {a}, {b}&quot;);
+        res
+}</code></pre>
+<p>then I can call it</p>
+<pre class="rust"><code>&gt;&gt; two_args(42.0, &quot;forty-two&quot;)
+&quot;all arguments: 42, forty-two&quot;</code></pre>
+<p>Just swapping the arguments obviously fails because <code>42.0</code> isn’t a <code>&amp;str</code> and
+<code>"forty-two"</code> isn’t a <code>f64</code>. But there isn’t a way to say “the value for that
+argument is this”; I can’t use any of these</p>
+<pre class="rust"><code>two_args(a = 42.0, b = &quot;forty-two&quot;)
+two_args(a: 42.0, b: &quot;forty-two&quot;)
+
+two_args(b = &quot;forty-two&quot;, a = 42.0)
+two_args(b: &quot;forty-two&quot;, a: 42.0)</code></pre>
+<p>I suspect the fact that this was a surprise to me means I’m earlier in my Rust
+learning than I had thought - I clearly haven’t built anything that has
+functionality I didn’t directly need, because I haven’t had to worry about
+calling functions in strange ways yet.</p>
+<p>There is one loophole… time to break out another cool toy: <a href="https://github.com/extendr/rextendr">{rextendr}</a></p>
+<pre class="r"><code>library(rextendr)
+
+rust_function(
+  &#39;fn two_args(a: f64, b: &amp;str) -&gt; String {
+          let res = format!(&quot;all arguments: {a}, {b}&quot;);
+          res
+  }&#39;
+)</code></pre>
+<pre class="bg-info text-info"><code>## ℹ build directory: &#39;]8;;file:///tmp/RtmpBsBRYt/file1cb2b27015ee57/tmp/RtmpBsBRYt/file1cb2b27015ee57]8;;&#39;</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Writing &#39;]8;;file:///tmp/RtmpBsBRYt/file1cb2b27015ee57/target/extendr_wrappers.R/tmp/RtmpBsBRYt/file1cb2b27015ee57/target/extendr_wrappers.R]8;;&#39;</code></pre>
+<p>This produces an R function that takes two arguments, <code>a</code> and <code>b</code> which I can call
+as if it was an R function</p>
+<pre class="r"><code>two_args(a = 42, b = &quot;forty-two&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;all arguments: 42, forty-two&quot;</code></pre>
+<p>I can call it without argument names</p>
+<pre class="r"><code>two_args(42, &quot;forty-two&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;all arguments: 42, forty-two&quot;</code></pre>
+<p>and I <em>can</em> swap them</p>
+<pre class="r"><code>two_args(b = &quot;forty-two&quot;, a = 42)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;all arguments: 42, forty-two&quot;</code></pre>
+<p>This is just because the argument matching happens before the values get
+sent down to the Rust code - the function here is an R function that calls
+other code internally</p>
+<pre class="r"><code>two_args</code></pre>
+<pre class="bg-success"><code>## function (a, b) 
+## .Call(&quot;wrap__two_args&quot;, a, b, PACKAGE = &quot;librextendr1&quot;)
+## &lt;bytecode: 0x55c5c3d52db8&gt;</code></pre>
+<p>I somewhat started out the idea for this blogpost as I was learning some Typescript and
+came across this <a href="https://github.com/gibbok/typescript-book#typescript-fundamental-comparison-rules">https://github.com/gibbok/typescript-book#typescript-fundamental-comparison-rules</a></p>
+<p><em>“Function parameters are compared by types, not by their names:”</em></p>
+<pre class="typescript"><code>type X = (a: number) =&gt; void;
+type Y = (a: number) =&gt; void;
+let x: X = (j: number) =&gt; undefined;
+let y: Y = (k: number) =&gt; undefined;
+y = x; // Valid
+x = y; // Valid</code></pre>
+<p>which initially struck me as strange, and I needed to work through some examples in a live
+setting. On reflection, I think I see that this is exactly what I would specify in
+e.g. <a href="http://learnyouahaskell.com/types-and-typeclasses">Haskell</a> - “a function that takes a number”, not “a function with an argument named <code>a</code> which
+is a number”</p>
+<pre class="haskell"><code>x :: Float -&gt; Nothing</code></pre>
+<p>Because technically all functions in Haskell <a href="https://wiki.haskell.org/Currying">actually only take a single argument</a> (the notation <code>Int -&gt; Int -&gt; Int</code> reveals this
+fact nicely, but in practice the notation makes it feel like multiple arguments can be used)
+there is no way to “pass arguments by name” but there <em>is</em> a neat way to swap the order
+of arguments that a function expects to receive; <a href="https://hackage.haskell.org/package/base-4.18.0.0/docs/Prelude.html#v:flip"><code>flip</code></a></p>
+<pre class="haskell"><code>flip :: (a -&gt; b -&gt; c) -&gt; b -&gt; a -&gt; c
+
+&gt;&gt;&gt; flip (++) &quot;hello&quot; &quot;world&quot;
+&quot;worldhello&quot;
+
+-- or
+
+&gt;&gt;&gt; &quot;hello&quot; ++ &quot;world&quot;
+&quot;helloworld</code></pre>
+<p>Those of you familiar with R’s S3 dispatch functionality will perhaps note that
+the ‘first’ argument has a special role; it controls exactly which method will
+be called. If we had some function which was flexible in the sense that it could
+take several different ‘classes’ and do something different with them, we would
+write that as</p>
+<pre class="r"><code>flexi &lt;- function(a, b) {
+  UseMethod(&quot;flexi&quot;)
+}
+
+flexi.matrix &lt;- function(a, b) {
+  paste0(&quot;a is a matrix, b = &quot;, b)
+}
+
+flexi.data.frame &lt;- function(a, b) {
+  paste0(&quot;a is a data.frame, b = &quot;, b)
+}
+
+flexi.default &lt;- function(a, b) {
+  paste0(&quot;a is something else, b = &quot;, b)
+}</code></pre>
+<p>Now, depending on whether <code>a</code> is a <code>matrix</code>, a <code>data.frame</code>, or something else, one
+of the ‘methods’ will be called</p>
+<pre class="r"><code>flexi(a = matrix(), b = 7)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a is a matrix, b = 7&quot;</code></pre>
+<pre class="r"><code>flexi(a = data.frame(), b = 8)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a is a data.frame, b = 8&quot;</code></pre>
+<pre class="r"><code>flexi(a = 1, b = 9)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a is something else, b = 9&quot;</code></pre>
+<p>even if we swap the order of the arguments in the call</p>
+<pre class="r"><code>flexi(b = 3, a = matrix())</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a is a matrix, b = 3&quot;</code></pre>
+<p>S4 dispatch goes even further and dispatches based on more than just the class of
+the first argument. Stuart Lee has <a href="https://stuartlee.org/2019/07/09/s4-short-guide/">a great guide on S4</a>. The point is, you can do something
+different depending on what you pass to multiple arguments</p>
+<pre class="r"><code>s4flexi(matrix(), data.frame(), 7)
+s4flexi(matrix(), data.frame(), list())
+s4flexi(matrix(), data.frame(), NULL)</code></pre>
+<p>Julia has some of the most interesting argument parsing. I love the Haskell-like
+function declarations - so little boilerplate! We define some function <code>f</code> that
+takes two arguments</p>
+<pre class="julia"><code>f(a, b) = a + b</code></pre>
+<pre class="bg-success"><code>## f (generic function with 1 method)</code></pre>
+<pre class="julia"><code>f(4, 5)</code></pre>
+<pre class="bg-success"><code>## 9</code></pre>
+<p>Similar to the Rust situation, though - these aren’t named outside of the function body,
+so we can’t refer to them either in that order or reversed</p>
+<pre class="julia"><code>f(a = 4, b = 5)</code></pre>
+<pre class="julia bg-danger text-danger"><code>MethodError: no method matching f(; a=4, b=5)
+Closest candidates are:
+  f(!Matched::Any, !Matched::Any) at none:3 got unsupported keyword arguments &quot;a&quot;, &quot;b&quot;</code></pre>
+<p>The reason is that Julia uses the python-esque keyword argument syntax, where unnamed
+arguments appear first, followed by any keyword arguments following a <code>;</code>, so we can specify
+these correctly as</p>
+<pre class="julia"><code>f(; a, b) = a + b</code></pre>
+<pre class="bg-success"><code>## f (generic function with 2 methods)</code></pre>
+<pre class="julia"><code>f(a = 4, b = 6)</code></pre>
+<pre class="bg-success"><code>## 10</code></pre>
+<p>Julia is optionally typed, which means we can be flippant with the types here, or we
+can be very specific - we can specify that <code>a</code> should be an integer and <code>b</code> should be
+a string, and that produces a <em>different</em> method compared to what we already defined. In
+this case, I want to return a string with the two values</p>
+<pre class="julia"><code>f(; a::Int, b::String) = &quot;$a; $b&quot;</code></pre>
+<pre class="bg-success"><code>## f (generic function with 2 methods)</code></pre>
+<pre class="julia"><code>f(a = 42, b = &quot;life, universe, everything&quot;)</code></pre>
+<pre class="bg-success"><code>## &quot;42; life, universe, everything&quot;</code></pre>
+<p>Since these are now named, we can swap them</p>
+<pre class="julia"><code>f(b = &quot;L, U, E&quot;, a = 42)</code></pre>
+<pre class="bg-success"><code>## &quot;42; L, U, E&quot;</code></pre>
+<p>but what’s even more powerful is we can define a general method, and add type-specific methods
+for whatever combination of argument types we want; the first of these returns an integer,
+while the other two return strings</p>
+<pre class="julia"><code>g(a, b) = a + b</code></pre>
+<pre class="bg-success"><code>## g (generic function with 1 method)</code></pre>
+<pre class="julia"><code>g(a::Int, b::String) = &quot;unnamed int, string: $a; $b&quot;</code></pre>
+<pre class="bg-success"><code>## g (generic function with 2 methods)</code></pre>
+<pre class="julia"><code>g(a::String, b::Int) = &quot;unnamed string, int: $a; $b&quot;</code></pre>
+<pre class="bg-success"><code>## g (generic function with 3 methods)</code></pre>
+<p>Then, depending on what types we provide in each argument, a different method is called</p>
+<pre class="julia"><code>g(3, 2)</code></pre>
+<pre class="bg-success"><code>## 5</code></pre>
+<pre class="julia"><code>g(&quot;abc&quot;, 123)</code></pre>
+<pre class="bg-success"><code>## &quot;unnamed string, int: abc; 123&quot;</code></pre>
+<pre class="julia"><code>g(123, &quot;abc&quot;)</code></pre>
+<pre class="bg-success"><code>## &quot;unnamed int, string: 123; abc&quot;</code></pre>
+<p>Similar to S4, but so easy to declare and use! Of course, this doesn’t work if we want these
+to be named since that would be ambiguous.</p>
+<p>As I’m slowly learning APL, I’ve found it interesting that there’s a well-known approach of
+writing <a href="https://en.wikipedia.org/wiki/Tacit_programming">“point-free” (“tacit”)</a> functions which don’t specify arguments at all.</p>
+<p>Last of all, I’ve had the pleasure of dealing with C this week including passing a <em>pointer</em>
+to some object into a function, in which case the value <em>outside of the function</em> is updated.
+That’s a whole other post I’m working on.</p>
+<p>How does your favourite language use arguments? Let me know! I can be found on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-08-06
+##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  assertthat    0.2.1   2019-03-21 [3] CRAN (R 4.0.1)
+##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  brio          1.1.3   2021-11-30 [1] CRAN (R 4.1.2)
+##  bslib         0.4.1   2022-11-02 [3] CRAN (R 4.2.2)
+##  cachem        1.0.6   2021-08-19 [3] CRAN (R 4.2.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.4.1   2022-09-23 [3] CRAN (R 4.2.1)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  DBI           1.1.3   2022-06-18 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.30  2022-10-18 [3] CRAN (R 4.2.1)
+##  dplyr         1.0.10  2022-09-01 [3] CRAN (R 4.2.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.18    2022-11-07 [3] CRAN (R 4.2.2)
+##  fansi         1.0.3   2022-03-24 [3] CRAN (R 4.2.0)
+##  fastmap       1.1.0   2021-01-25 [3] CRAN (R 4.2.0)
+##  fs            1.5.2   2021-12-08 [3] CRAN (R 4.1.2)
+##  generics      0.1.3   2022-07-05 [3] CRAN (R 4.2.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.3   2022-07-18 [3] CRAN (R 4.2.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.3   2022-10-21 [3] CRAN (R 4.2.1)
+##  JuliaCall     0.17.5  2022-09-08 [1] CRAN (R 4.1.2)
+##  knitr         1.40    2022-08-24 [3] CRAN (R 4.2.1)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pillar        1.8.1   2022-08-19 [3] CRAN (R 4.2.1)
+##  pkgbuild      1.4.0   2022-11-27 [1] CRAN (R 4.1.2)
+##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.0   2022-10-26 [3] CRAN (R 4.2.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.2   2022-10-26 [3] CRAN (R 4.2.2)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rextendr    * 0.3.0   2023-05-30 [1] CRAN (R 4.1.2)
+##  rlang         1.0.6   2022-09-24 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.18    2022-11-09 [3] CRAN (R 4.2.2)
+##  rprojroot     2.0.3   2022-04-02 [1] CRAN (R 4.1.2)
+##  rstudioapi    0.14    2022-08-22 [3] CRAN (R 4.2.1)
+##  sass          0.4.2   2022-07-16 [3] CRAN (R 4.2.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.8   2022-07-11 [3] CRAN (R 4.2.1)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  tibble        3.1.8   2022-07-22 [3] CRAN (R 4.2.2)
+##  tidyselect    1.2.0   2022-10-10 [3] CRAN (R 4.2.1)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  utf8          1.2.2   2021-07-24 [3] CRAN (R 4.2.0)
+##  vctrs         0.5.2   2023-01-23 [1] CRAN (R 4.1.2)
+##  withr         2.5.0   2022-03-03 [3] CRAN (R 4.2.0)
+##  xfun          0.34    2022-10-18 [3] CRAN (R 4.2.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.6   2022-10-18 [3] CRAN (R 4.2.1)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
