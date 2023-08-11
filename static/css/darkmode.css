@@ -103,7 +103,7 @@ input:checked + .slider .slider-icon {
 
 @media (prefers-color-scheme: dark) {
    code {
-    background-color: #ccc;
+    background-color: #222;
     color: #fbb;
   }
   pre code {
