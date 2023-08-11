@@ -257,7 +257,7 @@ but addition (`+`) is symmetric (commutative) so we can just as easily write
 ```
 vec + 0 => 0 + vec => 0 + x is at address 0[vec]
 vec + 1 => 1 + vec => 1 + x is at address 1[vec]
-vec + 1 => 1 + vec => 1 + x is at address 2[vec]
+vec + 2 => 2 + vec => 2 + x is at address 2[vec]
 ...
 vec + 5 => 5 + vec => 5 + x is at address 5[vec]
 ```

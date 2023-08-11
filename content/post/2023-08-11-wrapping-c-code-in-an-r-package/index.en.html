@@ -78,7 +78,7 @@ we would write</p>
 <pre class="r"><code>.row_names_info</code></pre>
 <pre class="bg-success"><code>## function (x, type = 1L) 
 ## .Internal(shortRowNames(x, type))
-## &lt;bytecode: 0x5593dd927890&gt;
+## &lt;bytecode: 0x55bd52835890&gt;
 ## &lt;environment: namespace:base&gt;</code></pre>
 <p>but we can’t see any deeper unless we ask where that C code lives. I recommend using <code>pryr::show_c_source()</code> (as I did <a href="https://jcarroll.com.au/2022/04/22/where-for-loop-art-thou/">in a previous post</a>) to identify the C code for these, e.g. </p>
 <pre class="r"><code>pryr::show_c_source(.Internal(shortRowNames(mtcars)))</code></pre>
@@ -202,7 +202,7 @@ vec[5] is at address x + 5 =&gt; vec + 5</code></pre>
 <p>but addition (<code>+</code>) is symmetric (commutative) so we can just as easily write</p>
 <pre><code>vec + 0 =&gt; 0 + vec =&gt; 0 + x is at address 0[vec]
 vec + 1 =&gt; 1 + vec =&gt; 1 + x is at address 1[vec]
-vec + 1 =&gt; 1 + vec =&gt; 1 + x is at address 2[vec]
+vec + 2 =&gt; 2 + vec =&gt; 2 + x is at address 2[vec]
 ...
 vec + 5 =&gt; 5 + vec =&gt; 5 + x is at address 5[vec]</code></pre>
 <p>and it all works out… <code>5[obj]</code> is valid, and corresponds to the same address as <code>obj[5]</code>.</p>
