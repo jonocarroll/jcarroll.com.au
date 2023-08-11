@@ -100,3 +100,13 @@ input:checked + .slider .slider-icon {
 .navbar-custom .nav:hover .navlinks-container {
   background: #deecfe;
 }
+
+@media (prefers-color-scheme: dark) {
+   code {
+    background-color: #ccc;
+    color: #fbb;
+  }
+  pre code {
+    color: #000;
+  }
+}
