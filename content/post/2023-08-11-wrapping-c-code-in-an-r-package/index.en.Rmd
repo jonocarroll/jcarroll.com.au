@@ -262,7 +262,7 @@ vec + 1 => 1 + vec => 1 + x is at address 2[vec]
 vec + 5 => 5 + vec => 5 + x is at address 5[vec]
 ```
 
-and it all works out... `5[x]` is valid, and corresponds to the same address as `x[5]`.
+and it all works out... `5[obj]` is valid, and corresponds to the same address as `obj[5]`.
 
 Back to our function. If only one argument is passed in (the name of the program) then the usage information is printed, otherwise the next argument is used to set the upper bound on the length of a 
 side of the triangle, converting it from a string to an int with `atoi`
@@ -309,7 +309,8 @@ This isn't _efficient_ at all - there will be lots of `0` values, but this is a
 simple program.
 
 The last section of the code just loops back through all of `a`, `b`, and `c` and when 
-it finds a non-zero element, it prints it
+it finds a non-zero element, it prints it, along with the sum `a + b + c` (the value in 
+`triangles[a][b][c]`)
 
 ```c
   printf("%4s\t%4s\t%4s\t%4s\n", "a", "b", "c", "sum");
@@ -392,6 +393,8 @@ void calculate_sum(int maxval, int ****tri_sum) {
  calculate_sum(maxval, &triangles);
  
 ```
+
+Yes, that's a pointer to a pointer to a pointer to a pointer (!!!!).
 
 The gotchas I encountered here were that 
 

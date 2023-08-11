@@ -78,7 +78,7 @@ we would write</p>
 <pre class="r"><code>.row_names_info</code></pre>
 <pre class="bg-success"><code>## function (x, type = 1L) 
 ## .Internal(shortRowNames(x, type))
-## &lt;bytecode: 0x56405ae48890&gt;
+## &lt;bytecode: 0x5593dd927890&gt;
 ## &lt;environment: namespace:base&gt;</code></pre>
 <p>but we can’t see any deeper unless we ask where that C code lives. I recommend using <code>pryr::show_c_source()</code> (as I did <a href="https://jcarroll.com.au/2022/04/22/where-for-loop-art-thou/">in a previous post</a>) to identify the C code for these, e.g. </p>
 <pre class="r"><code>pryr::show_c_source(.Internal(shortRowNames(mtcars)))</code></pre>
@@ -205,7 +205,7 @@ vec + 1 =&gt; 1 + vec =&gt; 1 + x is at address 1[vec]
 vec + 1 =&gt; 1 + vec =&gt; 1 + x is at address 2[vec]
 ...
 vec + 5 =&gt; 5 + vec =&gt; 5 + x is at address 5[vec]</code></pre>
-<p>and it all works out… <code>5[x]</code> is valid, and corresponds to the same address as <code>x[5]</code>.</p>
+<p>and it all works out… <code>5[obj]</code> is valid, and corresponds to the same address as <code>obj[5]</code>.</p>
 <p>Back to our function. If only one argument is passed in (the name of the program) then the usage information is printed, otherwise the next argument is used to set the upper bound on the length of a
 side of the triangle, converting it from a string to an int with <code>atoi</code></p>
 <pre class="c"><code>  if ( argc != 2 ) {
@@ -238,7 +238,8 @@ assign the sum of these to an element in <code>triangles</code> indexed by <code
 <p>This isn’t <em>efficient</em> at all - there will be lots of <code>0</code> values, but this is a
 simple program.</p>
 <p>The last section of the code just loops back through all of <code>a</code>, <code>b</code>, and <code>c</code> and when
-it finds a non-zero element, it prints it</p>
+it finds a non-zero element, it prints it, along with the sum <code>a + b + c</code> (the value in
+<code>triangles[a][b][c]</code>)</p>
 <pre class="c"><code>  printf(&quot;%4s\t%4s\t%4s\t%4s\n&quot;, &quot;a&quot;, &quot;b&quot;, &quot;c&quot;, &quot;sum&quot;);
   printf(&quot;   -------------------------\n&quot;);
   for (c = 1; c &lt;= maxval; c++) {
@@ -306,6 +307,7 @@ reference</p>
  printf(&quot;calling external sum\n&quot;);
  calculate_sum(maxval, &amp;triangles);
  </code></pre>
+<p>Yes, that’s a pointer to a pointer to a pointer to a pointer (!!!!).</p>
 <p>The gotchas I encountered here were that</p>
 <pre class="c"><code>*tri_sum[a][b][c]</code></pre>
 <p>would be a pointer to the <em>indexed</em> object, so I needed</p>
