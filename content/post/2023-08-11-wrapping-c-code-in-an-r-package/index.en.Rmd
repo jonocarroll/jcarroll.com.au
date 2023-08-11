@@ -1,0 +1,773 @@
+---
+title: Wrapping C Code in an R Package
+author: Jonathan Carroll
+date: '2023-08-11'
+slug: wrapping-c-code-in-an-r-package
+categories:
+  - rstats
+  - c
+tags:
+  - rstats
+  - c
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+Your collaborator says to you "I have some code I'd like to distribute to people who 
+will probably work in R most of the time. I don't write R, but I write C. Can you package 
+this up for me?" so you have a few options: re-write the code in R, package up the C code 
+and make it _available_ in R, or say no. I decided to try out the second of these, and this 
+post details how I achieved that.
+
+<!--more-->
+
+Your collaborator says to you "I have some code I'd like to distribute to people who 
+will probably work in R most of the time. I don't write R, but I write C. Can you package 
+this up for me?" so you have a few options: re-write the code in R, package up the C code 
+and make it _available_ in R, or say no. I decided to try out the second of these, and this 
+post details how I achieved that.
+
+Before we even start, [this](https://blog.davisvaughan.com/posts/2019-03-02-now-you-c-me/) is an 
+excellent post summarising many of the finer points involved here - go read that! Then, 
+read some of [\@coolbutuseless'](https://github.com/coolbutuseless) [various](https://github.com/coolbutuseless/simplecall) repositories [demonstrating](https://github.com/coolbutuseless/callme) how to wrap C code into R packages. These, 
+and many others, go much deeper into how to achieve this, but I'm going to detail what 
+I did because a) I'll want to remember, later; b) I had enough trouble piecing together what 
+I needed between these excellent posts and some older, possibly out of date posts; and c) I 
+_did_ build some functionality beyond what was done in those straightforward examples.
+
+Those of you who know R really well probably know that the language itself is in no small part 
+[written in C](https://github.com/wch/r-source/tree/trunk/src/main). Many packages do the 
+same, usually for performance reasons. This becomes most apparent if you install a package 
+"from source" and see a lot of this mess fly past in your console
+
+```
+gcc -I"/usr/share/R/include" -DNDEBUG -I./pkg/    -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-4A2Reg/r-base-4.1.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -c file1.c -o file1.o
+gcc -I"/usr/share/R/include" -DNDEBUG -I./pkg/    -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-4A2Reg/r-base-4.1.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -c file2.c -o file2.o
+gcc -I"/usr/share/R/include" -DNDEBUG -I./pkg/    -fvisibility=hidden -fpic  -g -O2 -ffile-prefix-map=/build/r-base-4A2Reg/r-base-4.1.2=. -fstack-protector-strong -Wformat -Werror=format-security -Wdate-time -D_FORTIFY_SOURCE=2 -g  -c pkg.c -o pkg.o
+gcc -shared -L/usr/lib/R/lib -Wl,-Bsymbolic-functions -flto=auto -ffat-lto-objects -flto=auto -Wl,-z,relro -o pkg.so file1.o file2.o pkg.o -L/usr/lib/R/lib -lR
+```
+
+Other languages are supported, including Fortran (yet to be superseded for numerical libraries), 
+C++, Rust, and various others. You can usually dig into the source of these if you can 
+track down where they come from. When debugging a function call, R is happy to step through 
+individual lines of R code. Try the following
+
+```r
+debugonce(seq.default)
+seq(5)
+```
+
+and step through the lines of `seq.default` until it reaches `1L:from` (yes, `seq(from = x)` produces the values `1` to `from`... sigh) where it returns that value as 
+
+```{r, eval = FALSE, class.source = "bg-success"}
+exiting from: seq.default(5)
+[1] 1 2 3 4 5
+```
+
+When the function involves C code, though, R can't step through that because it's 
+compiled. One of the most common ways to hit that limitation is when a function 
+calls either `.Internal()` or `.Primitive()`. 
+
+I went looking for a function containing one of these (there are plenty) and found `.row_names_info`
+
+```{r}
+# number of rownames
+.row_names_info(mtcars)
+
+# the rownames themselves
+.row_names_info(mtcars, type = 0)
+```
+
+if we wanted to see what `.row_names_info()` does
+we would write
+
+```{r}
+.row_names_info
+```
+
+but we can't see any deeper unless we ask where that C code lives. I recommend using `pryr::show_c_source()` (as I did [in a previous post](https://jcarroll.com.au/2022/04/22/where-for-loop-art-thou/)) to identify the C code for these, e.g. 
+
+```r
+pryr::show_c_source(.Internal(shortRowNames(mtcars)))
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+shortRowNames is implemented by do_shortRowNames with op = 0
+```
+
+which opens a [GitHub search of a copy of the R source](https://github.com/search?q=SEXP%20attribute_hidden%20do_shortRowNames+repo:wch/r-source&type=Code) in a browser. The file we want is [`attrib.c`](https://github.com/wch/r-source/blob/018816d40299e027d5d16832916019a65c1d6af2/src/main/attrib.c#L190) and contains the C code
+
+```
+SEXP do_shortRowNames(SEXP call, SEXP op, SEXP args, SEXP env)
+{
+    /* return  n if the data frame 'vec' has c(NA, n) rownames;
+     *	       nrow(.) otherwise;  note that data frames with nrow(.) == 0
+     *		have no row.names.
+     ==> is also used in dim.data.frame() */
+
+    checkArity(op, args);
+    SEXP s = getAttrib0(CAR(args), R_RowNamesSymbol), ans = s;
+    int type = asInteger(CADR(args));
+
+    if( type < 0 || type > 2)
+	error(_("invalid '%s' argument"), "type");
+
+    if(type >= 1) {
+	int n = (isInteger(s) && LENGTH(s) == 2 && INTEGER(s)[0] == NA_INTEGER)
+	    ? INTEGER(s)[1] : (isNull(s) ? 0 : LENGTH(s));
+	ans = ScalarInteger((type == 1) ? n : abs(n));
+    }
+    return ans;
+}
+```
+
+Fully interpreting this is beyond the scope of this post, but the links at the start of this 
+post cover most of what's not plain C code here.
+
+I won't share my collaborator's exact code, but I can write enough C that I can create 
+something with all the relevant features. 
+
+Let's calculate [Pythagorean Triples](https://en.wikipedia.org/wiki/Pythagorean_triple)! These
+are sets of 3 integers (whole numbers) `a`, `b`, and `c` such that a triangle with sides of those 
+lengths will be a right-triangle (contains a 90 degree / right-angle). These have 
+the property that $$a^2 + b^2 = c^2$$
+
+![Pythagorean theorem https://en.wikipedia.org/wiki/Pythagorean_theorem](images/pythagoras.png)
+
+The smallest of these is `3, 4, 5` because $$3^2 + 4^2 = 9 + 16 = 25 = 5^2$$
+
+Generating these just happens to fit the use-case I'm emulating, plus I have a whole other 
+blog post coming up about these (stay tuned!).
+
+Some C code to generate these up to some maximum side-length, written similar to 
+the code I received, is
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+int main (int argc, char *argv[]) {
+
+  int a, b, c;
+  int maxval;
+  int ***triangles;
+
+  if ( argc != 2 ) {
+    printf("Usage: triangle max_side_length\n");
+    exit(EXIT_FAILURE);
+  }
+
+  maxval = atoi( argv[1] );
+
+  triangles = (int ***) malloc (maxval * sizeof(int **));
+  for (a = 0; a < maxval; ++a) {
+    triangles[a] = (int **) malloc (maxval * sizeof(int *));
+    for (b = 0; b < maxval; ++b) {
+      triangles[a][b] = (int *) malloc (maxval * sizeof(int));
+      for (c = 0; c < maxval; ++c) {
+        triangles[a][b][c] = 0;
+      }
+    }
+  }
+
+  for (c = 1; c <= maxval; c++) {
+    for (b = 1; b <= c; b++)
+      for (a = 1; a <= b; a++)
+        if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+          triangles[a][b][c] = a + b + c;
+        }
+  }
+
+  printf("%4s\t%4s\t%4s\t%4s\n", "a", "b", "c", "sum");
+  printf("   -------------------------\n");
+  for (c = 1; c <= maxval; c++) {
+    for (b = 1; b <= c; b++)
+      for (a = 1; a <= b; a++)
+        if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+          printf("%4i\t%4i\t%4i\t%4i\n", a, b, c, triangles[a][b][c]);
+          }
+      }
+
+  exit(EXIT_SUCCESS);
+
+}
+```
+
+I won't make this an entire C tutorial, but the main pieces are:
+
+Load some libraries for printing to screen, doing math, ...
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+```
+
+Define an entrypoint function (the thing that will run when the code is run)
+which takes some number of character arguments `argv`, the first of which is the 
+compiled name of the program itself
+
+```c
+int main (int argc, char *argv[]) {
+```
+
+Define some variables, the most significant being `triangles` which is denoted as 
+a pointer to a pointer to a pointer (!)
+
+```c
+  int a, b, c;
+  int maxval;
+  int ***triangles;
+```
+
+That's a lot of redirection, but it's just creating a reference to a 3-dimensional array. 
+
+Side-note: 0-indexed languages actually make a bit more sense when working with pointer math 
+because a "vector" of memory addresses really only needs to "point" to the starting address, 
+then every element is some offset away from that, so the first element of some vector `vec` 
+might have some address `x`, but you can access that with `vec[0]`. You can access the next 
+element with `vec[1]` which means "offset 1 position from `x`, the starting address." You can access 
+the fifth value by offsetting 4 positions, so `vec[4]`. 
+
+One of my favourite bits of C trivia is that this syntactic sugar of using square brackets 
+to identify positions actually translates to 
+
+```
+vec[0] is at address x + 0 => vec + 0
+vec[1] is at address x + 1 => vec + 1
+vec[2] is at address x + 2 => vec + 2
+...
+vec[5] is at address x + 5 => vec + 5
+```
+
+but addition (`+`) is symmetric (commutative) so we can just as easily write
+
+```
+vec + 0 => 0 + vec => 0 + x is at address 0[vec]
+vec + 1 => 1 + vec => 1 + x is at address 1[vec]
+vec + 1 => 1 + vec => 1 + x is at address 2[vec]
+...
+vec + 5 => 5 + vec => 5 + x is at address 5[vec]
+```
+
+and it all works out... `5[x]` is valid, and corresponds to the same address as `x[5]`.
+
+Back to our function. If only one argument is passed in (the name of the program) then the usage information is printed, otherwise the next argument is used to set the upper bound on the length of a 
+side of the triangle, converting it from a string to an int with `atoi`
+
+```c
+  if ( argc != 2 ) {
+    printf("Usage: triangle max_side_length\n");
+    exit(EXIT_FAILURE);
+  }
+
+  maxval = atoi( argv[1] );
+```
+
+Next, the array is allocated (and assigned a default value of 0)
+
+```c
+  triangles = (int ***) malloc (maxval * sizeof(int **));
+  for (a = 0; a < maxval; ++a) {
+    triangles[a] = (int **) malloc (maxval * sizeof(int *));
+    for (b = 0; b < maxval; ++b) {
+      triangles[a][b] = (int *) malloc (maxval * sizeof(int));
+      for (c = 0; c < maxval; ++c) {
+        triangles[a][b][c] = 0;
+      }
+    }
+  }
+```
+
+and then, finally, we do the 'calculation' which just involves stepping through 
+every value, and if our criteria of $$a^2 + b^2 == c^2$$ is met, we 
+assign the sum of these to an element in `triangles` indexed by `a`, `b`, and `c`
+
+```c
+  for (c = 1; c <= maxval; c++) {
+    for (b = 1; b <= c; b++)
+      for (a = 1; a <= b; a++)
+        if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+          triangles[a][b][c] = a + b + c;
+        }
+  }
+```
+
+This isn't _efficient_ at all - there will be lots of `0` values, but this is a 
+simple program.
+
+The last section of the code just loops back through all of `a`, `b`, and `c` and when 
+it finds a non-zero element, it prints it
+
+```c
+  printf("%4s\t%4s\t%4s\t%4s\n", "a", "b", "c", "sum");
+  printf("   -------------------------\n");
+  for (c = 1; c <= maxval; c++) {
+    for (b = 1; b <= c; b++)
+      for (a = 1; a <= b; a++)
+        if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+          printf("%4i\t%4i\t%4i\t%4i\n", a, b, c, triangles[a][b][c]);
+          }
+      }
+```
+
+With all of this saved as [`triangles.c`](https://github.com/jonocarroll/triangles/blob/main/inst/src/triangles.c) we can compile and run this code in a terminal
+
+```
+$ cc -O -o triangle triangles.c
+
+$ ./triangle 
+Usage: triangle max_side_length
+
+$ ./triangle 16
+   a	   b	   c	 sum
+   -------------------------
+   3	   4	   5	  12
+   6	   8	  10	  24
+   5	  12	  13	  30
+   9	  12	  15	  36
+
+```
+
+Woot! You can even check that it has worked: $$9^2 + 12^2 = 81 + 144 = 225 = 15^2$$
+
+Back to the goal of this post - how do we get R to run that? We have some C code, now what?
+
+First, I created an R package. I like using RStudio for this as it auto-generates a lot of 
+the structure I want. It does, however, create an example R file `R/hello.R` (and corresponding
+`man/hello.Rd` page) so I delete those. I also delete the `NAMESPACE` because I'm going to 
+use {roxygen} to generate a new one. I check 'Generate documentation with Roxygen' in the
+Build tools menu, making sure to select 'Build & Reload' (which should be a default, no?)
+
+![Generate documentation with Roxygen](images/generate.png)
+
+and build my empty package. 
+
+I *love* the {usethis} package for building packages, and there's support there for what 
+we're doing, too! `usethis::use_c()` sets up some structure and adds the required boilerplate 
+so that Roxygen knows we're using C code. This does add a `src/code.c` file we can delete and 
+in its place we can put our own C code.
+
+If you read the links at the start of this post, you'll recognise that this C code isn't quite 
+ready to be used in an R package, though - we need to be able to send an R object (a `SEXP`) to this
+C code, not a `char`. More importantly, the functionality of the C code is all wrapped 
+up in the `main()` entrypoint function - it would be great if that was refactored out to 
+another function that could be called from `main()` but also from an R-facing function.
+
+I communicated this to my colleague and they agreed we could refactor that, but they 
+want to still run the C code from the command line, so we can't just put *everything* in our 
+R-facing function. The actual processing in the code could go to a new function 
+that doesn't return anything, but does update the 3-dimensional array passed by 
+reference
+
+```c
+void calculate_sum(int maxval, int ****tri_sum) {
+
+  int a, b, c;
+
+  for (c = 1; c <= maxval; c++) {
+    for (b = 1; b <= c; b++)
+      for (a = 1; a <= b; a++)
+        if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+          (*tri_sum)[a][b][c] = a + b + c;
+        }
+  }
+}
+
+[... in main()]
+
+ printf("calling external sum\n");
+ calculate_sum(maxval, &triangles);
+ 
+```
+
+The gotchas I encountered here were that 
+
+```c
+*tri_sum[a][b][c]
+```
+
+would be a pointer to the _indexed_ object, so I needed
+
+```c
+(*tri_sum)[a][b][c]
+```
+
+and `&triangles` sends a reference to the `triangles` object.
+
+Compiling and running [this](https://github.com/jonocarroll/triangles/blob/main/inst/src/triangles1.c) shows that we've successfully refactored out the main functionality
+
+```
+$ cc -O -o triangle1 triangles1.c
+
+$ ./triangle1 20
+calling external sum
+   a	   b	   c	 sum
+   -------------------------
+   3	   4	   5	  12
+   6	   8	  10	  24
+   5	  12	  13	  30
+   9	  12	  15	  36
+   8	  15	  17	  40
+  12	  16	  20	  48
+
+```
+
+But this still isn't _quite_ what we need for R... we need to pass and return `SEXP`s. 
+
+Rather than disrupt the runnable C code, we can add some additional R-specific code. That 
+requires the R-related libraries
+
+```c
+#include <R.h>
+#include <Rinternals.h>
+```
+
+(keeping in mind that these are _required_ if the user is compiling all of this code - it's 
+possible, but perhaps we'll comment these out when just using the C code standalone).
+
+We need a function that takes a `SEXP` (our maximum value) and returns a `SEXP` - this is 
+required, but so far we're just printing to screen. We'll return _something_ for now. A 
+function that meets these criteria and calls the new `calculate_sum()` could [be](https://github.com/jonocarroll/triangles/blob/main/inst/src/triangles2.c)
+
+```c
+SEXP C_triangles(SEXP maximum) {
+
+  int a, b, c;
+  int ***triangles;
+
+  int maxval = * INTEGER(maximum);
+
+  triangles = (int ***) malloc (maxval * sizeof(int **));
+  for (a = 0; a < maxval; ++a) {
+    triangles[a] = (int **) malloc (maxval * sizeof(int *));
+    for (b = 0; b < maxval; ++b) {
+      triangles[a][b] = (int *) malloc (maxval * sizeof(int));
+      for (c = 0; c < maxval; ++c) {
+        triangles[a][b][c] = 0;
+      }
+    }
+  }
+
+  printf("calling C function to calc sum\n");
+  calculate_sum(maxval, &triangles);
+
+  printf("%4s\t%4s\t%4s\t%4s\n", "a", "b", "c", "sum");
+  printf("   -------------------------\n");
+  for (c = 1; c < maxval; ++c) {
+    for (b = 1; b <= c; ++b)
+      for (a = 1; a <= b; ++a)
+        if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+          printf("%4i\t%4i\t%4i\t%4i\n", a, b, c, triangles[a][b][c]);
+        }
+  }
+
+  SEXP result = PROTECT(allocVector(LGLSXP, 1));
+  LOGICAL(result)[0] = 1;
+  UNPROTECT(1);
+
+  return(result);
+
+}
+```
+
+This is very similar to what's in `main()` - it still performs the allocation then 
+calls out to the calculating code, then prints the result. The only new part is 
+creating a logical `result` object (`1` == `TRUE`) so that there's something to return.
+
+You can read about `PROTECT` which guards against garbage collection in the [R-exts manual](https://cran.r-project.org/doc/manuals/r-release/R-exts.html#Garbage-Collection). 
+
+The new functions called here such as `allocVector` come from the Rinternals library and 
+are macros for functions starting with `Rf_` - i.e. `Rf_allocVector`. I had some issues initially 
+because I followed some guides which used `#define R_NO_REMAP`. Keep in mind that if you use 
+that (so that library functions aren't remapped) you will need to use the `Rf_` versions 
+of these functions. I ended up removing the `#define` myself, but I'm not sure if that will 
+bite me later.
+
+This also needs to convert the `SEXP` input `maximum` to a C `int` via `* INTEGER(maximum)`.
+
+We now have something that _should_ work in our R package! Saving this as `src/triangles.c` 
+we can add the R interface as `R/triangles.R` containing just
+
+```r
+#' triangles
+#'
+#' @export
+triangles <- function(maxval) {
+  .Call("C_triangles", as.integer(maxval))
+}
+```
+
+where we definitely only send an integer to the C function.
+
+Build the package, which compiles the code, and load the package
+
+```r
+library(triangles)
+triangles(20)
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+calling C function to calc sum
+   a	   b	   c	 sum
+   -------------------------
+   3	   4	   5	  12
+   6	   8	  10	  24
+   5	  12	  13	  30
+   9	  12	  15	  36
+   8	  15	  17	  40
+[1] TRUE
+```
+
+We see the debug print statement, then the printed output, and finally our returned `TRUE`. Success!
+
+The original code was made to work in a command line pipeline where the values were read 
+back in by a subsequent program, e.g.
+
+```bash
+$ ./triangle 16 | tail +3 | awk '{ sum += $4 } END { print sum }'
+102
+```
+
+so printing to `stdout` made sense there, but we want to _use_ the values in R, so it 
+would be great to return an actual `data.frame`. [This repo](https://github.com/coolbutuseless/simplecall/blob/master/src/create-data-frame.c) 
+contains a great example of doing that but I want to return a `data.frame` with a
+variable number of rows, and I need to allocate data into that. ChatGPT actually got me close enough to a working version. Here's what I ended up with
+
+```c
+
+  [...]
+
+  calculate_sum(maxval, &triangles);
+
+  /* count rows */
+  int nrows = 0;
+  for (c = 1; c < maxval; ++c) {
+    for (b = 1; b <= c; ++b)
+      for (a = 1; a <= b; ++a)
+          if (triangles[a][b][c] != 0) {
+          nrows += 1;
+        }
+  }
+
+  /* output a data.frame */
+  int ncols = 4;
+
+  SEXP col1, col2, col3, col4, df;
+  PROTECT(df = allocVector(VECSXP, ncols));
+
+  PROTECT(col1 = allocVector(INTSXP, nrows));
+  PROTECT(col2 = allocVector(INTSXP, nrows));
+  PROTECT(col3 = allocVector(INTSXP, nrows));
+  PROTECT(col4 = allocVector(INTSXP, nrows));
+
+  int j = 0;
+  for (c = 1; c < maxval; ++c) {
+    for (b = 1; b <= c; ++b) {
+      for (a = 1; a <= b; ++a) {
+        if (triangles[a][b][c] != 0) {
+          INTEGER(col1)[j] = a;
+          INTEGER(col2)[j] = b;
+          INTEGER(col3)[j] = c;
+          INTEGER(col4)[j] = triangles[a][b][c];
+          j += 1;
+        }
+      }
+    }
+  }
+
+  SET_VECTOR_ELT(df, 0, col1);
+  SET_VECTOR_ELT(df, 1, col2);
+  SET_VECTOR_ELT(df, 2, col3);
+  SET_VECTOR_ELT(df, 3, col4);
+
+  SEXP colNames;
+  PROTECT(colNames = allocVector(STRSXP, ncols));
+  SET_STRING_ELT(colNames, 0, mkChar("a"));
+  SET_STRING_ELT(colNames, 1, mkChar("b"));
+  SET_STRING_ELT(colNames, 2, mkChar("c"));
+  SET_STRING_ELT(colNames, 3, mkChar("sum"));
+  setAttrib(df, R_NamesSymbol, colNames);
+
+  SEXP rowNames;
+  PROTECT(rowNames = allocVector(STRSXP, nrows));
+  for (int i = 0; i < nrows; ++i) {
+    char rowName[10];
+    snprintf(rowName, sizeof(rowName), "%d", i + 1);
+    SET_STRING_ELT(rowNames, i, mkChar(rowName));
+  }
+  setAttrib(df, R_RowNamesSymbol, rowNames);
+
+  SEXP className;
+  PROTECT(className = allocVector(STRSXP, 1));
+  SET_STRING_ELT(className, 0, mkChar("data.frame"));
+  classgets(df, className);
+
+  UNPROTECT(8);
+  return df;
+```
+
+Going through the biggest parts of this: first we identify how many rows we want 
+to output by counting the nonzero elements of the passed-by-reference `triangles`
+
+```c
+  /* count rows */
+  int nrows = 0;
+  for (c = 1; c < maxval; ++c) {
+    for (b = 1; b <= c; ++b)
+      for (a = 1; a <= b; ++a)
+          if (triangles[a][b][c] != 0) {
+          nrows += 1;
+        }
+  }
+```
+
+then allocating vectors - first a list the length of the number of columns (4) then
+one for each of the columns with length `nrows`
+
+```c
+ /* output a data.frame */
+  int ncols = 4;
+
+  SEXP col1, col2, col3, col4, df;
+  PROTECT(df = allocVector(VECSXP, ncols));
+
+  PROTECT(col1 = allocVector(INTSXP, nrows));
+  PROTECT(col2 = allocVector(INTSXP, nrows));
+  PROTECT(col3 = allocVector(INTSXP, nrows));
+  PROTECT(col4 = allocVector(INTSXP, nrows));
+```
+
+These are then populated in a loop with a new counter for the nonzero elements
+
+```c
+  int j = 0;
+  for (c = 1; c < maxval; ++c) {
+    for (b = 1; b <= c; ++b) {
+      for (a = 1; a <= b; ++a) {
+        if (triangles[a][b][c] != 0) {
+          INTEGER(col1)[j] = a;
+          INTEGER(col2)[j] = b;
+          INTEGER(col3)[j] = c;
+          INTEGER(col4)[j] = triangles[a][b][c];
+          j += 1;
+        }
+      }
+    }
+  }
+```
+
+and finally the vectors linked into the list
+
+```c
+  SET_VECTOR_ELT(df, 0, col1);
+  SET_VECTOR_ELT(df, 1, col2);
+  SET_VECTOR_ELT(df, 2, col3);
+  SET_VECTOR_ELT(df, 3, col4);
+```
+
+The rest is mostly boilerplate of setting up the `data.frame`: assigning 
+column names
+
+```c
+  SEXP colNames;
+  PROTECT(colNames = allocVector(STRSXP, ncols));
+  SET_STRING_ELT(colNames, 0, mkChar("a"));
+  SET_STRING_ELT(colNames, 1, mkChar("b"));
+  SET_STRING_ELT(colNames, 2, mkChar("c"));
+  SET_STRING_ELT(colNames, 3, mkChar("sum"));
+  setAttrib(df, R_NamesSymbol, colNames);
+```
+
+and row names
+
+```c
+  SEXP rowNames;
+  PROTECT(rowNames = allocVector(STRSXP, nrows));
+  for (int i = 0; i < nrows; ++i) {
+    char rowName[10];
+    snprintf(rowName, sizeof(rowName), "%d", i + 1);
+    SET_STRING_ELT(rowNames, i, mkChar(rowName));
+  }
+  setAttrib(df, R_RowNamesSymbol, rowNames);
+```
+
+and the class itself
+
+```c
+  SEXP className;
+  PROTECT(className = allocVector(STRSXP, 1));
+  SET_STRING_ELT(className, 0, mkChar("data.frame"));
+  classgets(df, className);
+```
+
+then finally `UNPROTECT`ing the `PROTECTED` objects and returning the `data.frame`
+
+```c
+  UNPROTECT(8);
+  return df;
+```
+
+At one point, I had forgotten that I had modified an example and now had more `PROTECT`
+wrappers around objects, but hadn't updated the number in `UNPROTECT`. It turns out this 
+leads to an error in R about a stack imbalance - not particularly meaningful if you don't realise what that means, so FYI.
+
+So, with [this new code](https://github.com/jonocarroll/triangles/blob/main/inst/src/triangles3.c) in `src/triangles.c` we re-build and reload and try it out
+
+```{r}
+library(triangles)
+
+x <- triangles(16)
+
+x
+
+str(x)
+```
+
+Nothing printed when not expected, and the result is really a `data.frame`! We can 
+even work with the data now
+
+```{r}
+sum(x$sum)
+```
+
+We still have the C code, and this can be updated as it evolves without affecting 
+the R interface to it. With the R parts commented out, it can still be run as if 
+it was just a regular C file. If we _really_ want to compile it with the R parts 
+still there we can include the R libraries (on a linux system, for example) with
+
+```bash
+$ cc -O -o triangle triangles.c -I/usr/share/R/include -L/usr/lib/R/lib -lR
+```
+
+As always, I've learned a lot messing with things outside of my comfort zone here. I 
+wouldn't say that I want to write a lot more C code, but at least now I feel 
+somewhat comfortable bringing into R to work with.
+
+The package I detailed building here is on GitHub: [https://github.com/jonocarroll/triangles](https://github.com/jonocarroll/triangles) in case it's useful to you.
+
+There's always more for me to learn, though, so if you have comments, feedback, 
+suggestions for improvements, etc... I can be found on [Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
