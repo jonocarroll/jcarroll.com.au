@@ -607,8 +607,8 @@ variable number of rows, and I need to allocate data into that. ChatGPT actually
   SEXP rowNames;
   PROTECT(rowNames = allocVector(STRSXP, nrows));
   for (int i = 0; i < nrows; ++i) {
-    char rowName[10];
-    snprintf(rowName, sizeof(rowName), "%d", i + 1);
+    char rowName[11];
+    snprintf(rowName, sizeof(rowName), "%10d", i + 1
     SET_STRING_ELT(rowNames, i, mkChar(rowName));
   }
   setAttrib(df, R_RowNamesSymbol, rowNames);
@@ -700,8 +700,8 @@ and row names
   SEXP rowNames;
   PROTECT(rowNames = allocVector(STRSXP, nrows));
   for (int i = 0; i < nrows; ++i) {
-    char rowName[10];
-    snprintf(rowName, sizeof(rowName), "%d", i + 1);
+    char rowName[11];
+    snprintf(rowName, sizeof(rowName), "%10d", i + 1
     SET_STRING_ELT(rowNames, i, mkChar(rowName));
   }
   setAttrib(df, R_RowNamesSymbol, rowNames);
@@ -754,6 +754,38 @@ still there we can include the R libraries (on a linux system, for example) with
 ```bash
 $ cc -O -o triangle triangles.c -I/usr/share/R/include -L/usr/lib/R/lib -lR
 ```
+
+**Update 12-Aug-2023**: I forgot to mention that in order to pass checks, R wants 
+to have the following, typically in a file [`src/init.c`](https://github.com/jonocarroll/triangles/blob/main/src/init.c)
+
+```c
+#include <R.h>
+#include <Rinternals.h>
+#include <stdlib.h> // for NULL
+#include <R_ext/Rdynload.h>
+
+/* .Call calls */
+extern SEXP C_triangles(SEXP maximum);
+
+static const R_CallMethodDef CallEntries[] = {
+  {"C_triangles", (DL_FUNC) &C_triangles, 1},
+  {NULL, NULL, 0}
+};
+
+void R_init_addr(DllInfo *dll) {
+  R_registerRoutines(dll, NULL, CallEntries, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
+}
+```
+
+I won't say I understand this bit, but it _is_ mentioned in [this part](https://blog.davisvaughan.com/posts/2019-03-02-now-you-c-me/#registration) 
+of Davis' post.
+
+I also updated the `snprintf` call in the rownames assignment since I got a warning about 
+truncation.
+
+There are some valid concerns about the fact that I'm not explicitly `free()`ing the 
+allocated memory, so I plan to add some code to do that.
 
 As always, I've learned a lot messing with things outside of my comfort zone here. I 
 wouldn't say that I want to write a lot more C code, but at least now I feel 
