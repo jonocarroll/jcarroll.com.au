@@ -1,0 +1,363 @@
+---
+title: Pythagorean Triples with Comprehensions
+author: Jonathan Carroll
+date: '2023-08-13'
+slug: pythagorean-triples-with-comprehensions
+categories:
+  - haskell
+  - rstats
+  - julia
+  - python
+  - rust
+  - lisp
+  - clojure
+  - scala
+  - c
+tags:
+  - haskell
+  - rstats
+  - julia
+  - python
+  - rust
+  - lisp
+  - clojure
+  - scala
+  - c
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I've been learning at least one new programming language per month through [Exercism](https://exercism.org) and the #12in23 challenge. I've keep saying, 
+every time you learn a new language, you learn something about all the others 
+you know. Plus, once you know $N$ languages, the $N+1^{\rm th}$ is significantly easier. This 
+post covers a calculation I came across in Haskell, and how I can now do the same 
+in a lot of other languages - and perhaps can't as easily in others.
+
+<!--more-->
+
+I've been learning at least one new programming language per month through [Exercism](https://exercism.org) and the #12in23 challenge. I've keep saying, 
+every time you learn a new language, you learn something about all the others 
+you know. Plus, once you know $N$ languages, the $N+1^{\rm th}$ is significantly easier. This 
+post covers a calculation I came across in Haskell, and how I can now do the same 
+in a lot of other languages - and perhaps can't as easily in others.
+
+All of the languages here, I'm learning via Exercism, or at least I'm completing 
+a handful or more exercises in each of the languages, which means learning enough 
+of the syntax to be able to complete those. The #12in23 challenge is to 
+try 12 languages in 2023... I'm doing just fine so far
+
+![#12in23 progress as of July 2023 - I already have my 12, but no reason to stop now](images/12in23_12.png)
+
+### Haskell
+
+I've been reading the (great!) online version of [Learn You a Haskell for Great Good!](http://learnyouahaskell.com/) - Haskell is a (properly) "pure" functional 
+language, part of which means it has **no** side-effects, which includes, say, 
+printing to the console. Haskell, of course, has a way around this (monads!) but 
+it means there's a lot to get through before you even get to a "Hello, World!" 
+example. It's also _lazy_ which means it doesn't evaluate something if it doesn't 
+need to, which makes for some good performance, sometimes.
+
+One example that caught my eye in the [list comprehensions section](http://learnyouahaskell.com/starting-out#im-a-list-comprehension) was this
+
+```haskell
+ghci> let rightTriangles' = [ (a,b,c) | c <- [1..10], b <- [1..c], a <- [1..b], a^2 + b^2 == c^2, a+b+c == 24]  
+ghci> rightTriangles'  
+[(6,8,10)]  
+```
+
+This perhaps isn't too hard to read, even for those unfamiliar with the language. `ghci` is 
+the interactive REPL for the Glasgow Haskell Compiler, so the prompt starts with that. 
+Haskell uses a `let` binding to identify variables, and the apostrophe just indicates that 
+this is a slightly different version compared to the one defined slightly earlier in the chapter.
+
+The list comprehension itself is perhaps not so dissimilar to one you'd find in Python; it 
+defines some tuple `(a, b, c)` and `|` identifies some constraints, namely that `c` is taken 
+from a range of 1 to 10, `b` is taken from a range of 1 to `c`, and `a` is taken from 
+a range of 1 to `b`, along with the criteria that $a^2 + b^2 = c^2$ (the numbers form a Pythagorean 
+triple) and their sum is 24. I discussed the Pythagorean triples in my [last post](https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/) - no 
+coincidence (/s). If you evaluate this line, you more-or-less immediately get back the result
+
+```{haskell, eval = FALSE, class.source = "bg-success"}
+[(6,8,10)]
+```
+
+which is a Pythagorean triple 
+
+$$6^2 + 8^2 = 36 + 64 = 100 = 10^2$$
+
+for which 
+
+$$a + b + c = 6 + 8 + 10 = 24$$
+This isn't a groundbreaking calculation, but I've done a _lot_ of R, and my mind 
+was a little blown that such a calculation could really be done in a single line just 
+by specifying those constraints. Not a solver, not a grid of values with a filter, just 
+specifying constraints.
+
+### R
+
+Anyone who knows me knows I write a lot of R. I wrote [a book](https://beyondspreadsheetswithr.com/) on it. I solved all of the 
+[Advent of Code](https://adventofcode.com/) 2022 puzzles in [_strictly base_ R](https://github.com/jonocarroll/advent-of-code/tree/main/2022/R) (I really need to write that post). 
+
+Now, R (unfortunately) doesn't have any comprehensions, list or otherwise, so I started to 
+wonder how I would do this in R. The best I can come up with is
+
+```{r}
+expand.grid(a=1:10, b=1:10, c=1:10) |>
+  dplyr::filter(a^2 + b^2 == c^2 & 
+                  a + b + c == 24 & 
+                  a < b & 
+                  b < c)
+```
+
+but that involves explicitly creating _all_ 1000 combinations of `a`, `b`, and `c`. There 
+may be a multi-step way to limit the grid to $a < b$ and $b < c$ but that's more code. Maybe the
+Haskell solution also has to generate these behind the scenes, but it isn't up to the user to 
+do that, so it feels nicer. I like the `filter()` verb here - technically the `&` joining is 
+redundant and I could have passed each condition as its own argument. `expand.grid()` is one 
+of those underutilised functions that comes in very handy sometimes - or its cousin 
+`tidyr::crossing()` which wraps this and additionally performs de-duplication and sorting.
+
+Now that I know more languages, I felt I could explore this a bit further!
+
+### Python
+
+In Python, which I feel is well-known for list comprehensions, this translates more 
+or less 1:1 to
+
+```{python, eval = FALSE}
+[(a,b,c) for c in range(1,11) for b in range(1,c) for a in range(1,b) if ((a**2 + b**2) == c**2) if a+b+c==24]
+```
+```{python, eval = FALSE, class.source = "bg-success"}
+[(6, 8, 10)]
+```
+
+Of course, ranges are specified differently, but otherwise this follows the Haskell 
+solution quite nicely, including the dynamic ranges of `b` and `a` which avoids needing 
+to search the entire `10*10*10` space. 
+
+I appreciate there's a silly language war between Python and R but 
+honestly, a lot of stuff is written in Python and a lot of people write in Python. 
+I figure it's better to understand that language for when I need it than to stick my 
+head in the sand and claim some sort of superiority. There's bits I don't like, sure, 
+but that doesn't mean I shouldn't learn it. I'm even registered and attending [PyConAU](https://2023.pycon.org.au/) next 
+weekend.
+
+### Rust
+
+Rust is a fun language with easily the most helpful compiler ever made - you can make a 
+lot of mistakes, but the error messages and hints are unparalleled. I'm currently 
+taking [Tim McNamara's](https://fosstodon.org/@timClicks@mastodon.nz) ['How To Learn Rust'](https://learning.accelerant.dev/view/courses/how-to-learn-rust/) course which has a 
+lot of practical lessons and I've built some [fun things](https://github.com/jonocarroll/rps.rs) already. I completed the first 13 [Advent of Code](https://adventofcode.com/) 2022 [puzzles in Rust](https://github.com/jonocarroll/advent-of-code/tree/main/2022/Rust), after which it all 
+got a bit too complicated (and I do _really_ need to write that post).
+
+Rust doesn't have list comprehensions (I believe there are cargo crates which _do_ add 
+such functionality) so it's back to nested loops
+
+```{bash, eval = FALSE}
+for c in 1..=10 {
+  for b in 1..=c {
+    for a in 1..=b {
+      if a*a + b*b == c*c && a+b+c == 24 {
+        println!("{}, {}, {}", a, b, c);
+      }
+    }
+  }
+};
+```
+```{bash, eval = FALSE, class.source = "bg-success"}
+6, 8, 10
+```
+
+That doesn't allocate a result at all, it just prints the values when it 
+encounters them, and since the loop is nested, it can limit the search to $b \leq c$ and
+$a \leq b$, but it _does_ explicitly run the loop across all those combinations. It's 
+possible there's a much better way to do this, but I couldn't think of it.
+
+### Common Lisp
+
+I like the idea of Common Lisp, and I'm making my way through [Practical Common Lisp](https://gigamonkeys.com/book/) slowly. I suspect I enjoy some of the descendants 
+like Clojure a bit more, but it's absolutely worth learning. Miles McBain has [a great post](https://www.milesmcbain.com/posts/the-roots-of-quotation/)
+about how learning about lisp quoting helps understand more of the tidyverse. This 
+also doesn't have comprehensions so it relies on loops, and again, just prints the 
+result, returning `NIL`
+
+```{lein, eval = FALSE}
+  (loop for c from 1 to 10
+        do (loop for b from 1 to c
+                 do (loop for a from 1 to b
+                      do (when (and (= (+ a b c) 24) (= (+ (* a a) (* b b)) (* c c)))
+                        (format t "~d, ~d, ~d~%" a b c)))))
+
+```
+```{lein, eval = FALSE, class.source = "bg-success"}
+6, 8, 10
+NIL
+```
+
+The loop is still constrained to $b \leq c$ and $a \leq b$, but definitely runs 
+through all those values.
+
+### Julia
+
+I really want to learn more Julia, but I'm not entirely new to the language. I have completed 
+the first 25 [Project Euler](https://projecteuler.net/) problems in [Julia](https://github.com/jonocarroll/ProjectEuler_Julia) (by 
+no means optimised solutions). I think what's holding me back is the fact that almost 
+every presentation using it is so very mathsy - and I'm a physicist by training. I love 
+that the tidyverse is making its way over in the forms of [Queryverse](https://www.queryverse.org/), 
+[DataFramesMeta](https://juliadata.github.io/DataFramesMeta.jl/stable/), and more recently (and 
+most likely with more success) the [Tidier](https://github.com/TidierOrg/Tidier.jl) family.
+
+Julia _does_ have list comprehensions, and additionally has an "element" operator with 
+the mathematically-familiar symbol `∈`
+
+```{julia, eval = FALSE}
+[(a,b,c) for c ∈ 1:10, b ∈ 1:10, a ∈ 1:10 if (a^2 + b^2 == c^2) && (a+b+c == 24) && b <= c && a <= b]
+```
+```{julia, eval = FALSE, class.source = "bg-success"}
+1-element Vector{Tuple{Int64, Int64, Int64}}:
+ (6, 8, 10)
+```
+
+Unfortunately, the choices for `b` and `a` still need to run through all 10 values because 
+Julia doesn't allow these to be co-defined like Haskell and Python do. I came to Julia from 
+mainly only knowing R, so dealing with an output of type `Vector{Tuple{Int64, Int64, Int64}}` 
+initially proved to be a challenge, but I'd say learning more Rust has made me feel a lot more 
+comfortable around working with types.
+
+### Clojure
+
+Clojure feels to me like "lisp, but with good libraries". There's definitely syntax 
+differences, but most of them feel like improvements.
+
+```{lein, eval = FALSE}
+(for [c (range 11)
+      b (range c)
+      a (range b)
+     :when (and (== (+ (* a a) (* b b)) (* c c)) (== (+ a b c) 24))]
+[a b c])
+```
+```{lein, eval = FALSE, class.source = "bg-success"}
+([6 8 10])
+```
+
+This still feels like a comprehension, but the syntax is certainly a bit more 
+inscrutable. Still, far from unreadable, I'd say.
+
+### Scala
+
+I'm learning a lot of functional programming, and I think I'm happy that some of the 
+[textbooks](https://www.manning.com/books/functional-programming-in-scala-second-edition) use Scala rather than some alternatives. I'm still very new to this language, 
+but so far I think I like it.
+
+Again, we're back to a loop, but most if it is straightforward assignments
+
+```{scala, eval = FALSE}
+for {
+     c <- 1 until 11
+     b <- 1 until c
+     a <- 1 until b
+     if a * a + b * b == c * c & a + b + c == 24
+     } {
+        println(s"Side lengths: $a, $b, $c")
+}
+```
+
+```{scala, eval = FALSE, class.source = "bg-success"}
+Side lengths: 6, 8, 10
+```
+
+### C
+
+I mentioned that I performed this calculation in C in [my last post](https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/) - that 
+ends up being just a loop
+
+```{c, eval = FALSE}
+int a, b, c
+
+printf("%4s\t%4s\t%4s\t%4s\n", "a", "b", "c");
+printf("   -------------------------\n");
+for (c = 1; c <= 24; c++) 
+  for (b = 1; b <= c; b++)
+    for (a = 1; a <= b; a++)
+      if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+        printf("%4i\t%4i\t%4i\t%4i\n", a, b, c);
+      }
+```
+
+I haven't run the output directly, since it needs an entire program supporting it, but 
+it's the right answer.
+
+----
+
+So, what does it look like if you run all of these together? I've been getting back 
+into using [tmux](https://github.com/tmux/tmux/wiki) and it's very powerful. One of the 
+features is splitting a window into panes, so I did that - one for each of these 
+languages!
+
+![Calculating the Pythagorean Triple with perimeter 24 in several languages at once](images/polyglot_triangles.png)
+
+I still think the Haskell solution shines above all the rest. It has all of the 
+simplicity and language richness with none of the boilerplate. 
+
+Following my last post, [Kaz](https://fosstodon.org/@Kazinator@mstdn.ca) mentioned to me 
+that the "TXR Lisp code, calling calcsum directly via FFI using Lisp nested arrays" could 
+be written as
+
+```{bash, eval = FALSE}
+$ cat calcsum.tl
+(typedef arr3d (ptr (array (ptr (array (ptr (array int)))))))
+
+(with-dyn-lib "./calcsum.so"
+  (deffi calcsum "calcsum" void (int (ptr arr3d))))
+
+(let* ((dim 16)
+       (arr (vector dim)))
+  (each ((a 0..dim))
+    (set [arr a] (vector dim))
+    (each ((b 0..dim))
+      (set [[arr a] b] (vector dim 0))))
+  (calcsum (pred dim) arr)
+  (each-prod ((a 1..dim)
+              (b 1..dim)
+              (c 1..dim))
+    (let ((sum [[[arr a] b] c]))
+      (if (plusp sum)
+        (put-line (pic "### + ### + ### = ####" a b c sum))))))
+
+$ txr  calcsum.tl
+```
+```{lein, eval = FALSE, class.output = "bg-success"}
+  3 +   4 +   5 =   12
+  5 +  12 +  13 =   30
+  6 +   8 +  10 =   24
+  9 +  12 +  15 =   36
+```
+
+This calculates _all_ the combinations up to some value (as my post did) but it's 
+already clear there's some cool features there.
+
+How does your favourite language calculate the Pythagorean triple with a sum of 24? What can 
+I do better in the solution I have above for a language you know? I can be found on [Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
