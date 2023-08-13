@@ -65,9 +65,14 @@ try 12 languages in 2023... I'm doing just fine so far
 I've been reading the (great!) online version of [Learn You a Haskell for Great Good!](http://learnyouahaskell.com/) - Haskell is a (properly) "pure" functional 
 language, part of which means it has **no** side-effects, which includes, say, 
 printing to the console. Haskell, of course, has a way around this (monads!) but 
-it means there's a lot to get through before you even get to a "Hello, World!" 
+it means there's a lot to get through before you even get to a printing "Hello, World!" 
 example. It's also _lazy_ which means it doesn't evaluate something if it doesn't 
 need to, which makes for some good performance, sometimes.
+
+[This video](https://youtu.be/pUN3algpvMs) does a really nice job explaining the 
+principles of pure functional programming using JavaScript to introduce Haskell, 
+building recursive functions that only take a single argument and return a 
+single value.
 
 One example that caught my eye in the [list comprehensions section](http://learnyouahaskell.com/starting-out#im-a-list-comprehension) was this
 
@@ -86,7 +91,7 @@ The list comprehension itself is perhaps not so dissimilar to one you'd find in 
 defines some tuple `(a, b, c)` and `|` identifies some constraints, namely that `c` is taken 
 from a range of 1 to 10, `b` is taken from a range of 1 to `c`, and `a` is taken from 
 a range of 1 to `b`, along with the criteria that $a^2 + b^2 = c^2$ (the numbers form a Pythagorean 
-triple) and their sum is 24. I discussed the Pythagorean triples in my [last post](https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/) - no 
+triple) and their sum is 24. I discussed the [Pythagorean triples](https://en.wikipedia.org/wiki/Pythagorean_triple) in my [last post](https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/) - no 
 coincidence (/s). If you evaluate this line, you more-or-less immediately get back the result
 
 ```{haskell, eval = FALSE, class.source = "bg-success"}
@@ -189,8 +194,10 @@ possible there's a much better way to do this, but I couldn't think of it.
 
 I like the idea of Common Lisp, and I'm making my way through [Practical Common Lisp](https://gigamonkeys.com/book/) slowly. I suspect I enjoy some of the descendants 
 like Clojure a bit more, but it's absolutely worth learning. Miles McBain has [a great post](https://www.milesmcbain.com/posts/the-roots-of-quotation/)
-about how learning about lisp quoting helps understand more of the tidyverse. This 
-also doesn't have comprehensions so it relies on loops, and again, just prints the 
+about how learning about lisp quoting helps understand more of the tidyverse. I have used 
+lisp in [a code-golf post](https://jcarroll.com.au/2022/04/02/codegolf-lisp-edition/).
+
+Lisp doesn't have comprehensions so it relies on loops, and again, just prints the 
 result, returning `NIL`
 
 ```{lein, eval = FALSE}
@@ -253,7 +260,8 @@ differences, but most of them feel like improvements.
 ```
 
 This still feels like a comprehension, but the syntax is certainly a bit more 
-inscrutable. Still, far from unreadable, I'd say.
+convoluted. Bonus points for the dynamic ranges of `b` and `a`. Still, a long way 
+off of completely unreadable, I'd say.
 
 ### Scala
 
@@ -261,7 +269,8 @@ I'm learning a lot of functional programming, and I think I'm happy that some of
 [textbooks](https://www.manning.com/books/functional-programming-in-scala-second-edition) use Scala rather than some alternatives. I'm still very new to this language, 
 but so far I think I like it.
 
-Again, we're back to a loop, but most if it is straightforward assignments
+Again, we're back to a loop, but most of it is straightforward assignments and we 
+get the dynamic ranges of `b` and `a`
 
 ```{scala, eval = FALSE}
 for {
@@ -306,12 +315,15 @@ into using [tmux](https://github.com/tmux/tmux/wiki) and it's very powerful. One
 features is splitting a window into panes, so I did that - one for each of these 
 languages!
 
-![Calculating the Pythagorean Triple with perimeter 24 in several languages at once](images/polyglot_triangles.png)
+![Calculating the Pythagorean Triple with perimeter 24 in several languages at once - [link](https://raw.githubusercontent.com/jonocarroll/jcarroll.com.au/triangles/content/post/2023-08-13-pythagorean-triples-with-comprehensions/images/polyglot_triangles.png)](images/polyglot_triangles.png)
 
 I still think the Haskell solution shines above all the rest. It has all of the 
-simplicity and language richness with none of the boilerplate. 
+simplicity and language richness with none of the boilerplate. I like that it's 
+[declarative](https://en.wikipedia.org/wiki/Declarative_programming) ("get an answer to this") 
+rather than [imperative](https://en.wikipedia.org/wiki/Imperative_programming) ("do this, then that, then loop here..."). Comparing all of these, it's clear there's no guarantees about 
+being able to define the dynamic iteration ranges so another win for Haskell, there.
 
-Following my last post, [Kaz](https://fosstodon.org/@Kazinator@mstdn.ca) mentioned to me 
+Following my last post, [\@Kazinator](https://fosstodon.org/@Kazinator@mstdn.ca) mentioned to me 
 that the "TXR Lisp code, calling calcsum directly via FFI using Lisp nested arrays" could 
 be written as
 

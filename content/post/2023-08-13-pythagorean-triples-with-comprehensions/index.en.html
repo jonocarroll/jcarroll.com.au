@@ -56,9 +56,13 @@ try 12 languages in 2023… I’m doing just fine so far</p>
 <p>I’ve been reading the (great!) online version of <a href="http://learnyouahaskell.com/">Learn You a Haskell for Great Good!</a> - Haskell is a (properly) “pure” functional
 language, part of which means it has <strong>no</strong> side-effects, which includes, say,
 printing to the console. Haskell, of course, has a way around this (monads!) but
-it means there’s a lot to get through before you even get to a “Hello, World!”
+it means there’s a lot to get through before you even get to a printing “Hello, World!”
 example. It’s also <em>lazy</em> which means it doesn’t evaluate something if it doesn’t
 need to, which makes for some good performance, sometimes.</p>
+<p><a href="https://youtu.be/pUN3algpvMs">This video</a> does a really nice job explaining the
+principles of pure functional programming using JavaScript to introduce Haskell,
+building recursive functions that only take a single argument and return a
+single value.</p>
 <p>One example that caught my eye in the <a href="http://learnyouahaskell.com/starting-out#im-a-list-comprehension">list comprehensions section</a> was this</p>
 <pre class="haskell"><code>ghci&gt; let rightTriangles&#39; = [ (a,b,c) | c &lt;- [1..10], b &lt;- [1..c], a &lt;- [1..b], a^2 + b^2 == c^2, a+b+c == 24]  
 ghci&gt; rightTriangles&#39;  
@@ -71,7 +75,7 @@ this is a slightly different version compared to the one defined slightly earlie
 defines some tuple <code>(a, b, c)</code> and <code>|</code> identifies some constraints, namely that <code>c</code> is taken
 from a range of 1 to 10, <code>b</code> is taken from a range of 1 to <code>c</code>, and <code>a</code> is taken from
 a range of 1 to <code>b</code>, along with the criteria that <span class="math inline">\(a^2 + b^2 = c^2\)</span> (the numbers form a Pythagorean
-triple) and their sum is 24. I discussed the Pythagorean triples in my <a href="https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/">last post</a> - no
+triple) and their sum is 24. I discussed the <a href="https://en.wikipedia.org/wiki/Pythagorean_triple">Pythagorean triples</a> in my <a href="https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/">last post</a> - no
 coincidence (/s). If you evaluate this line, you more-or-less immediately get back the result</p>
 <pre class="haskell bg-success"><code>[(6,8,10)]</code></pre>
 <p>which is a Pythagorean triple</p>
@@ -149,8 +153,9 @@ possible there’s a much better way to do this, but I couldn’t think of it.</
 <h3>Common Lisp</h3>
 <p>I like the idea of Common Lisp, and I’m making my way through <a href="https://gigamonkeys.com/book/">Practical Common Lisp</a> slowly. I suspect I enjoy some of the descendants
 like Clojure a bit more, but it’s absolutely worth learning. Miles McBain has <a href="https://www.milesmcbain.com/posts/the-roots-of-quotation/">a great post</a>
-about how learning about lisp quoting helps understand more of the tidyverse. This
-also doesn’t have comprehensions so it relies on loops, and again, just prints the
+about how learning about lisp quoting helps understand more of the tidyverse. I have used
+lisp in <a href="https://jcarroll.com.au/2022/04/02/codegolf-lisp-edition/">a code-golf post</a>.</p>
+<p>Lisp doesn’t have comprehensions so it relies on loops, and again, just prints the
 result, returning <code>NIL</code></p>
 <pre class="lein"><code>  (loop for c from 1 to 10
         do (loop for b from 1 to c
@@ -194,14 +199,16 @@ differences, but most of them feel like improvements.</p>
 [a b c])</code></pre>
 <pre class="lein bg-success"><code>([6 8 10])</code></pre>
 <p>This still feels like a comprehension, but the syntax is certainly a bit more
-inscrutable. Still, far from unreadable, I’d say.</p>
+convoluted. Bonus points for the dynamic ranges of <code>b</code> and <code>a</code>. Still, a long way
+off of completely unreadable, I’d say.</p>
 </div>
 <div id="scala" class="section level3">
 <h3>Scala</h3>
 <p>I’m learning a lot of functional programming, and I think I’m happy that some of the
 <a href="https://www.manning.com/books/functional-programming-in-scala-second-edition">textbooks</a> use Scala rather than some alternatives. I’m still very new to this language,
 but so far I think I like it.</p>
-<p>Again, we’re back to a loop, but most if it is straightforward assignments</p>
+<p>Again, we’re back to a loop, but most of it is straightforward assignments and we
+get the dynamic ranges of <code>b</code> and <code>a</code></p>
 <pre class="scala"><code>for {
      c &lt;- 1 until 11
      b &lt;- 1 until c
@@ -234,12 +241,15 @@ into using <a href="https://github.com/tmux/tmux/wiki">tmux</a> and it’s very 
 features is splitting a window into panes, so I did that - one for each of these
 languages!</p>
 <div class="float">
-<img src="images/polyglot_triangles.png" alt="Calculating the Pythagorean Triple with perimeter 24 in several languages at once" />
-<div class="figcaption">Calculating the Pythagorean Triple with perimeter 24 in several languages at once</div>
+<img src="images/polyglot_triangles.png" alt="Calculating the Pythagorean Triple with perimeter 24 in several languages at once - link" />
+<div class="figcaption">Calculating the Pythagorean Triple with perimeter 24 in several languages at once - <a href="https://raw.githubusercontent.com/jonocarroll/jcarroll.com.au/triangles/content/post/2023-08-13-pythagorean-triples-with-comprehensions/images/polyglot_triangles.png">link</a></div>
 </div>
 <p>I still think the Haskell solution shines above all the rest. It has all of the
-simplicity and language richness with none of the boilerplate.</p>
-<p>Following my last post, <a href="https://fosstodon.org/@Kazinator@mstdn.ca">Kaz</a> mentioned to me
+simplicity and language richness with none of the boilerplate. I like that it’s
+<a href="https://en.wikipedia.org/wiki/Declarative_programming">declarative</a> (“get an answer to this”)
+rather than <a href="https://en.wikipedia.org/wiki/Imperative_programming">imperative</a> (“do this, then that, then loop here…”). Comparing all of these, it’s clear there’s no guarantees about
+being able to define the dynamic iteration ranges so another win for Haskell, there.</p>
+<p>Following my last post, <a href="https://fosstodon.org/@Kazinator@mstdn.ca">@Kazinator</a> mentioned to me
 that the “TXR Lisp code, calling calcsum directly via FFI using Lisp nested arrays” could
 be written as</p>
 <pre class="bash"><code>$ cat calcsum.tl
@@ -286,7 +296,7 @@ I do better in the solution I have above for a language you know? I can be found
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2023-08-12
+##  date     2023-08-13
 ##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
