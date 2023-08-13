@@ -1,0 +1,377 @@
+---
+title: Pythagorean Triples with Comprehensions
+author: Jonathan Carroll
+date: '2023-08-13'
+slug: pythagorean-triples-with-comprehensions
+categories:
+  - haskell
+  - rstats
+  - julia
+  - python
+  - rust
+  - lisp
+  - clojure
+  - scala
+  - c
+tags:
+  - haskell
+  - rstats
+  - julia
+  - python
+  - rust
+  - lisp
+  - clojure
+  - scala
+  - c
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>I’ve been learning at least one new programming language per month through <a href="https://exercism.org">Exercism</a> and the #12in23 challenge. I’ve keep saying,
+every time you learn a new language, you learn something about all the others
+you know. Plus, once you know <span class="math inline">\(N\)</span> languages, the <span class="math inline">\(N+1^{\rm th}\)</span> is significantly easier. This
+post covers a calculation I came across in Haskell, and how I can now do the same
+in a lot of other languages - and perhaps can’t as easily in others.</p>
+<!--more-->
+<p>I’ve been learning at least one new programming language per month through <a href="https://exercism.org">Exercism</a> and the #12in23 challenge. I’ve keep saying,
+every time you learn a new language, you learn something about all the others
+you know. Plus, once you know <span class="math inline">\(N\)</span> languages, the <span class="math inline">\(N+1^{\rm th}\)</span> is significantly easier. This
+post covers a calculation I came across in Haskell, and how I can now do the same
+in a lot of other languages - and perhaps can’t as easily in others.</p>
+<p>All of the languages here, I’m learning via Exercism, or at least I’m completing
+a handful or more exercises in each of the languages, which means learning enough
+of the syntax to be able to complete those. The #12in23 challenge is to
+try 12 languages in 2023… I’m doing just fine so far</p>
+<div class="float">
+<img src="images/12in23_12.png" alt="#12in23 progress as of July 2023 - I already have my 12, but no reason to stop now" />
+<div class="figcaption">#12in23 progress as of July 2023 - I already have my 12, but no reason to stop now</div>
+</div>
+<div id="haskell" class="section level3">
+<h3>Haskell</h3>
+<p>I’ve been reading the (great!) online version of <a href="http://learnyouahaskell.com/">Learn You a Haskell for Great Good!</a> - Haskell is a (properly) “pure” functional
+language, part of which means it has <strong>no</strong> side-effects, which includes, say,
+printing to the console. Haskell, of course, has a way around this (monads!) but
+it means there’s a lot to get through before you even get to a printing “Hello, World!”
+example. It’s also <em>lazy</em> which means it doesn’t evaluate something if it doesn’t
+need to, which makes for some good performance, sometimes.</p>
+<p><a href="https://youtu.be/pUN3algpvMs">This video</a> does a really nice job explaining the
+principles of pure functional programming using JavaScript to introduce Haskell,
+building recursive functions that only take a single argument and return a
+single value.</p>
+<p>One example that caught my eye in the <a href="http://learnyouahaskell.com/starting-out#im-a-list-comprehension">list comprehensions section</a> was this</p>
+<pre class="haskell"><code>ghci&gt; let rightTriangles&#39; = [ (a,b,c) | c &lt;- [1..10], b &lt;- [1..c], a &lt;- [1..b], a^2 + b^2 == c^2, a+b+c == 24]  
+ghci&gt; rightTriangles&#39;  
+[(6,8,10)]  </code></pre>
+<p>This perhaps isn’t too hard to read, even for those unfamiliar with the language. <code>ghci</code> is
+the interactive REPL for the Glasgow Haskell Compiler, so the prompt starts with that.
+Haskell uses a <code>let</code> binding to identify variables, and the apostrophe just indicates that
+this is a slightly different version compared to the one defined slightly earlier in the chapter.</p>
+<p>The list comprehension itself is perhaps not so dissimilar to one you’d find in Python; it
+defines some tuple <code>(a, b, c)</code> and <code>|</code> identifies some constraints, namely that <code>c</code> is taken
+from a range of 1 to 10, <code>b</code> is taken from a range of 1 to <code>c</code>, and <code>a</code> is taken from
+a range of 1 to <code>b</code>, along with the criteria that <span class="math inline">\(a^2 + b^2 = c^2\)</span> (the numbers form a Pythagorean
+triple) and their sum is 24. I discussed the <a href="https://en.wikipedia.org/wiki/Pythagorean_triple">Pythagorean triples</a> in my <a href="https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/">last post</a> - no
+coincidence (/s). If you evaluate this line, you more-or-less immediately get back the result</p>
+<pre class="haskell bg-success"><code>[(6,8,10)]</code></pre>
+<p>which is a Pythagorean triple</p>
+<p><span class="math display">\[6^2 + 8^2 = 36 + 64 = 100 = 10^2\]</span></p>
+<p>for which</p>
+<p><span class="math display">\[a + b + c = 6 + 8 + 10 = 24\]</span>
+This isn’t a groundbreaking calculation, but I’ve done a <em>lot</em> of R, and my mind
+was a little blown that such a calculation could really be done in a single line just
+by specifying those constraints. Not a solver, not a grid of values with a filter, just
+specifying constraints.</p>
+</div>
+<div id="r" class="section level3">
+<h3>R</h3>
+<p>Anyone who knows me knows I write a lot of R. I wrote <a href="https://beyondspreadsheetswithr.com/">a book</a> on it. I solved all of the
+<a href="https://adventofcode.com/">Advent of Code</a> 2022 puzzles in <a href="https://github.com/jonocarroll/advent-of-code/tree/main/2022/R"><em>strictly base</em> R</a> (I really need to write that post).</p>
+<p>Now, R (unfortunately) doesn’t have any comprehensions, list or otherwise, so I started to
+wonder how I would do this in R. The best I can come up with is</p>
+<pre class="r"><code>expand.grid(a=1:10, b=1:10, c=1:10) |&gt;
+  dplyr::filter(a^2 + b^2 == c^2 &amp; 
+                  a + b + c == 24 &amp; 
+                  a &lt; b &amp; 
+                  b &lt; c)</code></pre>
+<pre class="bg-success"><code>##   a b  c
+## 1 6 8 10</code></pre>
+<p>but that involves explicitly creating <em>all</em> 1000 combinations of <code>a</code>, <code>b</code>, and <code>c</code>. There
+may be a multi-step way to limit the grid to <span class="math inline">\(a &lt; b\)</span> and <span class="math inline">\(b &lt; c\)</span> but that’s more code. Maybe the
+Haskell solution also has to generate these behind the scenes, but it isn’t up to the user to
+do that, so it feels nicer. I like the <code>filter()</code> verb here - technically the <code>&amp;</code> joining is
+redundant and I could have passed each condition as its own argument. <code>expand.grid()</code> is one
+of those underutilised functions that comes in very handy sometimes - or its cousin
+<code>tidyr::crossing()</code> which wraps this and additionally performs de-duplication and sorting.</p>
+<p>Now that I know more languages, I felt I could explore this a bit further!</p>
+</div>
+<div id="python" class="section level3">
+<h3>Python</h3>
+<p>In Python, which I feel is well-known for list comprehensions, this translates more
+or less 1:1 to</p>
+<pre class="python"><code>[(a,b,c) for c in range(1,11) for b in range(1,c) for a in range(1,b) if ((a**2 + b**2) == c**2) if a+b+c==24]</code></pre>
+<pre class="python bg-success"><code>[(6, 8, 10)]</code></pre>
+<p>Of course, ranges are specified differently, but otherwise this follows the Haskell
+solution quite nicely, including the dynamic ranges of <code>b</code> and <code>a</code> which avoids needing
+to search the entire <code>10*10*10</code> space.</p>
+<p>I appreciate there’s a silly language war between Python and R but
+honestly, a lot of stuff is written in Python and a lot of people write in Python.
+I figure it’s better to understand that language for when I need it than to stick my
+head in the sand and claim some sort of superiority. There’s bits I don’t like, sure,
+but that doesn’t mean I shouldn’t learn it. I’m even registered and attending <a href="https://2023.pycon.org.au/">PyConAU</a> next
+weekend.</p>
+</div>
+<div id="rust" class="section level3">
+<h3>Rust</h3>
+<p>Rust is a fun language with easily the most helpful compiler ever made - you can make a
+lot of mistakes, but the error messages and hints are unparalleled. I’m currently
+taking <a href="https://fosstodon.org/@timClicks@mastodon.nz">Tim McNamara’s</a> <a href="https://learning.accelerant.dev/view/courses/how-to-learn-rust/">‘How To Learn Rust’</a> course which has a
+lot of practical lessons and I’ve built some <a href="https://github.com/jonocarroll/rps.rs">fun things</a> already. I completed the first 13 <a href="https://adventofcode.com/">Advent of Code</a> 2022 <a href="https://github.com/jonocarroll/advent-of-code/tree/main/2022/Rust">puzzles in Rust</a>, after which it all
+got a bit too complicated (and I do <em>really</em> need to write that post).</p>
+<p>Rust doesn’t have list comprehensions (I believe there are cargo crates which <em>do</em> add
+such functionality) so it’s back to nested loops</p>
+<pre class="bash"><code>for c in 1..=10 {
+  for b in 1..=c {
+    for a in 1..=b {
+      if a*a + b*b == c*c &amp;&amp; a+b+c == 24 {
+        println!(&quot;{}, {}, {}&quot;, a, b, c);
+      }
+    }
+  }
+};</code></pre>
+<pre class="bash bg-success"><code>6, 8, 10</code></pre>
+<p>That doesn’t allocate a result at all, it just prints the values when it
+encounters them, and since the loop is nested, it can limit the search to <span class="math inline">\(b \leq c\)</span> and
+<span class="math inline">\(a \leq b\)</span>, but it <em>does</em> explicitly run the loop across all those combinations. It’s
+possible there’s a much better way to do this, but I couldn’t think of it.</p>
+</div>
+<div id="common-lisp" class="section level3">
+<h3>Common Lisp</h3>
+<p>I like the idea of Common Lisp, and I’m making my way through <a href="https://gigamonkeys.com/book/">Practical Common Lisp</a> slowly. I suspect I enjoy some of the descendants
+like Clojure a bit more, but it’s absolutely worth learning. Miles McBain has <a href="https://www.milesmcbain.com/posts/the-roots-of-quotation/">a great post</a>
+about how learning about lisp quoting helps understand more of the tidyverse. I have used
+lisp in <a href="https://jcarroll.com.au/2022/04/02/codegolf-lisp-edition/">a code-golf post</a>.</p>
+<p>Lisp doesn’t have comprehensions so it relies on loops, and again, just prints the
+result, returning <code>NIL</code></p>
+<pre class="lein"><code>  (loop for c from 1 to 10
+        do (loop for b from 1 to c
+                 do (loop for a from 1 to b
+                      do (when (and (= (+ a b c) 24) (= (+ (* a a) (* b b)) (* c c)))
+                        (format t &quot;~d, ~d, ~d~%&quot; a b c)))))
+</code></pre>
+<pre class="lein bg-success"><code>6, 8, 10
+NIL</code></pre>
+<p>The loop is still constrained to <span class="math inline">\(b \leq c\)</span> and <span class="math inline">\(a \leq b\)</span>, but definitely runs
+through all those values.</p>
+</div>
+<div id="julia" class="section level3">
+<h3>Julia</h3>
+<p>I really want to learn more Julia, but I’m not entirely new to the language. I have completed
+the first 25 <a href="https://projecteuler.net/">Project Euler</a> problems in <a href="https://github.com/jonocarroll/ProjectEuler_Julia">Julia</a> (by
+no means optimised solutions). I think what’s holding me back is the fact that almost
+every presentation using it is so very mathsy - and I’m a physicist by training. I love
+that the tidyverse is making its way over in the forms of <a href="https://www.queryverse.org/">Queryverse</a>,
+<a href="https://juliadata.github.io/DataFramesMeta.jl/stable/">DataFramesMeta</a>, and more recently (and
+most likely with more success) the <a href="https://github.com/TidierOrg/Tidier.jl">Tidier</a> family.</p>
+<p>Julia <em>does</em> have list comprehensions, and additionally has an “element” operator with
+the mathematically-familiar symbol <code>∈</code></p>
+<pre class="julia"><code>[(a,b,c) for c ∈ 1:10, b ∈ 1:10, a ∈ 1:10 if (a^2 + b^2 == c^2) &amp;&amp; (a+b+c == 24) &amp;&amp; b &lt;= c &amp;&amp; a &lt;= b]</code></pre>
+<pre class="julia bg-success"><code>1-element Vector{Tuple{Int64, Int64, Int64}}:
+ (6, 8, 10)</code></pre>
+<p>Unfortunately, the choices for <code>b</code> and <code>a</code> still need to run through all 10 values because
+Julia doesn’t allow these to be co-defined like Haskell and Python do. I came to Julia from
+mainly only knowing R, so dealing with an output of type <code>Vector{Tuple{Int64, Int64, Int64}}</code>
+initially proved to be a challenge, but I’d say learning more Rust has made me feel a lot more
+comfortable around working with types.</p>
+</div>
+<div id="clojure" class="section level3">
+<h3>Clojure</h3>
+<p>Clojure feels to me like “lisp, but with good libraries”. There’s definitely syntax
+differences, but most of them feel like improvements.</p>
+<pre class="lein"><code>(for [c (range 11)
+      b (range c)
+      a (range b)
+     :when (and (== (+ (* a a) (* b b)) (* c c)) (== (+ a b c) 24))]
+[a b c])</code></pre>
+<pre class="lein bg-success"><code>([6 8 10])</code></pre>
+<p>This still feels like a comprehension, but the syntax is certainly a bit more
+convoluted. Bonus points for the dynamic ranges of <code>b</code> and <code>a</code>. Still, a long way
+off of completely unreadable, I’d say.</p>
+</div>
+<div id="scala" class="section level3">
+<h3>Scala</h3>
+<p>I’m learning a lot of functional programming, and I think I’m happy that some of the
+<a href="https://www.manning.com/books/functional-programming-in-scala-second-edition">textbooks</a> use Scala rather than some alternatives. I’m still very new to this language,
+but so far I think I like it.</p>
+<p>Again, we’re back to a loop, but most of it is straightforward assignments and we
+get the dynamic ranges of <code>b</code> and <code>a</code></p>
+<pre class="scala"><code>for {
+     c &lt;- 1 until 11
+     b &lt;- 1 until c
+     a &lt;- 1 until b
+     if a * a + b * b == c * c &amp; a + b + c == 24
+     } {
+        println(s&quot;Side lengths: $a, $b, $c&quot;)
+}</code></pre>
+<pre class="scala bg-success"><code>Side lengths: 6, 8, 10</code></pre>
+</div>
+<div id="c" class="section level3">
+<h3>C</h3>
+<p>I mentioned that I performed this calculation in C in <a href="https://jcarroll.com.au/2023/08/11/wrapping-c-code-in-an-r-package/">my last post</a> - that
+ends up being just a loop</p>
+<pre class="c"><code>int a, b, c
+
+printf(&quot;%4s\t%4s\t%4s\t%4s\n&quot;, &quot;a&quot;, &quot;b&quot;, &quot;c&quot;);
+printf(&quot;   -------------------------\n&quot;);
+for (c = 1; c &lt;= 24; c++) 
+  for (b = 1; b &lt;= c; b++)
+    for (a = 1; a &lt;= b; a++)
+      if ( ( pow ( a, 2 ) + pow ( b, 2 ) ) == pow ( c, 2 ) ) {
+        printf(&quot;%4i\t%4i\t%4i\t%4i\n&quot;, a, b, c);
+      }</code></pre>
+<p>I haven’t run the output directly, since it needs an entire program supporting it, but
+it’s the right answer.</p>
+<hr />
+<p>So, what does it look like if you run all of these together? I’ve been getting back
+into using <a href="https://github.com/tmux/tmux/wiki">tmux</a> and it’s very powerful. One of the
+features is splitting a window into panes, so I did that - one for each of these
+languages!</p>
+<div class="float">
+<img src="images/polyglot_triangles.png" alt="Calculating the Pythagorean Triple with perimeter 24 in several languages at once - link" />
+<div class="figcaption">Calculating the Pythagorean Triple with perimeter 24 in several languages at once - <a href="https://raw.githubusercontent.com/jonocarroll/jcarroll.com.au/triangles/content/post/2023-08-13-pythagorean-triples-with-comprehensions/images/polyglot_triangles.png">link</a></div>
+</div>
+<p>I still think the Haskell solution shines above all the rest. It has all of the
+simplicity and language richness with none of the boilerplate. I like that it’s
+<a href="https://en.wikipedia.org/wiki/Declarative_programming">declarative</a> (“get an answer to this”)
+rather than <a href="https://en.wikipedia.org/wiki/Imperative_programming">imperative</a> (“do this, then that, then loop here…”). Comparing all of these, it’s clear there’s no guarantees about
+being able to define the dynamic iteration ranges so another win for Haskell, there.</p>
+<p>Following my last post, <a href="https://fosstodon.org/@Kazinator@mstdn.ca">@Kazinator</a> mentioned to me
+that the “TXR Lisp code, calling calcsum directly via FFI using Lisp nested arrays” could
+be written as</p>
+<pre class="bash"><code>$ cat calcsum.tl
+(typedef arr3d (ptr (array (ptr (array (ptr (array int)))))))
+
+(with-dyn-lib &quot;./calcsum.so&quot;
+  (deffi calcsum &quot;calcsum&quot; void (int (ptr arr3d))))
+
+(let* ((dim 16)
+       (arr (vector dim)))
+  (each ((a 0..dim))
+    (set [arr a] (vector dim))
+    (each ((b 0..dim))
+      (set [[arr a] b] (vector dim 0))))
+  (calcsum (pred dim) arr)
+  (each-prod ((a 1..dim)
+              (b 1..dim)
+              (c 1..dim))
+    (let ((sum [[[arr a] b] c]))
+      (if (plusp sum)
+        (put-line (pic &quot;### + ### + ### = ####&quot; a b c sum))))))
+
+$ txr  calcsum.tl</code></pre>
+<pre class="lein"><code>  3 +   4 +   5 =   12
+  5 +  12 +  13 =   30
+  6 +   8 +  10 =   24
+  9 +  12 +  15 =   36</code></pre>
+<p>This calculates <em>all</em> the combinations up to some value (as my post did) but it’s
+already clear there’s some cool features there.</p>
+<p>How does your favourite language calculate the Pythagorean triple with a sum of 24? What can
+I do better in the solution I have above for a language you know? I can be found on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-08-13
+##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.5.0   2023-06-09 [3] CRAN (R 4.3.1)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  dplyr         1.1.2   2023-04-20 [3] CRAN (R 4.3.0)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.21    2023-05-05 [3] CRAN (R 4.3.0)
+##  fansi         1.0.4   2023-01-22 [3] CRAN (R 4.2.2)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  generics      0.1.3   2022-07-05 [3] CRAN (R 4.2.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.5   2023-03-23 [3] CRAN (R 4.2.3)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  JuliaCall     0.17.5  2022-09-08 [1] CRAN (R 4.1.2)
+##  knitr         1.43    2023-05-25 [3] CRAN (R 4.3.0)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lattice       0.21-8  2023-04-05 [4] CRAN (R 4.3.0)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  Matrix        1.6-0   2023-07-08 [4] CRAN (R 4.3.1)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pillar        1.9.0   2023-03-22 [3] CRAN (R 4.2.3)
+##  pkgbuild      1.4.0   2022-11-27 [1] CRAN (R 4.1.2)
+##  pkgconfig     2.0.3   2019-09-22 [3] CRAN (R 4.0.1)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  png           0.1-7   2013-12-03 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  reticulate    1.26    2022-08-31 [1] CRAN (R 4.1.2)
+##  rlang         1.1.1   2023-04-28 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.23    2023-07-01 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.12  2023-01-11 [3] CRAN (R 4.2.2)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  tibble        3.2.1   2023-03-20 [3] CRAN (R 4.3.1)
+##  tidyselect    1.2.0   2022-10-10 [3] CRAN (R 4.2.1)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  utf8          1.2.3   2023-01-31 [3] CRAN (R 4.2.2)
+##  vctrs         0.6.3   2023-06-14 [1] CRAN (R 4.1.2)
+##  xfun          0.39    2023-04-20 [3] CRAN (R 4.3.0)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
