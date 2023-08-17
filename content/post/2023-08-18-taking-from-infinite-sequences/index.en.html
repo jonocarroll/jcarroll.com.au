@@ -34,7 +34,7 @@ it’s entirely possible thanks to iterators and lazy evaluation.</p>
 <p>First, a diversion into recursion</p>
 <div class="float">
 <img src="images/recursive.png" alt="A timely combination. @rverbsr" />
-<div class="figcaption">A timely combination. <a href="https://fosstodon.org/@rverbsr@botsin.space/110903654592091528">@rverbsr</a></div>
+<div class="figcaption">A timely combination. <a href="https://botsin.space/@rverbsr/110903654468565096">@rverbsr</a></div>
 </div>
 <p>In Haskell, one of the first exercises after “Hello, World!” people discover is
 the Fibonacci sequence, where the <span class="math inline">\(n^{\rm th}\)</span> value is given by the sum of the
@@ -126,8 +126,13 @@ at some point it says “too many”.</p>
 <p>Okay, so, not possible, right?</p>
 <p>In Haskell I can define</p>
 <pre class="haskell"><code>λ&gt; fibs = 0 : scanl (+) 1 fibs</code></pre>
-<p>which is a concatenation (<code>:</code>) of <code>0</code> with the result of <code>scanl (+) 1 fibs</code>. To explain
-that part a little: <a href="https://hackage.haskell.org/package/base-4.18.0.0/docs/Prelude.html#v:scanl"><code>scanl</code></a> is similar to <code>reduce</code> in that it takes a starting value, a vector, and a
+<p>which is a concatenation (<code>:</code>) of <code>0</code> with the result of <code>scanl (+) 1 fibs</code>. Note carefully,
+this <em>isn’t</em> a function - it’s a vector of values defined recursively 🤯</p>
+<div class="float">
+<img src="images/mindblown.gif" alt="Mind = blown" />
+<div class="figcaption">Mind = blown</div>
+</div>
+<p>To explain the definition a little more: <a href="https://hackage.haskell.org/package/base-4.18.0.0/docs/Prelude.html#v:scanl"><code>scanl</code></a> is similar to <code>reduce</code> in that it takes a starting value, a vector, and a
 binary operator, but rather than reducing the vector to a value, it creates a new
 vector with the successively reduced values. In this example, the values <code>1..5</code> are
 successively added (<code>+</code>) to <code>0</code>, so the second entry is <code>0+1=1</code>, the next is <code>1+2=3</code>, the
@@ -171,7 +176,7 @@ for any number of values is fast, despite the list being “infinite”</p>
 let ones = iter::repeat(1);</code></pre>
 <p>and I can take some number of these, say, five, collected into a vector</p>
 <pre class="rust"><code>ones.take(5).collect::&lt;Vec&lt;_&gt;&gt;()</code></pre>
-<pre class="rust bg-success"><code>[1, 1, 1, 1, 1]</code></pre>
+<pre class="r bg-success"><code>[1, 1, 1, 1, 1]</code></pre>
 <p>Python also has a notion of infinite sequences, and they’re likely even more common.</p>
 <p>When you work with a (regular, finite) list of values in a range, you get a <code>range</code> object</p>
 <pre class="python"><code>numbers = range(1, 9)
@@ -187,7 +192,7 @@ numbers</code></pre>
 <p>If you <code>filter</code> the numbers (which works on a <code>range</code> or a <code>list</code>) you get a <code>filter</code> object</p>
 <pre class="python"><code>even_numbers = filter(lambda x: x % 2 == 0, numbers)
 even_numbers</code></pre>
-<pre class="bg-success"><code>## &lt;filter object at 0x7f1e981da470&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;filter object at 0x7fcf811da470&gt;</code></pre>
 <pre class="python"><code>type(even_numbers)</code></pre>
 <pre class="bg-success"><code>## &lt;class &#39;filter&#39;&gt;</code></pre>
 <p>which you can also convert to a list to see the values</p>
@@ -221,7 +226,7 @@ it isn’t evaluated until we ask for elements</p>
 nums = infinitenumbers()        
 
 nums</code></pre>
-<pre class="bg-success"><code>## &lt;generator object infinitenumbers at 0x7f1e9815d310&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;generator object infinitenumbers at 0x7fcf8115d310&gt;</code></pre>
 <pre class="python"><code>type(nums)</code></pre>
 <pre class="bg-success"><code>## &lt;class &#39;generator&#39;&gt;</code></pre>
 <p>This is a <em>generator</em> which means it’s capable of generating values. We can ask
@@ -328,9 +333,13 @@ take(fibs, 10, x = 0)</code></pre>
 <pre class="r"><code># 10 values, starting at 1
 take(fibs, 10, x = 1)</code></pre>
 <pre class="r bg-success"><code> [1]  1  1  2  3  5  8 13 21 34 55</code></pre>
-<p>Or, if we want 15 values, starting at the 10th</p>
-<pre class="r"><code>take(fibs, 15, x = 10)</code></pre>
-<pre class="r bg-success"><code> [1]    55    89   144   233   377   610   987  1597  2584  4181  6765 10946 17711 28657 46368</code></pre>
+<p>Or, if we want 12 values, starting at the 10th</p>
+<pre class="r"><code>take(fibs, 12, x = 10)</code></pre>
+<pre class="r bg-success"><code> [1]    55    89   144   233   377   610   987  1597  2584  4181  6765 10946</code></pre>
+<div class="float">
+<img src="images/glasses_recursion.gif" alt="It… works!" />
+<div class="figcaption">It… works!</div>
+</div>
 <p>I’d say that’s working quite nicely!!!</p>
 <p>Some caveats to keep in mind, though…</p>
 <p>Since we’re relying on a count of stack frames on top of <code>.GlobalEnv</code>, this <code>take()</code>
@@ -340,7 +349,8 @@ this blog which is Rmd via {blogdown}). Not for use in production, but a fun
 exercise to figure it out at all.</p>
 <p>Is there a better way to achieve this <code>take()</code> functionality? Where do you use
 infinite iterators/generators in R or another language? Spot an improvement that
-I can make? I can be found on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+I can make? I can be found on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or
+use the comments below.</p>
 <br />
 <details>
 <summary>

@@ -43,7 +43,7 @@ it's entirely possible thanks to iterators and lazy evaluation.
 
 First, a diversion into recursion
 
-![A timely combination. [\@rverbsr](https://fosstodon.org/@rverbsr@botsin.space/110903654592091528)](images/recursive.png)
+![A timely combination. [\@rverbsr](https://botsin.space/@rverbsr/110903654468565096)](images/recursive.png)
 
 In Haskell, one of the first exercises after "Hello, World!" people discover is 
 the Fibonacci sequence, where the $n^{\rm th}$ value is given by the sum of the 
@@ -178,8 +178,12 @@ In Haskell I can define
 λ> fibs = 0 : scanl (+) 1 fibs
 ```
 
-which is a concatenation (`:`) of `0` with the result of `scanl (+) 1 fibs`. To explain 
-that part a little: [`scanl`](https://hackage.haskell.org/package/base-4.18.0.0/docs/Prelude.html#v:scanl) is similar to `reduce` in that it takes a starting value, a vector, and a 
+which is a concatenation (`:`) of `0` with the result of `scanl (+) 1 fibs`. Note carefully, 
+this _isn't_ a function - it's a vector of values defined recursively 🤯
+
+![Mind = blown](images/mindblown.gif)
+
+To explain the definition a little more: [`scanl`](https://hackage.haskell.org/package/base-4.18.0.0/docs/Prelude.html#v:scanl) is similar to `reduce` in that it takes a starting value, a vector, and a 
 binary operator, but rather than reducing the vector to a value, it creates a new 
 vector with the successively reduced values. In this example, the values `1..5` are 
 successively added (`+`) to `0`, so the second entry is `0+1=1`, the next is `1+2=3`, the 
@@ -251,7 +255,7 @@ and I can take some number of these, say, five, collected into a vector
 ```rust
 ones.take(5).collect::<Vec<_>>()
 ```
-```{rust, eval = FALSE, class.source = "bg-success"}
+```{r, eval = FALSE, class.source = "bg-success"}
 [1, 1, 1, 1, 1]
 ```
 
@@ -501,14 +505,16 @@ take(fibs, 10, x = 1)
  [1]  1  1  2  3  5  8 13 21 34 55
 ```
 
-Or, if we want 15 values, starting at the 10th
+Or, if we want 12 values, starting at the 10th
 
 ```{r, eval = FALSE}
-take(fibs, 15, x = 10)
+take(fibs, 12, x = 10)
 ```
 ```{r, eval = FALSE, class.source = "bg-success"}
- [1]    55    89   144   233   377   610   987  1597  2584  4181  6765 10946 17711 28657 46368
+ [1]    55    89   144   233   377   610   987  1597  2584  4181  6765 10946
 ```
+
+![It... works!](images/glasses_recursion.gif) 
 
 I'd say that's working quite nicely!!!
 
@@ -522,7 +528,8 @@ exercise to figure it out at all.
 
 Is there a better way to achieve this `take()` functionality? Where do you use 
 infinite iterators/generators in R or another language? Spot an improvement that 
-I can make? I can be found on [Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+I can make? I can be found on [Mastodon](https://fosstodon.org/@jonocarroll) or 
+use the comments below. 
 
 <br />
 <details>
