@@ -31,6 +31,9 @@ it’s entirely possible thanks to iterators and lazy evaluation.</p>
 languages is the idea of <em>generators</em> or infinite sequences of values. Yes, <em>infinite</em>.
 Coming from R, that seems unlikely, but in at least several other languages,
 it’s entirely possible thanks to iterators and lazy evaluation.</p>
+<p>I saw <a href="https://youtu.be/7fylNa2wZaU">this video</a> which solves a codewars challenge
+using an infinite list, which references <a href="https://youtu.be/bnRNiE_OVWA">this one</a>
+on the same topic.</p>
 <p>First, a diversion into recursion</p>
 <div class="float">
 <img src="images/recursive.png" alt="A timely combination. @rverbsr" />
@@ -192,7 +195,7 @@ numbers</code></pre>
 <p>If you <code>filter</code> the numbers (which works on a <code>range</code> or a <code>list</code>) you get a <code>filter</code> object</p>
 <pre class="python"><code>even_numbers = filter(lambda x: x % 2 == 0, numbers)
 even_numbers</code></pre>
-<pre class="bg-success"><code>## &lt;filter object at 0x7fcf811da470&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;filter object at 0x7f5ac61da470&gt;</code></pre>
 <pre class="python"><code>type(even_numbers)</code></pre>
 <pre class="bg-success"><code>## &lt;class &#39;filter&#39;&gt;</code></pre>
 <p>which you can also convert to a list to see the values</p>
@@ -226,7 +229,7 @@ it isn’t evaluated until we ask for elements</p>
 nums = infinitenumbers()        
 
 nums</code></pre>
-<pre class="bg-success"><code>## &lt;generator object infinitenumbers at 0x7fcf8115d310&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;generator object infinitenumbers at 0x7f5ac615d310&gt;</code></pre>
 <pre class="python"><code>type(nums)</code></pre>
 <pre class="bg-success"><code>## &lt;class &#39;generator&#39;&gt;</code></pre>
 <p>This is a <em>generator</em> which means it’s capable of generating values. We can ask
@@ -366,7 +369,7 @@ use the comments below.</p>
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2023-08-17
+##  date     2023-08-18
 ##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────

@@ -41,6 +41,10 @@ languages is the idea of _generators_ or infinite sequences of values. Yes, _inf
 Coming from R, that seems unlikely, but in at least several other languages, 
 it's entirely possible thanks to iterators and lazy evaluation.
 
+I saw [this video](https://youtu.be/7fylNa2wZaU) which solves a codewars challenge 
+using an infinite list, which references [this one](https://youtu.be/bnRNiE_OVWA) 
+on the same topic.
+
 First, a diversion into recursion
 
 ![A timely combination. [\@rverbsr](https://botsin.space/@rverbsr/110903654468565096)](images/recursive.png)
