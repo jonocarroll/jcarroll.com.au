@@ -1,0 +1,547 @@
+---
+title: Taking from Infinite Sequences
+author: Jonathan Carroll
+date: '2023-08-18'
+slug: taking-from-infinite-sequences
+categories:
+  - rstats
+  - haskell
+  - python
+  - rust
+tags:
+  - rstats
+  - haskell
+  - python
+  - rust
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+One thing that has really caught my attention as I learn more programming 
+languages is the idea of _generators_ or infinite sequences of values. Yes, _infinite_.
+Coming from R, that seems unlikely, but in at least several other languages, 
+it's entirely possible thanks to iterators and lazy evaluation.
+
+<!--more-->
+
+One thing that has really caught my attention as I learn more programming 
+languages is the idea of _generators_ or infinite sequences of values. Yes, _infinite_.
+Coming from R, that seems unlikely, but in at least several other languages, 
+it's entirely possible thanks to iterators and lazy evaluation.
+
+I saw [this video](https://youtu.be/7fylNa2wZaU) which solves a codewars challenge 
+using an infinite list, which references [this one](https://youtu.be/bnRNiE_OVWA) 
+on the same topic.
+
+First, a diversion into recursion
+
+![A timely combination. [\@rverbsr](https://botsin.space/@rverbsr/110903654468565096)](images/recursive.png)
+
+In Haskell, one of the first exercises after "Hello, World!" people discover is 
+the Fibonacci sequence, where the $n^{\rm th}$ value is given by the sum of the 
+two previous values. As a function, this can be written as
+
+```haskell
+λ> fib 0 = 0
+λ> fib 1 = 1
+λ> fib n = fib (n-1) + fib (n-2)
+```
+
+Essentially, `fib(0)` returns `0`. `fib(1)` returns `1`, and for any value `n` it 
+returns the (recursively defined) sum of the two previous values. This isn't infinite
+at all...
+
+$$
+\begin{align*}
+{\rm fib}(4) &= {\rm fib}(3) + {\rm fib}(2)\\
+&= ({\rm fib}(2) + {\rm fib}(1)) + ({\rm fib}(1) + {\rm fib}(0))\\
+&= {\rm fib}(1) + {\rm fib}(0) + {\rm fib}(1) +  {\rm fib}(1) + {\rm fib}(0)\\
+&= 1 + 0 + 1 + 1 + 0\\
+&= 3
+\end{align*}
+$$
+
+We could write that in R as
+
+```{r}
+fib <- function(n) {
+  if (n == 0) return(0)
+  if (n == 1) return(1)
+  fib(n - 1) + fib(n - 2)
+}
+
+fib(4)
+
+fib(8)
+```
+
+This may come as a surprise to some - the function is defined _in terms of itself_ and 
+some base cases. This is entirely fine in R and Haskell as they're lazily evaluated - 
+nothing happens until a value is actually used. In R, this means that if an argument 
+to a function isn't used, it's not evaluated at all
+
+```{r}
+loud_func <- function() {
+  cat("HELLLOOOOO!!!\n")
+}
+
+stays_quiet <- function(f, g = loud_func()) {
+  f(c(1, 2, 3, 4))
+}
+
+stays_quiet(f = mean)
+```
+
+Notice that although the argument `g` is the _invocation_ of `loud_func()`, it's never
+evaluated because we don't use it. If we did use it...
+
+```{r}
+noisy <- function(f, g = loud_func()) {
+  g
+  f(c(1, 2, 3, 4))
+}
+
+noisy(sum)
+```
+
+So, in these languages, we can define a function recursively. Given the base case(s), 
+these will eventually return just a number, so the computation will complete.
+
+Instead of just adding the values together, we can create a sequence of values by 
+concatenating the iterations together. Starting with data and working down to a base 
+case is called "recursion", while starting from a base case and building up a data 
+structure is "corecursion".
+
+If we want a sequence of values that represents the Fibonacci numbers, we can use
+
+```{r}
+fibs <- function(n) {
+  if (n == 0) return(0)
+  if (n == 1) return(1)
+  prev <- fibs(n - 1)
+  c(prev, sum(tail(prev, 2)))
+}
+
+fibs(10)
+```
+
+What's blown my mind recently is the concept of _infinite_ data structures. If I 
+defined some function that, instead of working _down_ to a base case, just kept 
+expanding, say, by concatenating with a _larger_ number (corecursion), such as
+
+```{r}
+inf_series <- function(x) {
+  c(x, inf_series(x + 1))
+}
+```
+
+Then, if I tried to evaluate `inf_series(5)` this would produce
+
+```r
+c(5, inf_series(6))
+```
+
+which would expand to
+
+```r
+c(5, 6, inf_series(7))
+```
+
+and so on... forever. Of course, R can't keep going forever
+
+```{r, eval = FALSE}
+inf_series(5)
+```
+```{r, eval = FALSE, class.source = "bg-danger"}
+Error: C stack usage  7971732 is too close to the limit
+```
+
+This error comes about because each function in R is a "closure" which "encloses" 
+its environment. The way R keeps track of that (and where it needs to return after 
+returning from a function) is by adding "stack frames" each time it dives deeper 
+into a function calling a function. We've asked it to add infinity of these, so 
+at some point it says "too many".
+
+Okay, so, not possible, right?
+
+In Haskell I can define
+
+```haskell
+λ> fibs = 0 : scanl (+) 1 fibs
+```
+
+which is a concatenation (`:`) of `0` with the result of `scanl (+) 1 fibs`. Note carefully, 
+this _isn't_ a function - it's a vector of values defined recursively 🤯
+
+![Mind = blown](images/mindblown.gif)
+
+To explain the definition a little more: [`scanl`](https://hackage.haskell.org/package/base-4.18.0.0/docs/Prelude.html#v:scanl) is similar to `reduce` in that it takes a starting value, a vector, and a 
+binary operator, but rather than reducing the vector to a value, it creates a new 
+vector with the successively reduced values. In this example, the values `1..5` are 
+successively added (`+`) to `0`, so the second entry is `0+1=1`, the next is `1+2=3`, the 
+next is `3+3=6`, then `6+4=10`, then `10+5=15`
+
+```haskell
+λ> scanl (+) 0 [1..5]
+[0,1,3,6,10,15]
+```
+
+In the Fibonacci case, the operator is still addition, but the starting value is `1` 
+and the vector is ... the entire vector we're defining. Writing out some of the
+terms makes this easier to understand
+
+```haskell
+λ> scanl (+) 1 [0, 1, 1, 2, 3, 5, 8]
+[1,1,2,3,5,8,13,21]
+```
+
+The first terms in the sequence, after concatenating with `0` will be 
+
+```haskell
+λ> [0, 1, 1, 2, 3, 5, 8]
+```
+
+so, by defining `fibs` in _terms of_ `fibs`, the sequence can go on forever. So, 
+what if you try to print this? In `GHCI`, the output will just stream forever, which 
+isn't particularly useful. Instead, we can ask for some number of values, say, ten
+
+```haskell
+λ> take 10 fibs
+[0,1,1,2,3,5,8,13,21,34]
+```
+
+Due to the laziness of Haskell, nothing is computed until it's needed, so asking 
+for any number of values is fast, despite the list being "infinite"
+
+```haskell
+λ> take 100 fibs
+[0,1,1,2,3,5,8,13,21,34,55,89,144,233,377,610,987,1597,2584,4181,6765,10946,
+ 17711,28657,46368,75025,121393,196418,317811,514229,832040,1346269,2178309,
+ 3524578,5702887,9227465,14930352,24157817,39088169,63245986,102334155,
+ 165580141,267914296,433494437,701408733,1134903170,1836311903,2971215073,
+ 4807526976,7778742049,12586269025,20365011074,32951280099,53316291173,
+ 86267571272,139583862445,225851433717,365435296162,591286729879,956722026041,
+ 1548008755920,2504730781961,4052739537881,6557470319842,10610209857723,
+ 17167680177565,27777890035288,44945570212853,72723460248141,117669030460994,
+ 190392490709135,308061521170129,498454011879264,806515533049393,
+ 1304969544928657,2111485077978050,3416454622906707,5527939700884757,
+ 8944394323791464,14472334024676221,23416728348467685,37889062373143906,
+ 61305790721611591,99194853094755497,160500643816367088,259695496911122585,
+ 420196140727489673,679891637638612258,1100087778366101931,1779979416004714189,
+ 2880067194370816120,4660046610375530309,7540113804746346429,12200160415121876738,
+ 19740274219868223167,31940434634990099905,51680708854858323072,
+ 83621143489848422977,135301852344706746049,218922995834555169026]
+```
+
+The idea of taking some values from an iterator shows up in other languages. 
+
+In Rust, I can create an infinite iterator of the value `1`
+
+```rust
+use std::iter;
+let ones = iter::repeat(1);
+```
+
+and I can take some number of these, say, five, collected into a vector
+
+```rust
+ones.take(5).collect::<Vec<_>>()
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+[1, 1, 1, 1, 1]
+```
+
+Python also has a notion of infinite sequences, and they're likely even more common.
+
+When you work with a (regular, finite) list of values in a range, you get a `range` object
+
+```{python}
+numbers = range(1, 9)
+numbers
+type(numbers)
+```
+
+You can convert this to a regular list with
+
+```{python}
+list(numbers)
+type(list(numbers))
+```
+
+If you `filter` the numbers (which works on a `range` or a `list`) you get a `filter` object
+
+```{python}
+even_numbers = filter(lambda x: x % 2 == 0, numbers)
+even_numbers
+type(even_numbers)
+```
+
+which you can also convert to a list to see the values
+
+```{python}
+list(even_numbers)
+```
+
+But, you can use this as an _iterable_, so you can get the 'next' value as 
+many times as you need (defined here again to restart the iterator)
+
+```{python}
+even_numbers = filter(lambda x: x % 2 == 0, numbers)
+next(even_numbers)
+next(even_numbers)
+next(even_numbers)
+next(even_numbers)
+```
+
+until there's none left
+
+```{python, error = TRUE}
+next(even_numbers)
+```
+
+As before, you can convert these to a fixed-length list, if desired
+
+```{python}
+list(filter(lambda x: x % 2 == 0, numbers))
+```
+
+Still with me? Great. We can create an _infinite_ list, if we want to, because 
+it isn't evaluated until we ask for elements
+
+```{python}
+def infinitenumbers():
+    count = 0
+    while True:
+        yield count
+        count += 1
+
+nums = infinitenumbers()        
+
+nums
+type(nums)
+```
+
+This is a _generator_ which means it's capable of generating values. We can ask 
+for as many as we want, now
+
+```{python}
+next(nums)
+next(nums)
+next(nums)
+next(nums)
+next(nums)
+```
+
+If we want to convert some number of these to a list, we need a new function, roughly 
+the equivalent of Haskell's `take`, in order to extract these
+
+```{python}
+from itertools import islice
+
+nums = infinitenumbers()        
+
+list(islice(nums, 10))
+```
+
+and as before, if we ask for more _now_, we get the next batch
+
+```{python}
+list(islice(nums, 10))
+```
+
+So, can we do this at all in R? We can't build an infinite data structure _per se_, 
+but what if we use a recursive definition and just... stop when it's recursed enough 
+times?
+
+I initially thought about hacking into functions with `body()` to keep track of this, 
+but we've already discussed something we can use - the stack frames! R keeps track of 
+how deep it's recursed using these, and we can access that information with `sys.calls()`, 
+the help for which describes 
+
+```
+.GlobalEnv is given number 0 in the list of frames. Each subsequent function evaluation increases the frame stack by 1.
+```
+
+So, we can tell from inside a recursive function how deeply nested we currently are. 
+
+I wrote the following helper, named for the Haskell inspiration
+
+```{r}
+take <- function(f, n, x = 1) {
+  current_depth <- length(sys.calls())  # Subtract 1 to exclude the current call,
+                                        # but add 1 to start at 1
+  
+  # uncomment this line to watch the magic happen!
+  # cat("Current Stack Depth: ", current_depth, "\n")
+ 
+  if (current_depth >= n) {
+    return(f(x))
+  } else {
+    return(c(f(x), take(f, n, x + 1)))
+  }
+}
+```
+
+this checks `length(sys.calls())` which starts at 1 the first time it's called, and adds
+1 every time we go deeper. So long as we haven't reached the requested depth, it 
+combines the passed-in function evaluated at $x + i$ with a new evaluation one level deeper.
+
+When that reaches the requested depth, it returns the evaluated function, bubbling up the
+returned values so that we end up with a vector of $n$ values
+
+$$
+[f(x), f(x+1), f(x+2), f(x+3), \dots, f(x+n-1)]
+$$
+
+Neat idea, but does it work? We can't pass in an actual infinite data structure, 
+but we _can_ pass a function that defines one
+
+A (trivial) function that produces a number at each value of `x` is
+
+```{r}
+numbers <- function(x) {
+  x
+}
+```
+
+If we pretend that's a generator for every number, we can "take" some values from it
+
+```{r, eval = FALSE}
+take(numbers, 5)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1] 1 2 3 4 5
+```
+
+```{r, eval = FALSE}
+take(numbers, 10)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  1  2  3  4  5  6  7  8  9 10
+```
+
+A more complicated recipe for an infinite list of numbers could be
+
+```{r, eval = FALSE}
+g <- function(x) {
+  x + 1
+}
+
+take(g, 7)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+[1] 2 3 4 5 6 7 8
+```
+
+```{r, eval = FALSE}
+take(g, 10)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  2  3  4  5  6  7  8  9 10 11
+```
+
+
+Dealing with non-sequential numbers might be trickier... what if we want all the even 
+numbers?
+
+```{r, eval = FALSE}
+evens <- function(x) {
+  if(x %% 2 == 0) x else NULL
+}
+
+take(evens, 10)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  2  4  6  8 10
+```
+
+No, that only checks the first 10 numbers. Instead, 
+
+```{r, eval = FALSE}
+evens <- function(x) {
+  x * 2
+}
+
+take(evens, 7)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  2  4  6  8 10 12 14
+```
+```{r, eval = FALSE}
+take(evens, 10)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  2  4  6  8 10 12 14 16 18 20
+```
+
+What about our original example? 
+
+```{r, eval = FALSE}
+fibs <- function(x) {
+  if (x == 0) return(0)
+  if (x == 1) return(1)
+  fibs(x - 1) + fibs(x - 2)
+}
+
+# 10 values, starting at 0
+take(fibs, 10, x = 0)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  0  1  1  2  3  5  8 13 21 34
+```
+```{r, eval = FALSE}
+# 10 values, starting at 1
+take(fibs, 10, x = 1)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]  1  1  2  3  5  8 13 21 34 55
+```
+
+Or, if we want 12 values, starting at the 10th
+
+```{r, eval = FALSE}
+take(fibs, 12, x = 10)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+ [1]    55    89   144   233   377   610   987  1597  2584  4181  6765 10946
+```
+
+![It... works!](images/glasses_recursion.gif) 
+
+I'd say that's working quite nicely!!!
+
+Some caveats to keep in mind, though... 
+
+Since we're relying on a count of stack frames on top of `.GlobalEnv`, this `take()` 
+implementation won't work nicely inside another function. In fact, since 
+{knitr} is already a few functions deep, it also doesn't work in an Rmd file (including 
+this blog which is Rmd via {blogdown}). Not for use in production, but a fun
+exercise to figure it out at all.
+
+Is there a better way to achieve this `take()` functionality? Where do you use 
+infinite iterators/generators in R or another language? Spot an improvement that 
+I can make? I can be found on [Mastodon](https://fosstodon.org/@jonocarroll) or 
+use the comments below. 
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
