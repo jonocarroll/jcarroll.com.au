@@ -25,14 +25,14 @@ editor_options:
 
 
 <p>I keep hearing the assertion that “writing APL/Haskell/etc… makes you think
-differently” and I kept wondering why I agreed with the statement but didn’t think
-too much of it. I believe I’ve figured out that it’s <em>because</em> I happened to have
+differently” and I kept wondering why I agreed with the statement but at the same time
+didn’t think too much of it. I believe I’ve figured out that it’s <em>because</em> I happened to have
 been using Array-aware languages this whole time! It turns out R is an even better
 language for beginners than I thought.</p>
 <!--more-->
 <p>I keep hearing the assertion that “writing APL/Haskell/etc… makes you think
-differently” and I kept wondering why I agreed with the statement but didn’t think
-too much of it. I believe I’ve figured out that it’s <em>because</em> I happened to have
+differently” and I kept wondering why I agreed with the statement but at the same time
+didn’t think too much of it. I believe I’ve figured out that it’s <em>because</em> I happened to have
 been using Array-aware languages this whole time! It turns out R is an even better
 language for beginners than I thought.</p>
 <p>Let’s start with some basics. A “scalar” value is just a number by itself. That might
@@ -111,16 +111,17 @@ also hosts <a href="https://www.arraycast.com/">The Array Cast</a> podcast that 
 mention in yet another <a href="https://adspthepodcast.com/">of his podcasts</a> (how do
 people have the time to make all of these!?!). I was listening to the <a href="https://www.arraycast.com/episodes/episode60-rob-pike">latest of these;
 an interview with Rob Pike</a>, one
-of the co-creators of Go and UTF-8 - it’s a great interview full of history and a lot
-of name dropping.</p>
+of the co-creators of Go and UTF-8 - it’s a really interesting interview full of history,
+insights, and a lot of serious name dropping.</p>
 <p>Anyway, Rob is describing what it is he really likes about APL and says</p>
 <blockquote>
 <p>“I saw a talk some time ago, I wish I could remember where it was, where somebody said, this is why programming languages are so difficult for people. Let’s say that I have a list of numbers and I want to add seven to every number on that list. And he went through about a dozen languages showing how you create a list of numbers and then add seven to it. Right? And it went on and on and on. And he said,”Wouldn’t it be nice if you could just type 7+ and then write the list of numbers?” And he said, “Well, you know what? There’s one language that actually does that, and that’s APL.” And I think there’s something really profound in that, that there’s no ceremony in APL. If you want to add two numbers together in any language, you can add two numbers together. But if you want to add a matrix and a matrix, or a matrix and a vector, or a vector and a scaler or whatever, there’s no extra ceremony involved. You just write it down.</p>
 </blockquote>
 <p>(<a href="https://www.arraycast.com/episode-60-transcript#:~:text=I%20saw%20a%20talk%20some%20time%20ago">link to shownotes</a>)</p>
-<p>The talk he mentions is linked in the shownotes as <a href="https://youtu.be/8Ab3ArE8W3s&amp;t=434">“Stop Writing Dead Programs” by Jack Rusher (Strange Loop 2022)</a> (linked to the relevant timestamp) where
-Jack shows how to add <code>1</code> to a vector of values. He demonstrates that in some
-languages there’s lots you need to write that has <strong>nothing</strong> to do with the problem itself;
+<p>The talk he mentions is linked in the shownotes as <a href="https://youtu.be/8Ab3ArE8W3s&amp;t=434">“Stop Writing Dead Programs” by Jack Rusher (Strange Loop 2022)</a> (linked to the relevant timestamp, and
+which I’m pretty sure I’ve watched before - it’s a great talk!) where
+Jack shows how to add <code>1</code> to a vector of values in a handful of languages. He demonstrates that in
+some languages there’s lots you need to write that has <strong>nothing</strong> to do with the problem itself;
 allocating memory, looping to some length, etc… then leads to demonstrating that the way to
 do this in APL is</p>
 <pre class="r"><code>1 + 1 2 3 4</code></pre>
@@ -164,9 +165,7 @@ m</code></pre>
 ## [2,]    1    1    1    1
 ## [3,]    1    1    1    1</code></pre>
 <pre class="r"><code>v &lt;- c(11, 22, 33)
-v</code></pre>
-<pre class="bg-success"><code>## [1] 11 22 33</code></pre>
-<pre class="r"><code>m + v</code></pre>
+m + v</code></pre>
 <pre class="bg-success"><code>##      [,1] [,2] [,3] [,4]
 ## [1,]   12   12   12   12
 ## [2,]   23   23   23   23
@@ -185,7 +184,7 @@ m + v</code></pre>
 ## [2,]   23   12   45   34
 ## [3,]   34   23   12   45</code></pre>
 <p>{reticulate} has a really <a href="https://cran.r-project.org/web/packages/reticulate/vignettes/arrays.html">nice explainer</a>
-between the differences between R (column-major) and python (row-major), and importantly,
+of the differences between R (column-major) and python (row-major), and importantly,
 the interop between these two.</p>
 <p>So, is working with arrays actually so uncommon? I first thought of Julia,
 and since it’s much newer than R and took a lot of inspiration from a variety

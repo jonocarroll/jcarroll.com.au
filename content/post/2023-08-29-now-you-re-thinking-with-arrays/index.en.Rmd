@@ -32,16 +32,16 @@ knitr::opts_chunk$set(
 ```
 
 I keep hearing the assertion that "writing APL/Haskell/etc... makes you think 
-differently" and I kept wondering why I agreed with the statement but didn't think 
-too much of it. I believe I've figured out that it's _because_ I happened to have 
+differently" and I kept wondering why I agreed with the statement but at the same time 
+didn't think too much of it. I believe I've figured out that it's _because_ I happened to have 
 been using Array-aware languages this whole time! It turns out R is an even better 
 language for beginners than I thought.
 
 <!--more-->
 
 I keep hearing the assertion that "writing APL/Haskell/etc... makes you think 
-differently" and I kept wondering why I agreed with the statement but didn't think 
-too much of it. I believe I've figured out that it's _because_ I happened to have 
+differently" and I kept wondering why I agreed with the statement but at the same time 
+didn't think too much of it. I believe I've figured out that it's _because_ I happened to have 
 been using Array-aware languages this whole time! It turns out R is an even better 
 language for beginners than I thought.
 
@@ -141,8 +141,8 @@ also hosts [The Array Cast](https://www.arraycast.com/) podcast that I heard him
 mention in yet another [of his podcasts](https://adspthepodcast.com/) (how do 
 people have the time to make all of these!?!). I was listening to the [latest of these; 
 an interview with Rob Pike](https://www.arraycast.com/episodes/episode60-rob-pike), one 
-of the co-creators of Go and UTF-8 - it's a great interview full of history and a lot 
-of name dropping. 
+of the co-creators of Go and UTF-8 - it's a really interesting interview full of history, 
+insights, and a lot of serious name dropping. 
 
 Anyway, Rob is describing what it is he really likes about APL and says
 
@@ -150,9 +150,10 @@ Anyway, Rob is describing what it is he really likes about APL and says
 
 ([link to shownotes](https://www.arraycast.com/episode-60-transcript#:~:text=I%20saw%20a%20talk%20some%20time%20ago))
 
-The talk he mentions is linked in the shownotes as ["Stop Writing Dead Programs" by Jack Rusher (Strange Loop 2022)](https://youtu.be/8Ab3ArE8W3s&t=434) (linked to the relevant timestamp) where 
-Jack shows how to add `1` to a vector of values. He demonstrates that in some 
-languages there's lots you need to write that has **nothing** to do with the problem itself; 
+The talk he mentions is linked in the shownotes as ["Stop Writing Dead Programs" by Jack Rusher (Strange Loop 2022)](https://youtu.be/8Ab3ArE8W3s&t=434) (linked to the relevant timestamp, and
+which I'm pretty sure I've watched before - it's a great talk!) where 
+Jack shows how to add `1` to a vector of values in a handful of languages. He demonstrates that in
+some languages there's lots you need to write that has **nothing** to do with the problem itself; 
 allocating memory, looping to some length, etc... then leads to demonstrating that the way to 
 do this in APL is 
 
@@ -198,7 +199,6 @@ and adding a vector to a matrix repeats the operation over rows
 m <- matrix(1, nrow = 3, ncol = 4)
 m
 v <- c(11, 22, 33)
-v
 m + v
 ```
 
@@ -216,7 +216,7 @@ m + v
 ```
 
 {reticulate} has a really [nice explainer](https://cran.r-project.org/web/packages/reticulate/vignettes/arrays.html) 
-between the differences between R (column-major) and python (row-major), and importantly, 
+of the differences between R (column-major) and python (row-major), and importantly, 
 the interop between these two.
 
 So, is working with arrays actually so uncommon? I first thought of Julia, 
