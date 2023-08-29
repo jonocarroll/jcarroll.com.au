@@ -253,8 +253,8 @@ so no credit.
 Well, what about python? 
 
 ```python
->>> a = [1, 2, 3, 4, 5]
->>> a + 7
+a = [1, 2, 3, 4, 5]
+a + 7
 ```
 ```{r, eval = FALSE, class.source = "bg-danger"}
 Traceback (most recent call last):
