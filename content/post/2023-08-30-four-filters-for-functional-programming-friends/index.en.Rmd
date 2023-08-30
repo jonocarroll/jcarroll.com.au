@@ -1,0 +1,344 @@
+---
+title: Four Filters for Functional (Programming) Friends
+author: Jonathan Carroll
+date: '2023-08-30'
+categories:
+  - rstats
+tags:
+  - rstats
+slug: four-filters-for-functional-programming-friends
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I'm part of a local Functional Programming Meetup group which hosts talks, but also 
+coordinates social meetings where we discuss all sorts of FP-related topics including 
+Haskell and other languages. We've started running challenges where we all solve a 
+given problem in a language of our choosing then discuss over drinks how they compare. 
+
+<!--more-->
+
+I'm part of a local Functional Programming Meetup group which hosts talks, but also 
+coordinates social meetings where we discuss all sorts of FP-related topics including 
+Haskell and other languages. We've started running challenges where we all solve a 
+given problem in a language of our choosing then discuss over drinks how they compare. 
+
+This month we went with an "easy" problem with a wrinkle - we would solve the 'strain' 
+exercise from Exercism ([Haskell](https://exercism.org/tracks/haskell/exercises/strain), 
+[Python](https://exercism.org/tracks/python/exercises/strain) - your access to these is 
+likely conditional on you being enrolled in that language track) with an extension:
+
+> The problem is trivial; the challenge is to solve it in 4 different ways using your language of choice. 
+
+The problem itself is given as
+
+> Implement the `keep` and `discard` operation on collections. Given a collection and a predicate on the collection's elements, `keep` returns a new collection containing those elements where the predicate is true, while `discard` returns a new collection containing those elements where the predicate is false.
+>
+> For example, given the collection of numbers:
+>
+> `1, 2, 3, 4, 5`
+>
+> And the predicate:
+>
+> "is the number even?"
+>
+> Then your keep operation should produce:
+>
+> `2, 4`
+>
+> While your discard operation should produce:
+>
+> `1, 3, 5`
+
+
+but with a restriction:
+
+> Keep your hands off that filter/reject/whatchamacallit functionality provided by your standard library! Solve this one yourself using other basic tools instead. 
+
+I figured it's a good opportunity to write as I solve it, so here's my R solutions.
+
+I'll define a test case so I can try out things as I go
+
+```{r}
+test_vec <- c(1, 2, 3, 4, 5)
+test_vec
+```
+
+and the predicates related to 'even' and 'odd' as functions which return `TRUE` or `FALSE`
+
+```{r}
+is_even <- function(x) {
+  x %% 2 == 0
+}
+
+is_even(7)
+is_even(8)
+
+is_odd <- function(x) {
+  !is_even(x)
+}
+
+is_odd(7)
+is_odd(8)
+```
+
+Firstly, the restriction doesn't seem to worry me because when I think of "filter" in R 
+I immediately think of `dplyr::filter()` which works on `data.frame` (or `tibble`) 
+objects, and (given the examples) we're aiming to work with vectors (the problem is stated 
+the same in several languages, so "collection" is a generalisation).
+
+What about `base::Filter()`? The help states 
+
+> `Filter` extracts the elements of a vector for which a predicate (logical) function gives true. 
+
+```{r}
+Filter(is_even, test_vec)
+Filter(is_odd, test_vec)
+```
+
+Yep, that works exactly as I hoped, but is also a built-in "filter" so I can't use it. 
+
+When I think of `keep` and `discard` I do think of the `purrr` functions, and while these, too 
+do exactly what I want
+
+```{r}
+purrr::keep(test_vec, is_even)
+purrr::discard(test_vec, is_even)
+```
+
+They're in a library, so I'm going to say they don't count.
+
+One of the things I like about the way R does subsetting (via the square-bracket `[`
+which _is by itself_ a function, but requires a matching `]` to satisfy the parser) is that you 
+can use a logical vector to subset another vector, 
+
+```{r}
+c(3, 5, 8, 12)[c(TRUE, FALSE, FALSE, TRUE)]
+```
+
+which means that if I can _produce_ such a logical vector, say, by applying a predicate function, I can do subsetting that way 
+
+```{r}
+test_vec[is_even(test_vec)]
+test_vec[is_odd(test_vec)]
+```
+
+Instead of using `is_odd()` I can just _negate_ the logical vector to get the same effect
+
+```{r}
+test_vec[!is_even(test_vec)]
+```
+
+I can make those into functions that take a predicate and a vector
+
+```{r}
+keep_1 <- function(f, x) {
+  x[f(x)]
+}
+
+discard_1 <- function(f, x) {
+  x[!f(x)]
+}
+```
+
+Testing these
+
+```{r}
+keep_1(is_even, test_vec)
+discard_1(is_even, test_vec)
+```
+
+One down! 
+
+One thing to note with this approach is that R is _vectorised_ - I've discussed this 
+a few times on this blog ([most recently](https://jcarroll.com.au/2023/08/29/now-you-re-thinking-with-arrays/)) - which 
+means that these predicate functions will gladly take a vector, not just a single value. This 
+works for the `is_even()` function because inside that, the modulo operator `%%` is itself 
+vectorised, so 
+
+```{r}
+is_even(c(2, 4, 6, 9, 11, 13))
+```
+
+As I wrote in my previous post, thinking like this just becomes so natural in R that I 
+have to force myself to remember that not every language does that.
+
+It's also worth mentioning that I'm passing a reference to the function `is_even` to our 
+`keep` and `discard` functions - that is serving as our predicate because I need a way to 
+state "is the number even?" which references the number, so I need a function. That _doesn't_ 
+have to be a named function, though - it could be an "anonymous" function (a "lambda") if 
+I wanted
+
+```{r}
+keep_1(function(z) z %% 2 == 0, test_vec)
+discard_1(function(z) z %% 2 == 0, test_vec)
+```
+
+I can subset a vector with a logical vector of the same length, specifying whether or not 
+to include that element, but I can _also_ subset by position (keeping in mind that R is a 
+1-based language which means the first element is indexed by a `1` - why would any language 
+do anything different? 😜)
+
+```{r}
+c(3, 5, 8, 12)[c(1, 4)]
+```
+
+The function `which()` takes a logical vector and returns which indices are `TRUE`
+
+```{r}
+which(c(TRUE, FALSE, FALSE, TRUE))
+```
+
+so I can use this with our predicate to keep elements
+
+```{r}
+keep_2 <- function(f, x) {
+  x[which(f(x))]
+}
+
+keep_2(is_even, test_vec)
+```
+
+However, discarding elements by index doesn't use a logical negation, it uses a 
+negative sign (`-`)
+
+```{r}
+discard_2 <- function(f, x) {
+  x[-which(f(x))]
+}
+
+discard_2(is_even, test_vec)
+```
+
+If you look at the source of `Filter()`, you'll see that I wasn't far off of exactly 
+that
+
+```{r}
+Filter
+```
+
+but it still counts. 
+
+Another option would be to unpack the elements themselves and do some stepwise 
+comparisons in a loop. For each element `el` in the vector `x`, test if `f(el)` is `TRUE`, 
+and if it is, concatenate `el` to the end of the accumulating `result` vector
+
+```{r}
+keep_3 <- function(f, x) {
+  result <- c()
+  for (el in x) {
+    if (f(el)) {
+      result <- c(result, el)
+    }
+  }
+  result
+}
+
+keep_3(is_even, test_vec)
+
+discard_3 <- function(f, x) {
+  result <- c()
+  for (el in x) {
+    if (!f(el)) {
+      result <- c(result, el)
+    }
+  }
+  result
+}
+
+discard_3(is_even, test_vec)
+```
+
+Of course, this approach is a Bad Idea™ in general but I'm not optimising anything here. This 
+approach _does_ have the advantage that it isn't relying on R's vectorised capabilities, since 
+each element is passed to the predicate function individually, so if I did have a non-vectorized 
+predicate function, this would still work.
+
+I really want a "weird" way to do this. R has plenty of weird to go around, but since I've 
+been learning some Haskell, and the challenge originally referenced the Haskell solution, 
+what if I code a Haskell-esque solution? 
+
+Haskell makes good use of recursive functions. Any loop can be written as a recursion 
+(and vice-versa) so the previous solution is a good starting point. First, I define 
+a base case; if I run out of numbers to process, return `NULL`. A convenient feature 
+of R vectors is that `NULL`s are dropped
+
+```{r}
+c(1, 2, NULL, 3, 4, NULL, 5)
+```
+
+Otherwise, I can take the first value in the vector and test it with the predicate. If it 
+returns `TRUE` I can append it to what I've calculated so far, and recursively 
+call the function again with the rest of the vector. That could look like
+
+```{r}
+keep_4 <- function(f, x) {
+  if (!length(x)) return(NULL)
+  if (f(x[1])) {
+    return(c(x[1], Recall(f, x[-1])))
+  } else {
+    return(Recall(f, x[-1]))
+  }
+}
+
+keep_4(is_even, test_vec)
+```
+
+Some interesting points about this: the `Recall()` function is nice for defining a recursive 
+function. I could have used `keep_4` there, but the advantage of this implementation is 
+that I can rename the function and it still works as expected
+
+```{r}
+keep_4_also <- keep_4
+rm("keep_4")
+
+keep_4_also(is_even, test_vec)
+```
+
+If I had explicitly referenced `keep_4` inside itself, that recursion would fail with this 
+renaming. 
+
+The negative subsetting works as described above; `x[-1]` means "not including the first
+element". Lastly, testing `if (!length(x))` works because `0` can be coerced to `FALSE` and 
+any other value to `TRUE`, so if the `length` of `x` is _not_ `0`, this condition is met.
+
+The discarding variant is similar, just with the two `returns()` around the other way, or
+
+```{r}
+discard_4 <- function(f, x) {
+  if (!length(x)) return(NULL)
+  if (!f(x[1])) {
+    return(c(x[1], Recall(f, x[-1])))
+  } else {
+    return(Recall(f, x[-1]))
+  }
+}
+
+discard_4(is_even, test_vec)
+```
+
+There we go; 4 hand-coded implementations of `keep` and `discard` in R.
+
+Can you think of another that doesn't use `Filter()` or an external library? Let me 
+know in the comments below or on [Mastodon](https://fosstodon.org/@jonocarroll). I'm 
+looking forward to seeing how people solved this in other languages.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

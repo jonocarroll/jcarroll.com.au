@@ -1,0 +1,332 @@
+---
+title: Four Filters for Functional (Programming) Friends
+author: Jonathan Carroll
+date: '2023-08-30'
+categories:
+  - rstats
+tags:
+  - rstats
+slug: four-filters-for-functional-programming-friends
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>I’m part of a local Functional Programming Meetup group which hosts talks, but also
+coordinates social meetings where we discuss all sorts of FP-related topics including
+Haskell and other languages. We’ve started running challenges where we all solve a
+given problem in a language of our choosing then discuss over drinks how they compare.</p>
+<!--more-->
+<p>I’m part of a local Functional Programming Meetup group which hosts talks, but also
+coordinates social meetings where we discuss all sorts of FP-related topics including
+Haskell and other languages. We’ve started running challenges where we all solve a
+given problem in a language of our choosing then discuss over drinks how they compare.</p>
+<p>This month we went with an “easy” problem with a wrinkle - we would solve the ‘strain’
+exercise from Exercism (<a href="https://exercism.org/tracks/haskell/exercises/strain">Haskell</a>,
+<a href="https://exercism.org/tracks/python/exercises/strain">Python</a> - your access to these is
+likely conditional on you being enrolled in that language track) with an extension:</p>
+<blockquote>
+<p>The problem is trivial; the challenge is to solve it in 4 different ways using your language of choice.</p>
+</blockquote>
+<p>The problem itself is given as</p>
+<blockquote>
+<p>Implement the <code>keep</code> and <code>discard</code> operation on collections. Given a collection and a predicate on the collection’s elements, <code>keep</code> returns a new collection containing those elements where the predicate is true, while <code>discard</code> returns a new collection containing those elements where the predicate is false.</p>
+<p>For example, given the collection of numbers:</p>
+<p><code>1, 2, 3, 4, 5</code></p>
+<p>And the predicate:</p>
+<p>“is the number even?”</p>
+<p>Then your keep operation should produce:</p>
+<p><code>2, 4</code></p>
+<p>While your discard operation should produce:</p>
+<p><code>1, 3, 5</code></p>
+</blockquote>
+<p>but with a restriction:</p>
+<blockquote>
+<p>Keep your hands off that filter/reject/whatchamacallit functionality provided by your standard library! Solve this one yourself using other basic tools instead.</p>
+</blockquote>
+<p>I figured it’s a good opportunity to write as I solve it, so here’s my R solutions.</p>
+<p>I’ll define a test case so I can try out things as I go</p>
+<pre class="r"><code>test_vec &lt;- c(1, 2, 3, 4, 5)
+test_vec</code></pre>
+<pre class="bg-success"><code>## [1] 1 2 3 4 5</code></pre>
+<p>and the predicates related to ‘even’ and ‘odd’ as functions which return <code>TRUE</code> or <code>FALSE</code></p>
+<pre class="r"><code>is_even &lt;- function(x) {
+  x %% 2 == 0
+}
+
+is_even(7)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>is_even(8)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is_odd &lt;- function(x) {
+  !is_even(x)
+}
+
+is_odd(7)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is_odd(8)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<p>Firstly, the restriction doesn’t seem to worry me because when I think of “filter” in R
+I immediately think of <code>dplyr::filter()</code> which works on <code>data.frame</code> (or <code>tibble</code>)
+objects, and (given the examples) we’re aiming to work with vectors (the problem is stated
+the same in several languages, so “collection” is a generalisation).</p>
+<p>What about <code>base::Filter()</code>? The help states</p>
+<blockquote>
+<p><code>Filter</code> extracts the elements of a vector for which a predicate (logical) function gives true.</p>
+</blockquote>
+<pre class="r"><code>Filter(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<pre class="r"><code>Filter(is_odd, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>Yep, that works exactly as I hoped, but is also a built-in “filter” so I can’t use it.</p>
+<p>When I think of <code>keep</code> and <code>discard</code> I do think of the <code>purrr</code> functions, and while these, too
+do exactly what I want</p>
+<pre class="r"><code>purrr::keep(test_vec, is_even)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<pre class="r"><code>purrr::discard(test_vec, is_even)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>They’re in a library, so I’m going to say they don’t count.</p>
+<p>One of the things I like about the way R does subsetting (via the square-bracket <code>[</code>
+which <em>is by itself</em> a function, but requires a matching <code>]</code> to satisfy the parser) is that you
+can use a logical vector to subset another vector,</p>
+<pre class="r"><code>c(3, 5, 8, 12)[c(TRUE, FALSE, FALSE, TRUE)]</code></pre>
+<pre class="bg-success"><code>## [1]  3 12</code></pre>
+<p>which means that if I can <em>produce</em> such a logical vector, say, by applying a predicate function, I can do subsetting that way</p>
+<pre class="r"><code>test_vec[is_even(test_vec)]</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<pre class="r"><code>test_vec[is_odd(test_vec)]</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>Instead of using <code>is_odd()</code> I can just <em>negate</em> the logical vector to get the same effect</p>
+<pre class="r"><code>test_vec[!is_even(test_vec)]</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>I can make those into functions that take a predicate and a vector</p>
+<pre class="r"><code>keep_1 &lt;- function(f, x) {
+  x[f(x)]
+}
+
+discard_1 &lt;- function(f, x) {
+  x[!f(x)]
+}</code></pre>
+<p>Testing these</p>
+<pre class="r"><code>keep_1(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<pre class="r"><code>discard_1(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>One down!</p>
+<p>One thing to note with this approach is that R is <em>vectorised</em> - I’ve discussed this
+a few times on this blog (<a href="https://jcarroll.com.au/2023/08/29/now-you-re-thinking-with-arrays/">most recently</a>) - which
+means that these predicate functions will gladly take a vector, not just a single value. This
+works for the <code>is_even()</code> function because inside that, the modulo operator <code>%%</code> is itself
+vectorised, so</p>
+<pre class="r"><code>is_even(c(2, 4, 6, 9, 11, 13))</code></pre>
+<pre class="bg-success"><code>## [1]  TRUE  TRUE  TRUE FALSE FALSE FALSE</code></pre>
+<p>As I wrote in my previous post, thinking like this just becomes so natural in R that I
+have to force myself to remember that not every language does that.</p>
+<p>It’s also worth mentioning that I’m passing a reference to the function <code>is_even</code> to our
+<code>keep</code> and <code>discard</code> functions - that is serving as our predicate because I need a way to
+state “is the number even?” which references the number, so I need a function. That <em>doesn’t</em>
+have to be a named function, though - it could be an “anonymous” function (a “lambda”) if
+I wanted</p>
+<pre class="r"><code>keep_1(function(z) z %% 2 == 0, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<pre class="r"><code>discard_1(function(z) z %% 2 == 0, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>I can subset a vector with a logical vector of the same length, specifying whether or not
+to include that element, but I can <em>also</em> subset by position (keeping in mind that R is a
+1-based language which means the first element is indexed by a <code>1</code> - why would any language
+do anything different? 😜)</p>
+<pre class="r"><code>c(3, 5, 8, 12)[c(1, 4)]</code></pre>
+<pre class="bg-success"><code>## [1]  3 12</code></pre>
+<p>The function <code>which()</code> takes a logical vector and returns which indices are <code>TRUE</code></p>
+<pre class="r"><code>which(c(TRUE, FALSE, FALSE, TRUE))</code></pre>
+<pre class="bg-success"><code>## [1] 1 4</code></pre>
+<p>so I can use this with our predicate to keep elements</p>
+<pre class="r"><code>keep_2 &lt;- function(f, x) {
+  x[which(f(x))]
+}
+
+keep_2(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<p>However, discarding elements by index doesn’t use a logical negation, it uses a
+negative sign (<code>-</code>)</p>
+<pre class="r"><code>discard_2 &lt;- function(f, x) {
+  x[-which(f(x))]
+}
+
+discard_2(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>If you look at the source of <code>Filter()</code>, you’ll see that I wasn’t far off of exactly
+that</p>
+<pre class="r"><code>Filter</code></pre>
+<pre class="bg-success"><code>## function (f, x) 
+## {
+##     ind &lt;- as.logical(unlist(lapply(x, f)))
+##     x[which(ind)]
+## }
+## &lt;bytecode: 0x55da1b321ad8&gt;
+## &lt;environment: namespace:base&gt;</code></pre>
+<p>but it still counts.</p>
+<p>Another option would be to unpack the elements themselves and do some stepwise
+comparisons in a loop. For each element <code>el</code> in the vector <code>x</code>, test if <code>f(el)</code> is <code>TRUE</code>,
+and if it is, concatenate <code>el</code> to the end of the accumulating <code>result</code> vector</p>
+<pre class="r"><code>keep_3 &lt;- function(f, x) {
+  result &lt;- c()
+  for (el in x) {
+    if (f(el)) {
+      result &lt;- c(result, el)
+    }
+  }
+  result
+}
+
+keep_3(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<pre class="r"><code>discard_3 &lt;- function(f, x) {
+  result &lt;- c()
+  for (el in x) {
+    if (!f(el)) {
+      result &lt;- c(result, el)
+    }
+  }
+  result
+}
+
+discard_3(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>Of course, this approach is a Bad Idea™ in general but I’m not optimising anything here. This
+approach <em>does</em> have the advantage that it isn’t relying on R’s vectorised capabilities, since
+each element is passed to the predicate function individually, so if I did have a non-vectorized
+predicate function, this would still work.</p>
+<p>I really want a “weird” way to do this. R has plenty of weird to go around, but since I’ve
+been learning some Haskell, and the challenge originally referenced the Haskell solution,
+what if I code a Haskell-esque solution?</p>
+<p>Haskell makes good use of recursive functions. Any loop can be written as a recursion
+(and vice-versa) so the previous solution is a good starting point. First, I define
+a base case; if I run out of numbers to process, return <code>NULL</code>. A convenient feature
+of R vectors is that <code>NULL</code>s are dropped</p>
+<pre class="r"><code>c(1, 2, NULL, 3, 4, NULL, 5)</code></pre>
+<pre class="bg-success"><code>## [1] 1 2 3 4 5</code></pre>
+<p>Otherwise, I can take the first value in the vector and test it with the predicate. If it
+returns <code>TRUE</code> I can append it to what I’ve calculated so far, and recursively
+call the function again with the rest of the vector. That could look like</p>
+<pre class="r"><code>keep_4 &lt;- function(f, x) {
+  if (!length(x)) return(NULL)
+  if (f(x[1])) {
+    return(c(x[1], Recall(f, x[-1])))
+  } else {
+    return(Recall(f, x[-1]))
+  }
+}
+
+keep_4(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<p>Some interesting points about this: the <code>Recall()</code> function is nice for defining a recursive
+function. I could have used <code>keep_4</code> there, but the advantage of this implementation is
+that I can rename the function and it still works as expected</p>
+<pre class="r"><code>keep_4_also &lt;- keep_4
+rm(&quot;keep_4&quot;)
+
+keep_4_also(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 2 4</code></pre>
+<p>If I had explicitly referenced <code>keep_4</code> inside itself, that recursion would fail with this
+renaming.</p>
+<p>The negative subsetting works as described above; <code>x[-1]</code> means “not including the first
+element”. Lastly, testing <code>if (!length(x))</code> works because <code>0</code> can be coerced to <code>FALSE</code> and
+any other value to <code>TRUE</code>, so if the <code>length</code> of <code>x</code> is <em>not</em> <code>0</code>, this condition is met.</p>
+<p>The discarding variant is similar, just with the two <code>returns()</code> around the other way, or</p>
+<pre class="r"><code>discard_4 &lt;- function(f, x) {
+  if (!length(x)) return(NULL)
+  if (!f(x[1])) {
+    return(c(x[1], Recall(f, x[-1])))
+  } else {
+    return(Recall(f, x[-1]))
+  }
+}
+
+discard_4(is_even, test_vec)</code></pre>
+<pre class="bg-success"><code>## [1] 1 3 5</code></pre>
+<p>There we go; 4 hand-coded implementations of <code>keep</code> and <code>discard</code> in R.</p>
+<p>Can you think of another that doesn’t use <code>Filter()</code> or an external library? Let me
+know in the comments below or on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a>. I’m
+looking forward to seeing how people solved this in other languages.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-08-30
+##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.5.0   2023-06-09 [3] CRAN (R 4.3.1)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.21    2023-05-05 [3] CRAN (R 4.3.0)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.6   2023-08-10 [3] CRAN (R 4.3.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  knitr         1.43    2023-05-25 [3] CRAN (R 4.3.0)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pkgbuild      1.4.0   2022-11-27 [1] CRAN (R 4.1.2)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.1.1   2023-04-28 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.23    2023-07-01 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.12  2023-01-11 [3] CRAN (R 4.2.2)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  vctrs         0.6.3   2023-06-14 [1] CRAN (R 4.1.2)
+##  xfun          0.40    2023-08-09 [3] CRAN (R 4.3.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
