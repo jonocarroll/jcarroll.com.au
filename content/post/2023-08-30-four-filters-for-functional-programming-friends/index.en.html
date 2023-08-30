@@ -79,9 +79,9 @@ the same in several languages, so “collection” is a generalisation).</p>
 <pre class="bg-success"><code>## [1] 2 4</code></pre>
 <pre class="r"><code>Filter(is_odd, test_vec)</code></pre>
 <pre class="bg-success"><code>## [1] 1 3 5</code></pre>
-<p>Yep, that works exactly as we hoped, but is also a built-in “filter” so we can’t use it.</p>
+<p>Yep, that works exactly as I hoped, but is also a built-in “filter” so I can’t use it.</p>
 <p>When I think of <code>keep</code> and <code>discard</code> I do think of the <code>purrr</code> functions, and while these, too
-do exactly what we want</p>
+do exactly what I want</p>
 <pre class="r"><code>purrr::keep(test_vec, is_even)</code></pre>
 <pre class="bg-success"><code>## [1] 2 4</code></pre>
 <pre class="r"><code>purrr::discard(test_vec, is_even)</code></pre>
@@ -92,15 +92,15 @@ which <em>is by itself</em> a function, but requires a matching <code>]</code> t
 can use a logical vector to subset another vector,</p>
 <pre class="r"><code>c(3, 5, 8, 12)[c(TRUE, FALSE, FALSE, TRUE)]</code></pre>
 <pre class="bg-success"><code>## [1]  3 12</code></pre>
-<p>which means that if we can <em>produce</em> such a logical vector, say, by applying a predicate function, we can do subsetting that way</p>
+<p>which means that if I can <em>produce</em> such a logical vector, say, by applying a predicate function, I can do subsetting that way</p>
 <pre class="r"><code>test_vec[is_even(test_vec)]</code></pre>
 <pre class="bg-success"><code>## [1] 2 4</code></pre>
 <pre class="r"><code>test_vec[is_odd(test_vec)]</code></pre>
 <pre class="bg-success"><code>## [1] 1 3 5</code></pre>
-<p>Instead of using <code>is_odd()</code> we can just <em>negate</em> the logical vector to get the same effect</p>
+<p>Instead of using <code>is_odd()</code> I can just <em>negate</em> the logical vector to get the same effect</p>
 <pre class="r"><code>test_vec[!is_even(test_vec)]</code></pre>
 <pre class="bg-success"><code>## [1] 1 3 5</code></pre>
-<p>We can make those into functions that take a predicate and a vector</p>
+<p>I can make those into functions that take a predicate and a vector</p>
 <pre class="r"><code>keep_1 &lt;- function(f, x) {
   x[f(x)]
 }
@@ -123,17 +123,17 @@ vectorised, so</p>
 <pre class="bg-success"><code>## [1]  TRUE  TRUE  TRUE FALSE FALSE FALSE</code></pre>
 <p>As I wrote in my previous post, thinking like this just becomes so natural in R that I
 have to force myself to remember that not every language does that.</p>
-<p>It’s also worth mentioning that we’re passing a reference to the function <code>is_even</code> to our
-<code>keep</code> and <code>discard</code> functions - that is serving as our predicate because we need a way to
-state “is the number even?” which references the number, so we need a function. That <em>doesn’t</em>
+<p>It’s also worth mentioning that I’m passing a reference to the function <code>is_even</code> to our
+<code>keep</code> and <code>discard</code> functions - that is serving as our predicate because I need a way to
+state “is the number even?” which references the number, so I need a function. That <em>doesn’t</em>
 have to be a named function, though - it could be an “anonymous” function (a “lambda”) if
-we wanted</p>
+I wanted</p>
 <pre class="r"><code>keep_1(function(z) z %% 2 == 0, test_vec)</code></pre>
 <pre class="bg-success"><code>## [1] 2 4</code></pre>
 <pre class="r"><code>discard_1(function(z) z %% 2 == 0, test_vec)</code></pre>
 <pre class="bg-success"><code>## [1] 1 3 5</code></pre>
-<p>We can subset a vector with a logical vector of the same length, specifying whether or not
-to include that element, but we can <em>also</em> subset by position (keeping in mind that R is a
+<p>I can subset a vector with a logical vector of the same length, specifying whether or not
+to include that element, but I can <em>also</em> subset by position (keeping in mind that R is a
 1-based language which means the first element is indexed by a <code>1</code> - why would any language
 do anything different? 😜)</p>
 <pre class="r"><code>c(3, 5, 8, 12)[c(1, 4)]</code></pre>
@@ -141,7 +141,7 @@ do anything different? 😜)</p>
 <p>The function <code>which()</code> takes a logical vector and returns which indices are <code>TRUE</code></p>
 <pre class="r"><code>which(c(TRUE, FALSE, FALSE, TRUE))</code></pre>
 <pre class="bg-success"><code>## [1] 1 4</code></pre>
-<p>so we can use this with our predicate to keep elements</p>
+<p>so I can use this with our predicate to keep elements</p>
 <pre class="r"><code>keep_2 &lt;- function(f, x) {
   x[which(f(x))]
 }
@@ -156,7 +156,7 @@ negative sign (<code>-</code>)</p>
 
 discard_2(is_even, test_vec)</code></pre>
 <pre class="bg-success"><code>## [1] 1 3 5</code></pre>
-<p>If we look at the source of <code>Filter()</code>, we see that we weren’t far off of exactly
+<p>If you look at the source of <code>Filter()</code>, you’ll see that I wasn’t far off of exactly
 that</p>
 <pre class="r"><code>Filter</code></pre>
 <pre class="bg-success"><code>## function (f, x) 
@@ -164,7 +164,7 @@ that</p>
 ##     ind &lt;- as.logical(unlist(lapply(x, f)))
 ##     x[which(ind)]
 ## }
-## &lt;bytecode: 0x563239b6db80&gt;
+## &lt;bytecode: 0x55da1b321ad8&gt;
 ## &lt;environment: namespace:base&gt;</code></pre>
 <p>but it still counts.</p>
 <p>Another option would be to unpack the elements themselves and do some stepwise
@@ -194,21 +194,21 @@ keep_3(is_even, test_vec)</code></pre>
 
 discard_3(is_even, test_vec)</code></pre>
 <pre class="bg-success"><code>## [1] 1 3 5</code></pre>
-<p>Of course, this approach is a Bad Idea™ in general but we’re not optimising anything here. This
+<p>Of course, this approach is a Bad Idea™ in general but I’m not optimising anything here. This
 approach <em>does</em> have the advantage that it isn’t relying on R’s vectorised capabilities, since
-each element is passed to the predicate function individually, so if we did have a non-vectorized
+each element is passed to the predicate function individually, so if I did have a non-vectorized
 predicate function, this would still work.</p>
 <p>I really want a “weird” way to do this. R has plenty of weird to go around, but since I’ve
 been learning some Haskell, and the challenge originally referenced the Haskell solution,
 what if I code a Haskell-esque solution?</p>
 <p>Haskell makes good use of recursive functions. Any loop can be written as a recursion
-(and vice-versa) so the previous solution is a good starting point. First, we define
-a base case; if we run out of numbers to process, return <code>NULL</code>. A convenient feature
+(and vice-versa) so the previous solution is a good starting point. First, I define
+a base case; if I run out of numbers to process, return <code>NULL</code>. A convenient feature
 of R vectors is that <code>NULL</code>s are dropped</p>
 <pre class="r"><code>c(1, 2, NULL, 3, 4, NULL, 5)</code></pre>
 <pre class="bg-success"><code>## [1] 1 2 3 4 5</code></pre>
-<p>Otherwise, we can take the first value in the vector and test it with the predicate. If it
-returns <code>TRUE</code> we can append it to what we’ve calculated so far, and recursively
+<p>Otherwise, I can take the first value in the vector and test it with the predicate. If it
+returns <code>TRUE</code> I can append it to what I’ve calculated so far, and recursively
 call the function again with the rest of the vector. That could look like</p>
 <pre class="r"><code>keep_4 &lt;- function(f, x) {
   if (!length(x)) return(NULL)

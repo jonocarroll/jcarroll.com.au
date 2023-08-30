@@ -105,10 +105,10 @@ Filter(is_even, test_vec)
 Filter(is_odd, test_vec)
 ```
 
-Yep, that works exactly as we hoped, but is also a built-in "filter" so we can't use it. 
+Yep, that works exactly as I hoped, but is also a built-in "filter" so I can't use it. 
 
 When I think of `keep` and `discard` I do think of the `purrr` functions, and while these, too 
-do exactly what we want
+do exactly what I want
 
 ```{r}
 purrr::keep(test_vec, is_even)
@@ -125,20 +125,20 @@ can use a logical vector to subset another vector,
 c(3, 5, 8, 12)[c(TRUE, FALSE, FALSE, TRUE)]
 ```
 
-which means that if we can _produce_ such a logical vector, say, by applying a predicate function, we can do subsetting that way 
+which means that if I can _produce_ such a logical vector, say, by applying a predicate function, I can do subsetting that way 
 
 ```{r}
 test_vec[is_even(test_vec)]
 test_vec[is_odd(test_vec)]
 ```
 
-Instead of using `is_odd()` we can just _negate_ the logical vector to get the same effect
+Instead of using `is_odd()` I can just _negate_ the logical vector to get the same effect
 
 ```{r}
 test_vec[!is_even(test_vec)]
 ```
 
-We can make those into functions that take a predicate and a vector
+I can make those into functions that take a predicate and a vector
 
 ```{r}
 keep_1 <- function(f, x) {
@@ -172,19 +172,19 @@ is_even(c(2, 4, 6, 9, 11, 13))
 As I wrote in my previous post, thinking like this just becomes so natural in R that I 
 have to force myself to remember that not every language does that.
 
-It's also worth mentioning that we're passing a reference to the function `is_even` to our 
-`keep` and `discard` functions - that is serving as our predicate because we need a way to 
-state "is the number even?" which references the number, so we need a function. That _doesn't_ 
+It's also worth mentioning that I'm passing a reference to the function `is_even` to our 
+`keep` and `discard` functions - that is serving as our predicate because I need a way to 
+state "is the number even?" which references the number, so I need a function. That _doesn't_ 
 have to be a named function, though - it could be an "anonymous" function (a "lambda") if 
-we wanted
+I wanted
 
 ```{r}
 keep_1(function(z) z %% 2 == 0, test_vec)
 discard_1(function(z) z %% 2 == 0, test_vec)
 ```
 
-We can subset a vector with a logical vector of the same length, specifying whether or not 
-to include that element, but we can _also_ subset by position (keeping in mind that R is a 
+I can subset a vector with a logical vector of the same length, specifying whether or not 
+to include that element, but I can _also_ subset by position (keeping in mind that R is a 
 1-based language which means the first element is indexed by a `1` - why would any language 
 do anything different? 😜)
 
@@ -198,7 +198,7 @@ The function `which()` takes a logical vector and returns which indices are `TRU
 which(c(TRUE, FALSE, FALSE, TRUE))
 ```
 
-so we can use this with our predicate to keep elements
+so I can use this with our predicate to keep elements
 
 ```{r}
 keep_2 <- function(f, x) {
@@ -219,7 +219,7 @@ discard_2 <- function(f, x) {
 discard_2(is_even, test_vec)
 ```
 
-If we look at the source of `Filter()`, we see that we weren't far off of exactly 
+If you look at the source of `Filter()`, you'll see that I wasn't far off of exactly 
 that
 
 ```{r}
@@ -258,9 +258,9 @@ discard_3 <- function(f, x) {
 discard_3(is_even, test_vec)
 ```
 
-Of course, this approach is a Bad Idea™ in general but we're not optimising anything here. This 
+Of course, this approach is a Bad Idea™ in general but I'm not optimising anything here. This 
 approach _does_ have the advantage that it isn't relying on R's vectorised capabilities, since 
-each element is passed to the predicate function individually, so if we did have a non-vectorized 
+each element is passed to the predicate function individually, so if I did have a non-vectorized 
 predicate function, this would still work.
 
 I really want a "weird" way to do this. R has plenty of weird to go around, but since I've 
@@ -268,16 +268,16 @@ been learning some Haskell, and the challenge originally referenced the Haskell 
 what if I code a Haskell-esque solution? 
 
 Haskell makes good use of recursive functions. Any loop can be written as a recursion 
-(and vice-versa) so the previous solution is a good starting point. First, we define 
-a base case; if we run out of numbers to process, return `NULL`. A convenient feature 
+(and vice-versa) so the previous solution is a good starting point. First, I define 
+a base case; if I run out of numbers to process, return `NULL`. A convenient feature 
 of R vectors is that `NULL`s are dropped
 
 ```{r}
 c(1, 2, NULL, 3, 4, NULL, 5)
 ```
 
-Otherwise, we can take the first value in the vector and test it with the predicate. If it 
-returns `TRUE` we can append it to what we've calculated so far, and recursively 
+Otherwise, I can take the first value in the vector and test it with the predicate. If it 
+returns `TRUE` I can append it to what I've calculated so far, and recursively 
 call the function again with the rest of the vector. That could look like
 
 ```{r}
