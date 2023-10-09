@@ -1,0 +1,335 @@
+---
+title: Hooray, Array!
+author: Jonathan Carroll
+date: '2023-10-09'
+slug: hooray-array
+categories:
+  - APL
+  - uiua
+  - rstats
+  - raku
+  - rust
+tags:
+  - APL
+  - uiua
+  - rstats
+  - raku
+  - rust
+type: ''
+subtitle: ''
+image: ''
+---
+
+
+
+<p>If you’re reading this hoping that I’m done with droning on about
+array-languages, close the tab… it only gets worse from here. If you thought
+APL was unreadable, even after my <a href="https://jcarroll.com.au/2023/07/07/array-languages-r-vs-apl/">earlier blog posts</a>, again -
+close button is right there. In this post I try out a brand new <em>stack-based</em>
+array language and continue to advocate for learning such things.</p>
+<!--more-->
+<p>If you’re reading this hoping that I’m done with droning on about
+array-languages, close the tab… it only gets worse from here. If you thought
+APL was unreadable, even after my <a href="https://jcarroll.com.au/2023/07/07/array-languages-r-vs-apl/">earlier blog posts</a>, again -
+close button is right there. In this post I try out a brand new <em>stack-based</em>
+array language and continue to advocate for learning such things.</p>
+<p>I subscribe to a lot of RSS feeds these days - it’s certainly making a comeback, and it’s
+great to see developers returning to blogging outside of paid platforms. Keeping up with
+all of those posts, however, does take quite a bit of time. So when I find one I do
+really find engaging, I do my best to dig in.</p>
+<p><a href="https://buttondown.email/hillelwayne/archive/picat-is-my-favorite-new-toolbox-language/">This post</a>
+by Hillel Wayne wasn’t specifically interesting (my dance card for learning new languages is already
+pretty full, but I can’t help looking at others) but it did present a small, bite-sized
+puzzle to solve; what’s a simple way to “generate 5 random 10-character strings”. Now, that’s
+pretty much a code-golf question right there. Hillel presents a solution in <a href="https://raku.org/">Raku</a> (a.k.a. Perl 6 - note the “p” and “6” in the Raku logo) as a “quick” solution</p>
+<pre><code>for ^5 {say (&#39;a&#39;..&#39;z&#39;).roll(10).join}</code></pre>
+<pre class="r bg-success"><code>dmjfpwxspu
+vernmlljkw
+korntotesp
+rkpewsoqjn
+blswvruden</code></pre>
+<p>and I can’t argue with that - it’s readable (even though I don’t know much Perl/Raku), I can
+reason about what and how it’s doing what it’s doing (making an educated guess about <code>^</code> which
+is indeed a <a href="https://docs.raku.org/language/operators#prefix_%5E">range operation</a> and <code>say</code> being
+an <a href="https://docs.raku.org/routine/say">output method</a>; <code>roll</code> is a nice choice for <a href="https://docs.raku.org/routine/roll">random selection</a>).</p>
+<p>When I see problems like this, I start to think through what tools I could use to solve it. I
+still default to R because it’s the language I know best, but my first attempt isn’t nearly
+as concise</p>
+<pre class="r"><code>sapply(1:5, \(x) paste0(sample(letters, 10, replace = TRUE), collapse = &quot;&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;kcqicytylm&quot; &quot;peybjcbumk&quot; &quot;bbvhibgqjs&quot; &quot;uzbpzrkywp&quot; &quot;zettlmjghm&quot;</code></pre>
+<p>I <em>do</em> like that R has <code>letters</code> (and <code>LETTERS</code>) as built-in structures; that makes things a
+little easier. I <em>could</em> write that just as easily as a for-loop, especially since I don’t
+actually need an argument to the anonymous function</p>
+<pre class="r"><code>for (i in 1:5) {
+  print(
+    paste0(
+      sample(letters, 10, replace = TRUE), 
+      collapse = &quot;&quot;
+    )
+  )
+}</code></pre>
+<pre class="bg-success"><code>## [1] &quot;zwwpihqipr&quot;
+## [1] &quot;cxunwvojaq&quot;
+## [1] &quot;xlkcubjysw&quot;
+## [1] &quot;ilpohtgcag&quot;
+## [1] &quot;ralzlrszen&quot;</code></pre>
+<p>Side-by-side, these aren’t all that different…</p>
+<div class="float">
+<img src="images/raku_r_coloured.png" alt="Raku vs R solutions with common colouring" />
+<div class="figcaption">Raku vs R solutions with common colouring</div>
+</div>
+<p>R defaults to <code>replace = FALSE</code> which needs adjusting, and doesn’t like concatenating
+strings quite so easily as <code>join()</code>, but otherwise the translation is fairly
+straightforward. The Raku version is shorter, for sure.</p>
+<p>I could probably go and try a few other languages, but I’m all too tempted to try APL.
+Unfortunately, <a href="https://tryapl.org/">tryapl.org</a> seems to be down, but then I remembered…
+New on the scene is <a href="https://www.uiua.org/">Uiua</a> (pronounced “wee-wuh”) following the
+footsteps of other APL-descendants such as <a href="https://mlochbaum.github.io/BQN/">BQN</a>. This
+was covered by <a href="https://www.arraycast.com/episodes/episode63-uiua">The Array Cast panel</a>
+who interviewed the author, as well as Conor from the same group in
+<a href="https://www.youtube.com/watch?v=iTC1EiX5bM0">several</a> <a href="https://www.youtube.com/watch?v=pq1k5USZZ9A">videos</a>.</p>
+<p>The idea of a stack-based language is that you put some data “on the stack” then
+you no longer need to refer to arguments; a monadic function just applies to whatever
+is on the top of the stack. A dyadic function just applies to to the top two
+pieces of data on the stack. Need another copy of your data somewhere in your processing? Just
+duplicate it on the stack.</p>
+<p>The way this works in practice is you “read” from right-to-left (same as APL), so if we
+put the values <code>2</code> and <code>3</code> on the stack then use the dyadic <code>+</code> function</p>
+<pre><code>+ 3 2</code></pre>
+<pre class="r bg-success"><code>5</code></pre>
+<p>Similar to APL, this language uses glyphs for primitive functions, but a really nice
+feature is writing out the “name” of the function you want (in the above case, <code>add</code>) which
+the interpreter will convert to the glyph for you, so</p>
+<pre><code>add 3 2</code></pre>
+<pre class="r bg-success"><code>5</code></pre>
+<p>produces the same code (with glyphs) and output.</p>
+<p>Working with a stack would certainly be something different for me, but I figured it’s
+worth a try! The first hurdle came quickly; how do I get the letters of the alphabet?
+Reading through the examples, I found that I can specify a string literal with <code>@</code>, and
+Uiua supports some <a href="https://www.uiua.org/docs/types#:~:text=Character%20Arithmetic">arithmetic on these</a> so this works</p>
+<pre><code>+ @a 1
++ @a 25</code></pre>
+<pre class="r bg-success"><code>@b
+@z</code></pre>
+<p>Next, I needed to generate all the letters, and thankfully, adding a <em>range</em> from 1 to 25
+(<code>⇡26</code>) works</p>
+<pre><code>+@a⇡26</code></pre>
+<pre class="r bg-success"><code>&quot;abcdefghijklmnopqrstuvwxyz&quot;</code></pre>
+<p>Note that you can also use <code>add @a range 26</code> - the interpreter inserts the glyphs for you.</p>
+<p>Next, I need a way to sample 10 letters from this. There’s a <code>rand</code> function
+(the glyph looks like a dice - nice!) but it only produces a single value
+between 0 and 1. Additionally, I need to run this several times to get the 10
+values. The front page of the website has a nice example demonstrating exactly
+this, so that helps. It uses <code>rand</code> (<code>⚂</code>) and <code>repeat</code> (<code>⍥</code>) to generate 5
+random numbers between 0 and 1, then <code>mult</code> (<code>×</code>) to bring the range up to 0 to
+10, then finally <code>floor</code> (<code>⌊</code>) to return to integers.</p>
+<pre><code>⌊×10[⍥⚂5]</code></pre>
+<pre class="r bg-success"><code>[5 3 7 8 4]</code></pre>
+<p>In my case, I want to generate 10 values and I need to multiply by 26 to have the
+right indices</p>
+<pre><code>⌊×26[⍥⚂10]+@a⇡26</code></pre>
+<pre class="r bg-success"><code>&quot;abcdefghijklmnopqrstuvwxyz&quot;
+[10 25 23 20 4 25 15 2 24 24]</code></pre>
+<p>The values on the stack are then the letters of the alphabet, and 10 indices to be selected.</p>
+<p>This is where I had to pause and think - how do I repeat this 5 times? There’s no loops (I
+don’t think). Then I realised - this is an <em>array</em> language… I should be leveraging that!</p>
+<p>Instead of asking for 10 indices, I can ask for 50. Then, I just need to <code>reshape</code> (<code>↯</code>)
+these 50 values into 5 groups of 10</p>
+<pre><code>↯5_10⌊×26[⍥⚂50]+@a⇡26</code></pre>
+<pre class="r bg-success"><code>&quot;abcdefghijklmnopqrstuvwxyz&quot;
+╭─                               
+╷ 21 19  4 18  2 24  6  1  2  6  
+   0 12  1  1 12  2 12  7 12  0  
+   5  1 19  6 22 19 23 18 12 25  
+  20 13 10 19 17  2 12  1 16  4  
+   9 24  6  9 18  6 21 18 23  1  
+                                ╯</code></pre>
+<p>Now, there are two data objects on the stack; the alphabet, and an array of indices to be
+selected. A dyadic <code>select</code> (<code>⊏</code>) will take these two objects, and select elements of the
+first based on indices of the second, and voila!</p>
+<pre><code>⊏↯5_10⌊×26[⍥⚂50]+@a⇡26</code></pre>
+<pre class="r bg-success"><code>╭─              
+╷ &quot;gewctqbttq&quot;  
+  &quot;vsbvzbqiod&quot;  
+  &quot;wpmkmnuxwz&quot;  
+  &quot;rymyxzqibo&quot;  
+  &quot;zxtnpadwvl&quot;  
+               ╯</code></pre>
+<p>That’s a walkthrough of the glyphs in my final solution - <a href="https://uiua.org/pad?src=4oqP4oavNV8xMOKMisOXMjZb4o2l4pqCNTBdK0Bh4oehMjY=">you can play
+with it on the website yourself</a> - but one could enter those function names in full
+and the interpreter will figure it out for you</p>
+<pre><code>select reshape 5_10 floor mult 26[repeat rand 50] add @a range 26
+
+...
+
+⊏ ↯ 5_10 ⌊ × 26[⍥⚂ 50] + @a ⇡ 26</code></pre>
+<pre class="r bg-success"><code>╭─              
+╷ &quot;wtyefkiavu&quot;  
+  &quot;gfllwkuqcn&quot;  
+  &quot;qydoiyqprk&quot;  
+  &quot;awvdxdsymj&quot;  
+  &quot;zzvueychem&quot;  
+               ╯</code></pre>
+<p>I know people like to say this is “unreadable” but with a little colour, a lot of
+the elements of the Raku and R solutions are here</p>
+<div class="float">
+<img src="images/uiua_coloured.png" alt="Uiua solution with colours corresponding to the earlier Raku and R solutions" />
+<div class="figcaption">Uiua solution with colours corresponding to the earlier Raku and R solutions</div>
+</div>
+<p>So… is that more concise than the R or even Raku solutions? Gosh, no. BUT, I
+had a lot more fun writing it. For certain problems, APL-like languages really
+do have a lot to offer, and for all I know there’s a much better way to spell
+this in very few glyphs that I’ve overlooked (feel free to send me one!).</p>
+<p>You can make quite complex things; the Uiua logo itself - made in Uiua!</p>
+<pre><code>xy ← ⍘⍉⊞⊟. ÷÷2∶ -÷2,⇡.200
+Rgb ← [∶⍘⊟×.xy ↯△⊢xy0.5]
+u ← ↥&lt;0.2∶&gt;0.7.+×2 ×.∶⍘⊟xy
+c ← &lt;∶√/+ⁿ2 xy
+⍉⊂∶-¬u c1 +0.1 ∺↧Rgb c0.95</code></pre>
+<div class="float">
+<img src="images/uiua_logo.png" alt="Uiui code to generate the Uiua logo" />
+<div class="figcaption">Uiui code to generate the Uiua logo</div>
+</div>
+<p>Another neat fact about this language is that it’s written in Rust, so it’s
+potentially quite fast as well. Array stuff in Rust is top of mind for me at the
+moment - <a href="https://www.jernesto.com/articles/rapl">this cool post</a> from earlier
+in the year covers an implementation of some APL-like array processing in Rust
+which I’m keen to dig deeper into (there’s a not-too-old
+<a href="https://github.com/JErnestoMtz/rapl">repo</a> of things already built). I clearly
+need to re-read my own posts, because I actually linked to that cool post above
+in <a href="https://jcarroll.com.au/2023/07/07/array-languages-r-vs-apl/">my first APL-related post</a>, but because I had searched for “rank polymorphism” and it fit the bill.</p>
+<p>The fact that R has a lot of these array-compatible functions out-of-the-box is
+terribly underpromoted and undercelebrated. Bringing this back around to R, can
+I use the array method there? I can certainly build a matrix of 50 letters quite
+concisely, though the fact that R doesn’t concatenate characters so easily still
+hurts</p>
+<pre class="r"><code>m &lt;- matrix(sample(letters, 50, replace = TRUE), 5, 10)
+apply(m, 1, \(x) paste0(x, collapse = &quot;&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;wzyfpoyegm&quot; &quot;xjehbspfql&quot; &quot;vjpvimtwkm&quot; &quot;uzkwmgcmix&quot; &quot;suakdpagvl&quot;</code></pre>
+<p>I’m hoping to play a bit more with Uiua, and I was genuinely impressed that I managed
+to solve this at all, but I’m still just beginning my journey in APL and there’s no
+shortage of things to learn there. In fact, despite having no tryapl.org, I <em>do</em> have
+the Ride editor locally. A bit of searching for clues later, and I have something!</p>
+<p>In (Dyalog) APL you can create the uppercase alphabet with just</p>
+<pre><code>  ⎕A</code></pre>
+<pre class="r bg-success"><code>ABCDEFGHIJKLMNOPQRSTUVWXYZ</code></pre>
+<p>similar to <code>LETTERS</code>. Lowercase letters can be generated with</p>
+<pre><code>  819⌶⎕A</code></pre>
+<pre class="r bg-success"><code>abcdefghijklmnopqrstuvwxyz</code></pre>
+<p>or (possibly implementation-specific)</p>
+<pre><code>  ⎕c⎕a</code></pre>
+<pre class="r bg-success"><code>abcdefghijklmnopqrstuvwxyz</code></pre>
+<p>Selecting random elements from this involves <a href="https://aplwiki.com/wiki/Roll"><code>roll</code></a> with
+the syntax</p>
+<pre><code>  ?5 10⍴26</code></pre>
+<pre class="r bg-success"><code>18 16  7  8 22 25 15 17 24 19
+18 23 24  9 25 17  4  2 25 24
+10 13  6 11 10 17 21  9 15 20
+25  8  3 12  4  2 21  3  1 18
+ 2  5 17 19 25  3  3 21  9  4</code></pre>
+<p>which produces random values between 1 and the right argument (in this case, a
+5x10 reshape of the value <code>26</code> repeated over and over). That’s exactly what we need
+as indices to select letters. Putting these together</p>
+<pre><code>⎕c⎕a[?5 10⍴26]</code></pre>
+<pre class="r bg-success"><code>axpyohnotq
+hsrottizwk
+dgecrgxbcu
+qvvxszptpq
+wmaktfuvwf</code></pre>
+<p>Even better - if we store the <code>letters</code> like R does, and define a functional
+version which takes a left argument (<code>⍺</code>; the shape of the
+array), a right argument (<code>⍵</code>; the letters to sample from), and automatically
+calculates the length as <code>≢⍵</code>, then the entire solution is</p>
+<pre><code>letters←⎕c⎕a
+randstrings←{⍵[?⍺⍴≢⍵]}
+5 10 randstrings letters</code></pre>
+<pre class="r bg-success"><code>npentutsdo
+jttcnqeuqm
+imgrtupyfx
+eliiqnishu
+jonkovlmcn</code></pre>
+<p>Okay, <em>that’s</em> concise! And, provided you know what <code>?</code>, <code>⍴</code>, and <code>≢</code> do, it’s
+fairly readable (in my opinion, at least).</p>
+<p>Can you make a better/shorter/more interesting solution to the random strings
+problem? Or can improve the Uiua solution? I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-10-09
+##  pandoc   3.1.8 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.5.1   2023-08-11 [3] CRAN (R 4.3.1)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.21    2023-05-05 [3] CRAN (R 4.3.0)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.6   2023-08-10 [3] CRAN (R 4.3.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  knitr         1.43    2023-05-25 [3] CRAN (R 4.3.0)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pkgbuild      1.4.0   2022-11-27 [1] CRAN (R 4.1.2)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.1.1   2023-04-28 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.24    2023-08-14 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.12  2023-01-11 [3] CRAN (R 4.2.2)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  vctrs         0.6.3   2023-06-14 [1] CRAN (R 4.1.2)
+##  xfun          0.40    2023-08-09 [3] CRAN (R 4.3.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
