@@ -1,0 +1,306 @@
+---
+title: Print Debugging (Now with Icecream!)
+author: Jonathan Carroll
+date: '2023-11-07'
+slug: print-debugging-now-with-icecream
+categories:
+  - rstats
+  - rust
+tags:
+  - rstats
+  - rust
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>Print debugging has its place. Sure, it’s not always the <em>best</em> way to debug something,
+but it can often be the fastest. In this post I describe a useful way to do this in Rust
+and how we can get similar behaviour in R.</p>
+<!--more-->
+<p>Print debugging has its place. Sure, it’s not always the <em>best</em> way to debug something,
+but it can often be the fastest. In this post I describe a useful way to do this in Rust
+and how we can get similar behaviour in R.</p>
+<p>I love the Rust <a href="https://dev-doc.rust-lang.org/beta/std/macro.dbg.html"><code>dbg!</code></a>
+macro - it wraps a value or expression and prints the result to help debug
+what’s happening in the middle of some function. If we had some complicated
+function that combined some values, e.g.</p>
+<pre class="rust"><code>fn f(val1: i32, val2: i32) -&gt; i32 {
+    // do some things
+    let otherval: i32 = 10;
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!(&quot;final result = {}&quot;, f(5, 6))
+}</code></pre>
+<p>Running this gives just the final result, as expected</p>
+<pre><code>final result = 21</code></pre>
+<p>We might want to check on what the intermediate combinations of <code>otherval</code> and <code>val1</code>
+or <code>val2</code> (terrible names, I know). One option is to just print them</p>
+<pre class="rust"><code>fn f(val1: i32, val2: i32) -&gt; i32 {
+    // do some things
+    let otherval: i32 = 10;
+    println!(&quot;{}&quot;, otherval + val1);
+    println!(&quot;{}&quot;, otherval + val2);
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!(&quot;final result = {}&quot;, f(5, 6))
+}</code></pre>
+<p>Running this shows the values we printed, but with no context</p>
+<pre><code>15
+16
+final result = 21</code></pre>
+<p>We could add some context manually</p>
+<pre class="rust"><code>fn f(val1: i32, val2: i32) -&gt; i32 {
+    // do some things
+    let otherval: i32 = 10;
+    println!(&quot;first temp val = {}&quot;, otherval + val1);
+    println!(&quot;second temp val = {}&quot;, otherval + val2);
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!(&quot;final result = {}&quot;, f(5, 6))
+}</code></pre>
+<p>producing</p>
+<pre><code>first temp val = 15
+second temp val = 16
+final result = 21</code></pre>
+<p>but across an entire codebase, this is going to get messy, fast.</p>
+<p>A better option is the <code>dbg!</code> macro, which takes an <em>expression</em> (a value, or
+something that produces a value) and prints both the expression itself and the resulting
+value</p>
+<pre class="rust"><code>fn f(val1: i32, val2: i32) -&gt; i32 {
+    // do some things
+    let otherval: i32 = 10;
+    dbg!(otherval + val1);
+    dbg!(otherval + val2);
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!(&quot;final result = {}&quot;, f(5, 6))
+}</code></pre>
+<p>Running this produces</p>
+<pre><code>[src/main.rs:15] otherval + val1 = 15
+[src/main.rs:16] otherval + val2 = 16
+final result = 21</code></pre>
+<p>and we see we get the file/linenumber context, the expression we wrapped, and the value.</p>
+<p>This is extremely useful, and helps me to figure out what’s going on in the middle of
+some implementation.</p>
+<p>One of the downsides is that even if I make a release build, these statements remain,
+so I need to go through and remove them all once I’m finished debugging.</p>
+<p>A “better” solution is to use a full logging solution like the
+<a href="https://docs.rs/log/latest/log/"><code>log</code></a> crate which enables using different log
+levels, turning off logging outside of some threshold, etc… but that seems
+more suited to intentional logging, not debugging something that <em>isn’t</em>
+working.</p>
+<p>Having played with this in Rust, of course I wanted the same thing in R. I built a
+minimal viable proof-of-concept which leverages {rlang} to capture the expression</p>
+<pre class="r"><code>dbg &lt;- function(x) {
+  ex &lt;- rlang::f_text(rlang::enquos(x)[[1]])
+  ret &lt;- rlang::eval_bare(x)
+  message(glue::glue(&quot;DEBUG: {ex} = {ret}&quot;))
+  ret
+}</code></pre>
+<p>This works rather well - it postpones evaluation of the expression and prints the result
+without affecting any variables</p>
+<pre class="r"><code>a &lt;- 1
+b &lt;- 3
+x &lt;- dbg(a + b)</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: a + b = 4</code></pre>
+<pre class="r"><code>y &lt;- dbg(2*x + 3)</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: 2 * x + 3 = 11</code></pre>
+<pre class="r"><code>z &lt;- 10 + dbg(y*2)</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: y * 2 = 22</code></pre>
+<pre class="r"><code>z</code></pre>
+<pre class="bg-success"><code>## [1] 32</code></pre>
+<p>It lacks one beautiful part of the Rust solution, though - if I include this in some
+functions sourced from a file, I won’t be able to tell which file the statement came from. Plus,
+it doesn’t deal so well with large structures</p>
+<pre class="r"><code>x &lt;- dbg(head(mtcars))</code></pre>
+<pre class="bg-info text-info"><code>## DEBUG: head(mtcars) = c(21, 21, 22.8, 21.4, 18.7, 18.1)DEBUG: head(mtcars) = c(6, 6, 4, 6, 8, 6)DEBUG: head(mtcars) = c(160, 160, 108, 258, 360, 225)DEBUG: head(mtcars) = c(110, 110, 93, 110, 175, 105)DEBUG: head(mtcars) = c(3.9, 3.9, 3.85, 3.08, 3.15, 2.76)DEBUG: head(mtcars) = c(2.62, 2.875, 2.32, 3.215, 3.44, 3.46)DEBUG: head(mtcars) = c(16.46, 17.02, 18.61, 19.44, 17.02, 20.22)DEBUG: head(mtcars) = c(0, 0, 1, 1, 0, 1)DEBUG: head(mtcars) = c(1, 1, 1, 0, 0, 0)DEBUG: head(mtcars) = c(4, 4, 4, 3, 3, 3)DEBUG: head(mtcars) = c(4, 4, 1, 1, 2, 1)</code></pre>
+<p>At some point I saw <a href="https://turtletopia.github.io/2022/07/28/ice-cream-for-r-programmers/">a blog
+post</a>
+about a debug logging package <a href="https://github.com/lewinfox/icecream">{icecream}</a>
+which had this ability of tracing the <code>srcref</code> of a file containing the debug
+statement, so I wanted to see if I could extract that to suit my needs. Running
+the <code>ic()</code> statement as a print debugger works nicely</p>
+<pre class="r"><code>f &lt;- function(val1, val2) {
+  otherval &lt;- 10
+  icecream::ic(otherval + val1)
+  icecream::ic(otherval + val2)
+  val1 + val2 + otherval
+}
+f(5, 6)</code></pre>
+<pre class="bg-info text-info"><code>## ℹ ic| `otherval + val1`: num 15</code></pre>
+<pre class="bg-info text-info"><code>## ℹ ic| `otherval + val2`: num 16</code></pre>
+<pre class="bg-success"><code>## [1] 21</code></pre>
+<p>it indeed wraps the expression and shows the result. After poking around at the
+internals, I realised it actually does everything that I wanted, I just needed to change
+some of the defaults</p>
+<pre class="r"><code>options(icecream.peeking.function = utils::head,
+        icecream.max.lines = 5,
+        icecream.prefix = &quot;dbg:&quot;,
+        icecream.always.include.context = TRUE)</code></pre>
+<p>Now it prints like the <code>dbg!</code> macro</p>
+<pre class="r"><code>f &lt;- function(val1, val2) {
+  otherval &lt;- 10
+  icecream::ic(otherval + val1)
+  icecream::ic(otherval + val2)
+  val1 + val2 + otherval
+}
+f(5, 6)</code></pre>
+<pre class="bg-info text-info"><code>## ℹ dbg: `f()` in &lt;env: global&gt; | `otherval + val1`: [1] 15</code></pre>
+<pre class="bg-info text-info"><code>## ℹ dbg: `f()` in &lt;env: global&gt; | `otherval + val2`: [1] 16</code></pre>
+<pre class="bg-success"><code>## [1] 21</code></pre>
+<p>To make it even more like the Rust macro, I made a similar binding of <code>.dbg</code> (so
+that it doesn’t appear in my workspace by default) and added the following to my
+.Rprofile</p>
+<pre><code># install.packages(&quot;icecream&quot;)
+if (requireNamespace(&quot;icecream&quot;, quietly = TRUE)) {
+  .dbg &lt;- icecream::ic
+  options(icecream.peeking.function = utils::head,
+          icecream.max.lines = 5,
+          icecream.prefix = &quot;dbg:&quot;,
+          icecream.always.include.context = TRUE)
+}</code></pre>
+<p>so now I can add debug statements</p>
+<pre class="r"><code>f &lt;- function(val1, val2) {
+  otherval &lt;- 10
+  .dbg(otherval + val1)
+  .dbg(otherval + val2)
+  val1 + val2 + otherval
+}
+f(5, 6)</code></pre>
+<pre class="bg-info text-info"><code>## ℹ dbg: `f()` in &lt;env: global&gt; | `otherval + val1`: [1] 15</code></pre>
+<pre class="bg-info text-info"><code>## ℹ dbg: `f()` in &lt;env: global&gt; | `otherval + val2`: [1] 16</code></pre>
+<pre class="bg-success"><code>## [1] 21</code></pre>
+<p>Better yet, I can turn them off if I don’t need them</p>
+<pre class="r"><code>icecream::ic_disable()
+f(5, 6)</code></pre>
+<pre class="bg-success"><code>## [1] 21</code></pre>
+<p>This works as I had hoped; I can even debug partway through an expression</p>
+<pre class="r"><code>icecream::ic_enable()
+3 + .dbg(4 + 6)</code></pre>
+<pre class="bg-info text-info"><code>## ℹ dbg: &lt;env: global&gt; | `4 + 6`: [1] 10</code></pre>
+<pre class="bg-success"><code>## [1] 13</code></pre>
+<p>and if I source a file, I get the context</p>
+<pre><code>## test_dbg.R:
+f &lt;- function() {
+  x &lt;- 7
+  .dbg(x + 3)
+  7
+}</code></pre>
+<pre class="r"><code>source(&quot;test_dbg.R&quot;)
+f()</code></pre>
+<pre class="r bg-info"><code>ℹ dbg: `f()` in test_dbg.R:3:2 | `x + 3`: [1] 10</code></pre>
+<pre class="r bg-success"><code>[1] 7</code></pre>
+<p>It even deals with printing larger objects, given the “peeking_function” and “max lines”
+options above</p>
+<pre class="r"><code>.dbg(mtcars)</code></pre>
+<pre class="bg-info text-info"><code>## ℹ dbg: &lt;env: global&gt; | `mtcars`: 
+## mpg cyl disp  hp drat    wt  qsec vs am gear carb
+## Mazda RX4         21.0   6  160 110 3.90 2.620 16.46  0  1    4    4
+## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 17.02  0  1    4    4
+## Datsun 710        22.8   4  108  93 3.85 2.320 18.61  1  1    4    1
+## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 19.44  1  0    3    1</code></pre>
+<p>That seems to be feature-equivalent to the Rust <code>dbg!</code> macro, plus the ability to
+turn off the messages, so I’m very happy with this result.</p>
+<p>Do you have a better solution? I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.1.2 (2021-11-01)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-11-07
+##  pandoc   3.1.8 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.17    2023-05-16 [1] CRAN (R 4.1.2)
+##  bookdown      0.29    2022-09-12 [1] CRAN (R 4.1.2)
+##  bslib         0.5.1   2023-08-11 [3] CRAN (R 4.3.1)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.1.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.21    2023-05-05 [3] CRAN (R 4.3.0)
+##  fansi         1.0.4   2023-01-22 [3] CRAN (R 4.2.2)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.6   2023-08-10 [3] CRAN (R 4.3.1)
+##  htmlwidgets   1.5.4   2021-09-08 [1] CRAN (R 4.1.2)
+##  httpuv        1.6.6   2022-09-08 [1] CRAN (R 4.1.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.1.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  knitr         1.43    2023-05-25 [3] CRAN (R 4.3.0)
+##  later         1.3.0   2021-08-18 [1] CRAN (R 4.1.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.1.2)
+##  pillar        1.9.0   2023-03-22 [3] CRAN (R 4.2.3)
+##  pkgbuild      1.4.0   2022-11-27 [1] CRAN (R 4.1.2)
+##  pkgload       1.3.0   2022-06-27 [1] CRAN (R 4.1.2)
+##  prettyunits   1.1.1   2020-01-24 [3] CRAN (R 4.0.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.7   2020-11-02 [1] CRAN (R 4.1.2)
+##  promises      1.2.0.1 2021-02-11 [1] CRAN (R 4.1.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.1   2023-01-10 [1] CRAN (R 4.1.2)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.9   2022-07-08 [1] CRAN (R 4.1.2)
+##  remotes       2.4.2   2021-11-30 [1] CRAN (R 4.1.2)
+##  rlang         1.1.1   2023-04-28 [1] CRAN (R 4.1.2)
+##  rmarkdown     2.24    2023-08-14 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.1.2)
+##  shiny         1.7.2   2022-07-19 [1] CRAN (R 4.1.2)
+##  stringi       1.7.12  2023-01-11 [3] CRAN (R 4.2.2)
+##  stringr       1.5.0   2022-12-02 [1] CRAN (R 4.1.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.1.2)
+##  usethis       2.1.6   2022-05-25 [1] CRAN (R 4.1.2)
+##  utf8          1.2.3   2023-01-31 [3] CRAN (R 4.2.2)
+##  vctrs         0.6.3   2023-06-14 [1] CRAN (R 4.1.2)
+##  xfun          0.40    2023-08-09 [3] CRAN (R 4.3.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.1.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.1
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
