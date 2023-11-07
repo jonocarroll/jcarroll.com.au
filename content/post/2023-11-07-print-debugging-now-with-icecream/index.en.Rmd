@@ -1,0 +1,326 @@
+---
+title: Print Debugging (Now with Icecream!)
+author: Jonathan Carroll
+date: '2023-11-07'
+slug: print-debugging-now-with-icecream
+categories:
+  - rstats
+  - rust
+tags:
+  - rstats
+  - rust
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+Print debugging has its place. Sure, it's not always the *best* way to debug something, 
+but it can often be the fastest. In this post I describe a useful way to do this in Rust 
+and how we can get similar behaviour in R.
+
+<!--more-->
+
+Print debugging has its place. Sure, it's not always the *best* way to debug something, 
+but it can often be the fastest. In this post I describe a useful way to do this in Rust 
+and how we can get similar behaviour in R.
+
+I love the Rust [`dbg!`](https://dev-doc.rust-lang.org/beta/std/macro.dbg.html)
+macro - it wraps a value or expression and prints the result to help debug
+what's happening in the middle of some function. If we had some complicated
+function that combined some values, e.g.
+
+```rust
+fn f(val1: i32, val2: i32) -> i32 {
+    // do some things
+    let otherval: i32 = 10;
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!("final result = {}", f(5, 6))
+}
+```
+
+Running this gives just the final result, as expected
+
+```
+final result = 21
+```
+
+We might want to check on what the intermediate combinations of `otherval` and `val1` 
+or `val2` (terrible names, I know). One option is to just print them
+
+```rust
+fn f(val1: i32, val2: i32) -> i32 {
+    // do some things
+    let otherval: i32 = 10;
+    println!("{}", otherval + val1);
+    println!("{}", otherval + val2);
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!("final result = {}", f(5, 6))
+}
+```
+
+Running this shows the values we printed, but with no context
+
+```
+15
+16
+final result = 21
+```
+
+We could add some context manually
+
+```rust
+fn f(val1: i32, val2: i32) -> i32 {
+    // do some things
+    let otherval: i32 = 10;
+    println!("first temp val = {}", otherval + val1);
+    println!("second temp val = {}", otherval + val2);
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!("final result = {}", f(5, 6))
+}
+```
+
+producing
+
+```
+first temp val = 15
+second temp val = 16
+final result = 21
+```
+
+but across an entire codebase, this is going to get messy, fast.
+
+A better option is the `dbg!` macro, which takes an _expression_ (a value, or 
+something that produces a value) and prints both the expression itself and the resulting 
+value
+
+```rust
+fn f(val1: i32, val2: i32) -> i32 {
+    // do some things
+    let otherval: i32 = 10;
+    dbg!(otherval + val1);
+    dbg!(otherval + val2);
+    // final result
+    val1 + val2 + otherval
+}
+
+fn main() {
+    println!("final result = {}", f(5, 6))
+}
+```
+
+Running this produces
+
+```
+[src/main.rs:15] otherval + val1 = 15
+[src/main.rs:16] otherval + val2 = 16
+final result = 21
+```
+
+and we see we get the file/linenumber context, the expression we wrapped, and the value.
+
+This is extremely useful, and helps me to figure out what's going on in the middle of 
+some implementation.
+
+One of the downsides is that even if I make a release build, these statements remain, 
+so I need to go through and remove them all once I'm finished debugging.
+
+A "better" solution is to use a full logging solution like the
+[`log`](https://docs.rs/log/latest/log/) crate which enables using different log
+levels, turning off logging outside of some threshold, etc... but that seems
+more suited to intentional logging, not debugging something that _isn't_
+working.
+
+Having played with this in Rust, of course I wanted the same thing in R. I built a 
+minimal viable proof-of-concept which leverages {rlang} to capture the expression
+
+```{r}
+dbg <- function(x) {
+  ex <- rlang::f_text(rlang::enquos(x)[[1]])
+  ret <- rlang::eval_bare(x)
+  message(glue::glue("DEBUG: {ex} = {ret}"))
+  ret
+}
+```
+
+This works rather well - it postpones evaluation of the expression and prints the result 
+without affecting any variables
+
+```{r}
+a <- 1
+b <- 3
+x <- dbg(a + b)
+y <- dbg(2*x + 3)
+z <- 10 + dbg(y*2)
+z
+```
+
+It lacks one beautiful part of the Rust solution, though - if I include this in some 
+functions sourced from a file, I won't be able to tell which file the statement came from. Plus, 
+it doesn't deal so well with large structures
+
+```{r}
+x <- dbg(head(mtcars))
+```
+
+At some point I saw [a blog
+post](https://turtletopia.github.io/2022/07/28/ice-cream-for-r-programmers/)
+about a debug logging package [{icecream}](https://github.com/lewinfox/icecream)
+which had this ability of tracing the `srcref` of a file containing the debug
+statement, so I wanted to see if I could extract that to suit my needs. Running
+the `ic()` statement as a print debugger works nicely
+
+```{r, include=FALSE}
+options(
+    icecream.enabled = TRUE,
+    icecream.prefix = "ic|",
+    icecream.output.function = NULL,
+    icecream.peeking.function = icecream:::ic_autopeek,
+    icecream.max.lines = 1,
+    icecream.arg.to.string.function = NULL,
+    icecream.always.include.context = FALSE
+  )
+```
+
+```{r}
+f <- function(val1, val2) {
+  otherval <- 10
+  icecream::ic(otherval + val1)
+  icecream::ic(otherval + val2)
+  val1 + val2 + otherval
+}
+f(5, 6)
+```
+
+it indeed wraps the expression and shows the result. After poking around at the 
+internals, I realised it actually does everything that I wanted, I just needed to change 
+some of the defaults
+
+```{r}
+options(icecream.peeking.function = utils::head,
+        icecream.max.lines = 5,
+        icecream.prefix = "dbg:",
+        icecream.always.include.context = TRUE)
+```
+
+Now it prints like the `dbg!` macro
+
+```{r}
+f <- function(val1, val2) {
+  otherval <- 10
+  icecream::ic(otherval + val1)
+  icecream::ic(otherval + val2)
+  val1 + val2 + otherval
+}
+f(5, 6)
+```
+
+To make it even more like the Rust macro, I made a similar binding of `.dbg` (so
+that it doesn't appear in my workspace by default) and added the following to my
+.Rprofile
+
+```
+# install.packages("icecream")
+if (requireNamespace("icecream", quietly = TRUE)) {
+  .dbg <- icecream::ic
+  options(icecream.peeking.function = utils::head,
+          icecream.max.lines = 5,
+          icecream.prefix = "dbg:",
+          icecream.always.include.context = TRUE)
+}
+```
+
+so now I can add debug statements
+
+```{r}
+f <- function(val1, val2) {
+  otherval <- 10
+  .dbg(otherval + val1)
+  .dbg(otherval + val2)
+  val1 + val2 + otherval
+}
+f(5, 6)
+```
+
+Better yet, I can turn them off if I don't need them
+
+```{r}
+icecream::ic_disable()
+f(5, 6)
+```
+
+This works as I had hoped; I can even debug partway through an expression
+
+```{r}
+icecream::ic_enable()
+3 + .dbg(4 + 6)
+```
+
+and if I source a file, I get the context
+
+```
+## test_dbg.R:
+f <- function() {
+  x <- 7
+  .dbg(x + 3)
+  7
+}
+```
+
+```{r, eval = FALSE}
+source("test_dbg.R")
+f()
+```
+
+```{r, eval = FALSE, class.source = "bg-info"}
+ℹ dbg: `f()` in test_dbg.R:3:2 | `x + 3`: [1] 10
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+[1] 7
+```
+
+It even deals with printing larger objects, given the "peeking_function" and "max lines" 
+options above
+
+```{r}
+.dbg(mtcars)
+```
+
+That seems to be feature-equivalent to the Rust `dbg!` macro, plus the ability to 
+turn off the messages, so I'm very happy with this result.
+
+Do you have a better solution? I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
