@@ -38,6 +38,10 @@ I could). I then (starting Dec 27) went back and re-solved (13 of) them in Rust.
 
 This post details what I learned along the way and some fun visualisations I made.
 
+As I eventually ran out of time before the 2023 AoC event, some of the latter 
+solutions are just links to my GitHub repo without comment. I'll try to update those 
+at some point.
+
 <br />
 <details open>
   <summary>
