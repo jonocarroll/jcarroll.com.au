@@ -1,18 +1,15 @@
 ---
 title: Advent of Code 2022
 author: Jonathan Carroll
-date: '2023-09-01'
-slug: advent-of-code-2022
+date: '2023-11-28'
 categories:
   - rstats
   - rust
 tags:
   - rstats
   - rust
-type: ''
-subtitle: ''
-image: ''
-editor_options: 
+slug: advent-of-code-2022
+editor_options:
   chunk_output_type: console
 ---
 
