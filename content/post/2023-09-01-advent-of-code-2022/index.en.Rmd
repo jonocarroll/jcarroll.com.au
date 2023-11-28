@@ -28,7 +28,7 @@ knitr::opts_chunk$set(
 In the lead up to Christmas each year, [Advent of Code](https://adventofcode.com/) 
 offers a series of 25 puzzles which start out reasonably simple, but get progressively harder, eventually requiring knowledge of algorithms and dynamic programming techniques. Last year 
 I solved these in (strictly) base R on the day they were released (or as close to as 
-I could). I then (starting Dec 27) went back and re-solved them in Rust. 
+I could). I then (starting Dec 27) went back and re-solved (13 of) them in Rust.
 
 This post details what I learned along the way and some fun visualisations I made.
 
@@ -37,7 +37,7 @@ This post details what I learned along the way and some fun visualisations I mad
 In the lead up to Christmas each year, [Advent of Code](https://adventofcode.com/) 
 offers a series of 25 puzzles which start out reasonably simple, but get progressively harder, eventually requiring knowledge of algorithms and dynamic programming techniques. Last year 
 I solved these in (strictly) base R on the day they were released (or as close to as 
-I could). I then (starting Dec 27) went back and re-solved them in Rust. 
+I could). I then (starting Dec 27) went back and re-solved (13 of) them in Rust. 
 
 This post details what I learned along the way and some fun visualisations I made.
 
@@ -54,24 +54,24 @@ This post details what I learned along the way and some fun visualisations I mad
   <li>[Day 5: Supply Stacks](#day5)</li>
   <li>[Day 6: Tuning Trouble](#day6)</li>
   <li>[Day 7: No Space Left On Device](#day7)</li>
-  <li>[Day 8](#day8)</li>
-  <li>[Day 9](#day9)</li>
-  <li>[Day 10](#day10)</li>
-  <li>[Day 11](#day11)</li>
-  <li>[Day 12](#day12)</li>
-  <li>[Day 13](#day13)</li>
-  <li>[Day 14](#day14)</li>
-  <li>[Day 15](#day15)</li>
-  <li>[Day 16](#day16)</li>
-  <li>[Day 17](#day17)</li>
-  <li>[Day 18](#day18)</li>
-  <li>[Day 19](#day19)</li>
-  <li>[Day 20](#day20)</li>
-  <li>[Day 21](#day21)</li>
-  <li>[Day 22](#day22)</li>
-  <li>[Day 23](#day23)</li>
-  <li>[Day 24](#day24)</li>
-  <li>[Day 25](#day25)</li>
+  <li>[Day 8: Treetop Tree House](#day8)</li>
+  <li>[Day 9: Rope Bridge](#day9)</li>
+  <li>[Day 10: Cathode-Ray Tube](#day10)</li>
+  <li>[Day 11: Monkey in the Middle](#day11)</li>
+  <li>[Day 12: Hill Climbing Algorithm](#day12)</li>
+  <li>[Day 13: Distress Signal](#day13)</li>
+  <li>[Day 14: Regolith Reservoir](#day14)</li>
+  <li>[Day 15: Beacon Exclusion Zone](#day15)</li>
+  <li>[Day 16: Proboscidea Volcanium](#day16)</li>
+  <li>[Day 17: Pyroclastic Flow](#day17)</li>
+  <li>[Day 18: Boiling Boulders](#day18)</li>
+  <li>[Day 19: Not Enough Minerals](#day19)</li>
+  <li>[Day 20: Grove Positioning System](#day20)</li>
+  <li>[Day 21: Monkey Math](#day21)</li>
+  <li>[Day 22: Monkey Map](#day22)</li>
+  <li>[Day 23: Unstable Diffusion](#day23)</li>
+  <li>[Day 24: Blizzard Basin](#day24)</li>
+  <li>[Day 25: Full of Hot Air](#day25)</li>
   </ul>
   </details>
   <br />
@@ -744,7 +744,7 @@ The flexibility and symmetry of `head(n)`, `head(-n)`, `tail(n)`, and `tail(-n)`
 this particularly nice. This was one instance where I re-used my solution to the first 
 part with an argument for the second part.
 
-## Rust
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/05.rs)
 
 If I thought the input parsing was hard in R, I wasn't looking forward to doing it 
 in Rust. I implemented the stacks in much the same way - taking 4 `chars` at a time
@@ -903,7 +903,7 @@ After complaining about strings the previous day, parsing this one sounded poten
 tricky, but I think it worked out nicely. The problem involves finiding the first 
 group of 4 characters where they are all different.
 
-## R
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day06.R)
 
 Returning to the 'do it once, then `*apply` approach, I was happy to know that 
 R's `substring` is vectorised, so the `first` and `last` arguments can be 
@@ -945,7 +945,7 @@ f06b <- function(x) {
 }
 ```
 
-## Rust
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/06.rs)
 
 Without R's vectorised substring, I needed to parse 4 characters at a time - again I was
 thankful that Rust treats strings as a series of Chars. To keep track of which Chars 
@@ -1023,7 +1023,7 @@ dir a
 
 but it turned out a brute-force replacement approach didn't work too badly.
 
-## R
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day07.R)
 
 There's probably some good algorithm to deal with this, but instead I wrote a lot of 
 for-loops to see what needed to be done. The tricky part of the recursion was having 
@@ -1071,80 +1071,593 @@ f07a <- function(x) {
 }
 ```
 
-This isn't recursive, 
+This isn't recursive, but it works. The second part is much shorter, since it 
+can reuse the first part
 
-## Rust
+```r
+f07b <- function(x) {
+  alldirs <- f07a(x)$env
+  todelete <- alldirs[["/"]] - 40000000
+  sizes <- sapply(ls(alldirs), get, env = alldirs)
+  candidates <- sizes[which(sizes >= todelete)]
+  smallest <- candidates[which.min(candidates)]
+  smallest
+}
+```
 
-# <a rel="noopener" target="_blank" id="day8" href="#day8"><i class="fa fa-link" aria-hidden="true"></i></a> Day 8
-## R
-## Rust
-# <a rel="noopener" target="_blank" id="day9" href="#day9"><i class="fa fa-link" aria-hidden="true"></i></a> Day 9
-## R
-## Rust
-# <a rel="noopener" target="_blank" id="day10" href="#day10"><i class="fa fa-link" aria-hidden="true"></i></a> Day 10
-## R
-## Rust
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/08.rs)
 
-# <a rel="noopener" target="_blank" id="day11" href="#day11"><i class="fa fa-link" aria-hidden="true"></i></a> Day 11
-## R
-## Rust
+Here I took the same approach, but using a `HashMap` as the filesystem
 
-# <a rel="noopener" target="_blank" id="day12" href="#day12"><i class="fa fa-link" aria-hidden="true"></i></a> Day 12
-## R
-## Rust
+```rust
+use std::{collections::HashMap};
 
-# <a rel="noopener" target="_blank" id="day13" href="#day13"><i class="fa fa-link" aria-hidden="true"></i></a> Day 13
-## R
-## Rust
+pub fn part_one(input: &str) -> Option<u32> {
+    let mut dir_deque = vec![];
+    let mut current_dir = String::from("");
+    let mut filesystem = HashMap::new();
+    for l in input.lines() {
+        if l == "$ cd .." {
+            dir_deque.pop().unwrap();
+            current_dir = dir_deque.join("");
+            continue;
+        } else if l == "$ cd /" {
+            current_dir = String::from("/");
+            filesystem.insert(current_dir.clone(), 0);
+            dir_deque = vec![String::from("/")];
+            continue;
+        } else if l.starts_with("dir") {
+            continue;
+        } else if l.starts_with("$ cd") {
+            let new_dir = l.replace("$ cd ", "");
+            dir_deque.push(new_dir.clone() + &"/");
+            current_dir = current_dir + &new_dir.clone() + &"/";
+            filesystem.insert(current_dir.clone(), 0);
+            continue;
+        } else if char::is_digit(l.chars().nth(1).unwrap(), 10) {
+            let parts = l.split_whitespace().collect::<Vec<_>>();
+            let dir_size = parts[0].parse::<u32>().unwrap();
+            for d in 0..dir_deque.len() {
+                let this_d = dir_deque[0..=d].join("");
+                let known_size = filesystem.get(&this_d).unwrap();
+                filesystem.insert(this_d, known_size + dir_size);
+            }
+            continue;
+        }
+    }
 
-# <a rel="noopener" target="_blank" id="day14" href="#day14"><i class="fa fa-link" aria-hidden="true"></i></a> Day 14
-## R
+    let totalsize = filesystem.iter()
+            .filter(|&(_k, v)| *v <= 1e5 as u32)
+            .map(|(_k, v)| *v)
+            .collect::<Vec<u32>>()
+            .iter()
+            .sum();
+
+    Some(totalsize)
+        
+}
+
+pub fn part_two(input: &str) -> Option<u32> {
+    let mut dir_deque = vec![];
+    let mut current_dir = String::from("");
+    let mut filesystem = HashMap::new();
+    for l in input.lines() {
+        if l == "$ cd .." {
+            dir_deque.pop().unwrap();
+            current_dir = dir_deque.join("");
+            continue;
+        } else if l == "$ cd /" {
+            current_dir = String::from("/");
+            filesystem.insert(current_dir.clone(), 0);
+            dir_deque = vec![String::from("/")];
+            continue;
+        } else if l.starts_with("dir") {
+            continue;
+        } else if l.starts_with("$ cd") {
+            let new_dir = l.replace("$ cd ", "");
+            dir_deque.push(new_dir.clone() + &"/");
+            current_dir = current_dir + &new_dir.clone() + &"/";
+            filesystem.insert(current_dir.clone(), 0);
+            continue;
+        } else if char::is_digit(l.chars().nth(1).unwrap(), 10) {
+            let parts = l.split_whitespace().collect::<Vec<_>>();
+            let dir_size = parts[0].parse::<u32>().unwrap();
+            for d in 0..dir_deque.len() {
+                let this_d = dir_deque[0..=d].join("");
+                let known_size = filesystem.get(&this_d).unwrap();
+                filesystem.insert(this_d, known_size + dir_size);
+            }
+            continue;
+        }
+    }
+
+    let to_delete = filesystem.get("/").unwrap() - (4e7 as u32);
+    let candidates = filesystem.iter()
+        .filter(|&(_k, v)| *v >= to_delete)
+        .map(|(_k, v)| *v)
+        .collect::<Vec<u32>>();
+    Some(*candidates.iter().min().unwrap())
+
+}
+```
+
+# <a rel="noopener" target="_blank" id="day8" href="#day8"><i class="fa fa-link" aria-hidden="true"></i></a> Day 8: Treetop Tree House
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day08.R)
 
 
-# <a rel="noopener" target="_blank" id="day15" href="#day15"><i class="fa fa-link" aria-hidden="true"></i></a> Day 15
-## R
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/09.rs)
 
+# <a rel="noopener" target="_blank" id="day9" href="#day9"><i class="fa fa-link" aria-hidden="true"></i></a> Day 9: Rope Bridge
 
-# <a rel="noopener" target="_blank" id="day16" href="#day16"><i class="fa fa-link" aria-hidden="true"></i></a> Day 16
-## R
+This one involves keeping track of the positions of several 'knots' in a rope as it moves.
 
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day09.R)
 
-# <a rel="noopener" target="_blank" id="day17" href="#day17"><i class="fa fa-link" aria-hidden="true"></i></a> Day 17
-## R
+I wrote a *lot* of helper functions for this one
 
+```r
+f09a <- function(x) {
+  visited <- list()
+  head_pos <- c(5, 1)
+  tail_pos <- c(5, 1)
+  # print_grid(head_pos, tail_pos)
+  visited <- c(visited, list(tail_pos))
+  for (instr in x) {
+    tmp <- move_rope(head_pos, tail_pos, instr)
+    head_pos <- tmp[[1]]
+    tail_pos <- tmp[[2]]
+    visited <- c(visited, tmp[[3]])
+  }
+  length(unique(visited))
+}
 
-# <a rel="noopener" target="_blank" id="day18" href="#day18"><i class="fa fa-link" aria-hidden="true"></i></a> Day 18
-## R
+print_grid <- function(head_pos, tail_pos, size = 6) {
+  grid <- matrix(".", nrow = size, ncol = size)
+  grid[matrix(tail_pos, ncol = 2)] <- "T"
+  grid[matrix(head_pos, ncol = 2)] <- "H"
+  print(grid)
+}
 
+print_knots <- function(k, size = 10) {
+  grid <- matrix(".", nrow = size, ncol = size)
+  for (i in seq_len(length(k))) {
+    grid[matrix(k[[i]], ncol = 2)] <- i
+  }
+  print(grid)
+}
 
-# <a rel="noopener" target="_blank" id="day19" href="#day19"><i class="fa fa-link" aria-hidden="true"></i></a> Day 19
-## R
+move_head <- function(head_pos, dir) {
+  if (dir == "L") return(c(head_pos[1], head_pos[2] - 1))
+  if (dir == "R") return(c(head_pos[1], head_pos[2] + 1))
+  if (dir == "U") return(c(head_pos[1] - 1, head_pos[2]))
+  if (dir == "D") return(c(head_pos[1] + 1, head_pos[2]))
+}
 
+move_rope <- function(head_pos, tail_pos, x) {
+  visited <- list()
+  dir <- sub(" .*", "", x)
+  dist <- as.integer(sub("[LRUD] ", "", x))
+  for (i in seq_len(dist)) {
+    head_pos <- move_head(head_pos, dir)
+    tail_pos <- move_tail(head_pos, tail_pos)
+    visited <- c(visited, list(tail_pos))
+  }
+  return(list(head_pos, tail_pos, visited))
+}
 
-# <a rel="noopener" target="_blank" id="day20" href="#day20"><i class="fa fa-link" aria-hidden="true"></i></a> Day 20
-## R
+move_knots <- function(knots, x) {
+  visited <- list()
+  dir <- sub(" .*", "", x)
+  dist <- as.integer(sub("[LRUD] ", "", x))
+  for (i in seq_len(dist)) {
+    knots[[1]] <- move_head(knots[[1]], dir)
+    for (i in 2:10) {
+      knots[[i]] <- move_tail(knots[[i-1]], knots[[i]])
+    }
+    visited <- c(visited, list(knots[[10]]))
+  }
+  return(list(knots, visited))
+}
 
+touching <- function(head_pos, tail_pos) {
+  (head_pos[1] == tail_pos[1] && head_pos[2] == tail_pos[2]) ||
+  (abs(head_pos[1] - tail_pos[1]) <= 1 && abs(head_pos[2] - tail_pos[2]) <= 1)
+}
 
-# <a rel="noopener" target="_blank" id="day21" href="#day21"><i class="fa fa-link" aria-hidden="true"></i></a> Day 21
-## R
+move_tail <- function(head_pos, tail_pos) {
+  if (touching(head_pos, tail_pos)) return(tail_pos)
+  if (tail_pos[1] == head_pos[1]) return(c(tail_pos[1], tail_pos[2] + sign(head_pos[2] - tail_pos[2])*1))
+  if (tail_pos[2] == head_pos[2]) return(c(tail_pos[1] + sign(head_pos[1] - tail_pos[1]*1), tail_pos[2]))
+  return(c(tail_pos[1] + sign(head_pos[1] - tail_pos[1])*1, tail_pos[2] + sign(head_pos[2] - tail_pos[2])*1))
+}
+```
 
+This was also the first one I found the time to plot - here I plotted the path of the 10th knot, 
+as well as the positions of the other knots after each step
 
-# <a rel="noopener" target="_blank" id="day22" href="#day22"><i class="fa fa-link" aria-hidden="true"></i></a> Day 22
-## R
+![](images/vis-day09.png)
 
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/09.rs)
 
-# <a rel="noopener" target="_blank" id="day23" href="#day23"><i class="fa fa-link" aria-hidden="true"></i></a> Day 23
-## R
+# <a rel="noopener" target="_blank" id="day10" href="#day10"><i class="fa fa-link" aria-hidden="true"></i></a> Day 10: Cathode-Ray Tube
 
+(see links)
 
-# <a rel="noopener" target="_blank" id="day24" href="#day24"><i class="fa fa-link" aria-hidden="true"></i></a> Day 24
-## R
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day10.R)
 
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/10.rs)
 
-# <a rel="noopener" target="_blank" id="day25" href="#day25"><i class="fa fa-link" aria-hidden="true"></i></a> Day 25
-## R
+# <a rel="noopener" target="_blank" id="day11" href="#day11"><i class="fa fa-link" aria-hidden="true"></i></a> Day 11: Monkey in the Middle
 
+(see links)
 
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day11.R)
+
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/11.rs)
+
+# <a rel="noopener" target="_blank" id="day12" href="#day12"><i class="fa fa-link" aria-hidden="true"></i></a> Day 12: Hill Climbing Algorithm
+
+This one required that I learn a pathfinding algorithm - something I hadn't really done before. I ended up 
+learning (and implementing) Dijkstra's Algorithm for finding the shortest paths between nodes in a graph.
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day12.R)
+
+```r
+f12a <- function(x) {
+  rows <- strsplit(x, "")
+  grid <- matrix(unlist(rows), ncol = nchar(x[1]), byrow = TRUE)
+  ngrid <- grid
+  ngrid[which(grid == "S", arr.ind = TRUE)] <- "a"
+  ngrid[which(grid == "E", arr.ind = TRUE)] <- "z"
+  ngrid[] <- match(ngrid[], letters)
+  mode(ngrid) <- "integer"
+  startat <- which(t(grid) == "S")
+  endat <- which(t(grid) == "E")
+  min_path <- dijkstra(ngrid, endat, dir = -1)
+  min_pathp[startat]
+}
+
+get_pos <- function(grid, v) {
+  i <- floor((v-1)/ncol(grid))+1
+  j <- ((v-1) %% ncol(grid))+1
+  return(c(i, j))
+}
+
+can_reach <- function(ngrid, v, dir = 1) {
+  x <- get_pos(ngrid, v)
+  i <- x[1]
+  j <- x[2]
+  # can only move 1 row away
+  res <- abs(floor(0:(prod(dim(ngrid))-1) / ncol(ngrid)) + 1 - i) <= 1 &
+    # can only move 1 col away
+    abs((0:(prod(dim(ngrid))-1)%%ncol(ngrid)) + 1 - j) <= 1 &
+    # can't move diagonally
+    abs(floor(0:(prod(dim(ngrid))-1) / ncol(ngrid)) + 1 - i) + abs((0:(prod(dim(ngrid))-1)%%ncol(ngrid)) + 1 - j) == 1
+    if (dir == 1) {
+    # can only step up 1
+      res <- res & c(t(ngrid - ngrid[i, j] <= 1))
+    } else {
+      res <- res & c(t(ngrid[i, j] - ngrid <= 1))
+    }
+  as.integer(res)
+}
+
+dijkstra <- function(grid, start, dir = -1){
+  #' Implementation of dijkstra using on-demand query
+  #' derived from https://www.algorithms-and-technologies.com/dijkstra/r
+  #' This returns an array containing the length of the shortest path from the start node to each other node.
+  #' It is only guaranteed to return correct results if there are no negative edges in the graph. Positive cycles are fine.
+  #' This has a runtime of O(|V|^2) (|V| = number of Nodes), for a faster implementation see @see ../fast/Dijkstra.java (using adjacency lists)
+  #' @param graph an adjacency-matrix-representation of the graph where (x,y) is the weight of the edge or 0 if there is no edge.
+  #' @param start the node to start from.
+  #' @param dir are we going up or down? passed to can_reach()
+  #' @return an array containing the shortest distances from the given start node to each other node
+
+  # This contains the distances from the start node to all other nodes
+  distances = rep(Inf, prod(dim(grid)))
+  paths = rep(list(), prod(dim(grid)))
+
+  # This contains whether a node was already visited
+  visited = rep(FALSE, prod(dim(grid)))
+
+  # The distance from the start node to itself is of course 0
+  distances[start] = 0
+  paths[[start]] = start
+
+  # While there are nodes left to visit...
+  repeat{
+
+    # ... find the node with the currently shortest distance from the start node...
+    shortest_distance = Inf
+    shortest_index = -1
+    for(i in seq_along(distances)) {
+      # ... by going through all nodes that haven't been visited yet
+      if(distances[i] < shortest_distance && !visited[i]){
+        shortest_distance = distances[i]
+        shortest_index = i
+      }
+    }
+
+    if(shortest_index == -1){
+      # There was no node not yet visited --> We are done
+      return (list(distances, paths))
+    }
+    # ...then, for all neighboring nodes that haven't been visited yet....
+    g <- can_reach(grid, shortest_index, dir = dir)
+    for(i in seq_along(g)) {
+      # ...if the path over this edge is shorter...
+      if(g[i] != 0 && distances[i] > distances[shortest_index] + g[i]){
+        # ...Save this path as new shortest path.
+        distances[i] = distances[shortest_index] + g[i]
+        paths[[i]] <- c(paths[[shortest_index]], i)
+      }
+      # Lastly, note that we are finished with this node.
+      visited[shortest_index] = TRUE
+    }
+  }
+}
+```
+
+With a decent amount of plotting code, I ended up with an animation showing the solution
+for the test data
+
+![](images/vis-day12_test.gif)
+
+which I was very pleased about. Even better, was the full solution animation
+
+![](images/vis-day12.gif)
+
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/12.rs)
+
+# <a rel="noopener" target="_blank" id="day13" href="#day13"><i class="fa fa-link" aria-hidden="true"></i></a> Day 13: Distress Signal
+
+This one involves comparing nested lists like `[[1],[2,3,4]]` vs `[[1],4]`. I really want to go back 
+and try this one in Haskell because those comparisons are (I believe) built-in.
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day13.R)
+
+## [Rust](https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/13.rs)
+
+# <a rel="noopener" target="_blank" id="day14" href="#day14"><i class="fa fa-link" aria-hidden="true"></i></a> Day 14: Regolith Reservoir
+
+I didn't finish my Rust solution for this one, but I was very happy with my R solution. The goal here 
+is to fill the area with falling sand, allowing for some obstacles.
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day14.R)
+
+```r
+f14a <- function(x) {
+  allrocks <- lapply(x, rocks)
+  cave <- matrix(".", nrow = 200, ncol = 1500)
+  for (r in allrocks) {
+    for (rr in seq_along(r[-1])) {
+      f <- fill_rocks(r[rr], r[rr+1])
+      cave[f] <- "#"
+    }
+  }
+  done <- FALSE
+  while(!done) {
+    cave <- fall(cave, c(1, 500+500))
+    done <- cave[matrix(c(1,1), ncol = 2)] == "X"
+  }
+  sum(cave == "o")
+}
+
+fall <- function(cave, sand, crit = "fall") {
+  down <- c(sand[1]+1, sand[2])
+  if (crit == "fall" && down[1] > 200) {
+    cave[matrix(c(1,1), ncol = 2)] <- "X"
+    return(cave)
+  } else if (blocked(cave, c(1, 500+500))) {
+    sandmat <<- rbind(sandmat, c(1, 500+500))
+    cave[matrix(c(1,500+500), ncol = 2)] <- "o"
+    cave[matrix(c(1,1), ncol = 2)] <- "X"
+    return(cave)
+  }
+  if (blocked(cave, down)) {
+    downleft <- c(sand[1]+1, sand[2]-1)
+    if (blocked(cave, downleft)) {
+      downright <- c(sand[1]+1, sand[2]+1)
+      if (blocked(cave, downright)) {
+        sandmat <<- rbind(sandmat, sand)
+        cave[matrix(sand, ncol = 2)] <- "o"
+      } else {
+        return(fall(cave, downright))
+      }
+    } else {
+      return(fall(cave, downleft))
+    }
+  } else {
+    return(fall(cave, down))
+  }
+  return(cave)
+}
+
+blocked <- function(cave, x) {
+  cave[matrix(x, ncol = 2)] %in% c("#", "o")
+}
+
+rocks <- function(x) {
+  rocks <- strsplit(x, " -> ")[[1]]
+  rocks <- strsplit(rocks, ",")
+  for (r in seq_along(rocks)) {
+    rocks[[r]] <- as.integer(rocks[[r]])
+    rocks[[r]][1] <- rocks[[r]][1] + 500
+  }
+  rocks
+}
+
+fill_rocks <- function(x, y) {
+  x <- x[[1]]
+  x[2] <- x[2] + 1
+  y <- y[[1]]
+  y[2] <- y[2] + 1
+  # horizontal
+  if (x[1] == y[1]) {
+    span <- x[2]:y[2]
+    return(matrix(c(span, rep(x[1], length(span))), ncol = 2, byrow = FALSE))
+  }
+  # vertical
+  if (x[2] == y[2]) {
+    span <- x[1]:y[1]
+    return(matrix(c(rep(x[2], length(span)), span), ncol = 2, byrow = FALSE))
+  }
+}
+```
+
+I animated the falling sand, filling up the cave, but with _so_ many particles it didn't go very well, 
+especially when limiting the frames
+
+![](images/vis-day14.gif)
+
+Instead, a render of the final solution, with the sand coloured by the time at which it came to 
+rest, looked much cooler
+
+![](images/vis-day14.png)
+
+# <a rel="noopener" target="_blank" id="day15" href="#day15"><i class="fa fa-link" aria-hidden="true"></i></a> Day 15: Beacon Exclusion Zone
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day15.R)
+
+# <a rel="noopener" target="_blank" id="day16" href="#day16"><i class="fa fa-link" aria-hidden="true"></i></a> Day 16: Proboscidea Volcanium
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day16.R)
+
+# <a rel="noopener" target="_blank" id="day17" href="#day17"><i class="fa fa-link" aria-hidden="true"></i></a> Day 17: Pyroclastic Flow
+
+While it was never mentioned by name, this one was essentially a game of Tetris.
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day17.R)
+
+At this point, there's too much code to copy inline. Check out the repo links.
+
+I couldn't help but plot this one as an animation...
+
+![](images/vis-day17.gif)
+
+# <a rel="noopener" target="_blank" id="day18" href="#day18"><i class="fa fa-link" aria-hidden="true"></i></a> Day 18: Boiling Boulders
+
+I got to learn even more algorithms for this one - this time a flood-fill algorithm.
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day18.R)
+
+I took advantage of one of coolbutuseless' packages [{isocubes}](https://github.com/coolbutuseless/isocubes)
+to plot the shape of the lava droplet
+
+![](images/vis-day18.png)
+
+# <a rel="noopener" target="_blank" id="day19" href="#day19"><i class="fa fa-link" aria-hidden="true"></i></a> Day 19: Not Enough Minerals
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day19.R)
+
+# <a rel="noopener" target="_blank" id="day20" href="#day20"><i class="fa fa-link" aria-hidden="true"></i></a> Day 20: Grove Positioning System
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day20.R)
+
+# <a rel="noopener" target="_blank" id="day21" href="#day21"><i class="fa fa-link" aria-hidden="true"></i></a> Day 21: Monkey Math
+
+I had no intentions of making it on to the leaderboard for timing, even though the puzzles were 
+released at an entirely reasonable time for me. I actually got to this one late in the 
+evening due to some other commitments, but I am quietly confident that my R solution could 
+have been one of the fastest solves...
+
+The problem is figuring out what the value of the 'root' monkey is, given the following operations
+
+```
+root: pppw + sjmn
+dbpl: 5
+cczh: sllz + lgvd
+zczc: 2
+ptdq: humn - dvpt
+dvpt: 3
+lfqf: 4
+humn: 5
+ljgn: 2
+sjmn: drzm * dbpl
+sllz: 4
+pppw: cczh / lfqf
+lgvd: ljgn * ptdq
+drzm: hmdt - zczc
+hmdt: 32
+```
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day21.R)
+
+I realised fairly quickly that I could just make each of the connections a function call, 
+and evaluate the entire stack! This was very fast to write, and I got to my full solution 
+faster than most of those at the top of the leaderboard, but much later in the day.
+
+```r
+f21a <- function(x) {
+  defs <- sapply(x, parseInput)
+  for (d in defs) {
+    eval(parse(text = d))
+  }
+  format(root(), scientific = FALSE)
+}
+
+parseInput <- function(x) {
+  monkey <- sub("^(.*):.*", "\\1", x)
+  ret <- sub(".*: (.*)$", "\\1", x)
+  if (is.na(suppressWarnings(as.integer(ret)))) {
+    ret <- strsplit(ret, " ")[[1]]
+    v1 <- ret[1]
+    op <- ret[2]
+    v2 <- ret[3]
+    def <- paste0(monkey, " <- function() { ", v1, "() ", op, " ", v2, "() }")
+  } else {
+    def <- paste0(monkey, " <- function() { ", ret, " }")
+  }
+}
+```
+
+Sure, sometimes (most of the time), `eval(parse(text = ))` is a terrible idea, but in 
+this case it worked out great!
+
+# <a rel="noopener" target="_blank" id="day22" href="#day22"><i class="fa fa-link" aria-hidden="true"></i></a> Day 22: Monkey Map
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day22.R)
+
+# <a rel="noopener" target="_blank" id="day23" href="#day23"><i class="fa fa-link" aria-hidden="true"></i></a> Day 23: Unstable Diffusion
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day23.R)
+
+# <a rel="noopener" target="_blank" id="day24" href="#day24"><i class="fa fa-link" aria-hidden="true"></i></a> Day 24: Blizzard Basin
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day24.R)
+
+# <a rel="noopener" target="_blank" id="day25" href="#day25"><i class="fa fa-link" aria-hidden="true"></i></a> Day 25: Full of Hot Air
+
+(see links)
+
+## [R](https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day25.R)
+
+# Summary
+
+I really enjoyed advent of code, and I ended up donating as thanks for providing such 
+a nice experience. I'll be having a go at AoC 2023 but won't be so strict; I may not 
+solve each puzzle _on the day it's released_ and I will be allowing myself to use whatever 
+libraries and whatever languages I want.
+
+Will you be participating? I'd love to compare solutions once we're done! I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) and I'll be commenting on the puzzles as I go.
 
 <br />
 <details>
