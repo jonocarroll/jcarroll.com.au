@@ -1,0 +1,1591 @@
+---
+title: Advent of Code 2022
+author: Jonathan Carroll
+date: '2023-11-28'
+categories:
+  - rstats
+  - rust
+tags:
+  - rstats
+  - rust
+slug: advent-of-code-2022
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>In the lead up to Christmas each year, <a href="https://adventofcode.com/">Advent of Code</a>
+offers a series of 25 puzzles which start out reasonably simple, but get progressively harder, eventually requiring knowledge of algorithms and dynamic programming techniques. Last year
+I solved these in (strictly) base R on the day they were released (or as close to as
+I could). I then (starting Dec 27) went back and re-solved (13 of) them in Rust.</p>
+<p>This post details what I learned along the way and some fun visualisations I made.</p>
+<!--more-->
+<p>In the lead up to Christmas each year, <a href="https://adventofcode.com/">Advent of Code</a>
+offers a series of 25 puzzles which start out reasonably simple, but get progressively harder, eventually requiring knowledge of algorithms and dynamic programming techniques. Last year
+I solved these in (strictly) base R on the day they were released (or as close to as
+I could). I then (starting Dec 27) went back and re-solved (13 of) them in Rust.</p>
+<p>This post details what I learned along the way and some fun visualisations I made.</p>
+<p>As I eventually ran out of time before the 2023 AoC event, some of the latter
+solutions are just links to my GitHub repo without comment. I’ll try to update those
+at some point.</p>
+<br />
+<details open>
+<summary>
+Quicklinks (click here to hide):
+</summary>
+<ul style="columns: 3; -webkit-columns: 3; -moz-columns: 3;">
+<li>
+<a href="#day1">Day 1: Calorie Counting</a>
+</li>
+<li>
+<a href="#day2">Day 2: Rock Paper Scissors</a>
+</li>
+<li>
+<a href="#day3">Day 3: Rucksack Reorganization</a>
+</li>
+<li>
+<a href="#day4">Day 4: Camp Cleanup</a>
+</li>
+<li>
+<a href="#day5">Day 5: Supply Stacks</a>
+</li>
+<li>
+<a href="#day6">Day 6: Tuning Trouble</a>
+</li>
+<li>
+<a href="#day7">Day 7: No Space Left On Device</a>
+</li>
+<li>
+<a href="#day8">Day 8: Treetop Tree House</a>
+</li>
+<li>
+<a href="#day9">Day 9: Rope Bridge</a>
+</li>
+<li>
+<a href="#day10">Day 10: Cathode-Ray Tube</a>
+</li>
+<li>
+<a href="#day11">Day 11: Monkey in the Middle</a>
+</li>
+<li>
+<a href="#day12">Day 12: Hill Climbing Algorithm</a>
+</li>
+<li>
+<a href="#day13">Day 13: Distress Signal</a>
+</li>
+<li>
+<a href="#day14">Day 14: Regolith Reservoir</a>
+</li>
+<li>
+<a href="#day15">Day 15: Beacon Exclusion Zone</a>
+</li>
+<li>
+<a href="#day16">Day 16: Proboscidea Volcanium</a>
+</li>
+<li>
+<a href="#day17">Day 17: Pyroclastic Flow</a>
+</li>
+<li>
+<a href="#day18">Day 18: Boiling Boulders</a>
+</li>
+<li>
+<a href="#day19">Day 19: Not Enough Minerals</a>
+</li>
+<li>
+<a href="#day20">Day 20: Grove Positioning System</a>
+</li>
+<li>
+<a href="#day21">Day 21: Monkey Math</a>
+</li>
+<li>
+<a href="#day22">Day 22: Monkey Map</a>
+</li>
+<li>
+<a href="#day23">Day 23: Unstable Diffusion</a>
+</li>
+<li>
+<a href="#day24">Day 24: Blizzard Basin</a>
+</li>
+<li>
+<a href="#day25">Day 25: Full of Hot Air</a>
+</li>
+</ul>
+</details>
+<p><br /></p>
+<div id="day-1-calorie-counting" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day1" href="#day1"><i class="fa fa-link" aria-hidden="true"></i></a> Day 1: Calorie Counting</h1>
+<div id="r" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day01.R">R</a></h2>
+<p>I hadn’t participated in AoC before this, so part of this day involved setting up
+a clean way to get the puzzle into R and figure out how I was going to run/test
+my solutions. The <a href="https://github.com/tjmahr/aoc">{aoc}</a> package makes this quite smooth
+by using a session cookie to fetch the puzzle from the website and scaffold the input and
+functions for a given day.</p>
+<p>Each puzzle has a small worked example, which requires a small example data input. For the
+first two weeks I painstakingly copied this input from the puzzle text to the templated
+<code>example_input_xx</code> function. The actual input for the puzzle is typically much larger
+and I believe is randomised from a handful of variants so that not everyone gets the
+exact same input, which makes sharing solutions less of a problem. This input is
+stored in a <code>.txt</code> file in the <code>inst/</code> directory by the {aoc} package, which also
+templates a <code>run-dayxx.R</code> file which reads said input.</p>
+<p>All that’s left for the user is to fill in the <code>fxxa</code> and <code>fxxb</code> functions which
+solve the part a and part b of each day’s puzzle.</p>
+<p>Solving the puzzle begins with parsing the input data, which may be a newline-delimited
+series of numbers, or something more complex. In this case, groups of numbers
+delimited by a blank line. This puzzle asks us to find the group with the largest total.
+With the data loaded as a long string containing newlines <code>\n</code> I split at a double-newline,
+then spit within each group at the remaining newline, trimmed the string, converted
+to an integer, and summed the result, which gives a total value per group. Finally, I
+determined the largest value from the groups with the pattern <code>x[which.max(x)]</code></p>
+<pre class="r"><code>f01a &lt;- function(x) {
+  xvec &lt;- strsplit(x, &quot;\n\n&quot;)[[1]]
+  tots &lt;- unlist(lapply(xvec, \(y) sum(as.integer(trimws(strsplit(y, &quot;\n&quot;)[[1]])))))
+  tots[which.max(tots)]
+}</code></pre>
+<p>An alternative would have been to sort <code>tots</code> and take the first value.</p>
+<p>The second part of each puzzle expands the problem - in this case, rather than just the
+largest value from a group, it asks for the largest three groups</p>
+<pre class="r"><code>f01b &lt;- function(x) {
+  xvec &lt;- strsplit(x, &quot;\n\n&quot;)[[1]]
+  tots &lt;- unlist(lapply(xvec, \(y) sum(as.integer(trimws(strsplit(y, &quot;\n&quot;)[[1]])))))
+  res &lt;- 0
+  for (i in 1:3) {
+    n &lt;- which.max(tots)
+    res &lt;- res + tots[n]
+    tots &lt;- tots[-n]
+  }
+  res
+}</code></pre>
+<p>In hindsight, <code>sum(head(sort(tots, decreasing = TRUE), 3))</code> looks like it would have been clearer.</p>
+<p>I wasn’t interested in the performance of my solutions, but for the sake of comparison
+later, here is how long these take to run over the real input, which contains <code>2251</code> lines</p>
+<pre class="r"><code>microbenchmark::microbenchmark(f01a(x), f01b(x), times = 100, check = NULL)
+Unit: milliseconds
+    expr      min       lq     mean   median       uq      max neval cld
+ f01a(x) 21.21986 21.50103 22.26573 21.63479 21.82128 31.41858   100   a
+ f01b(x) 21.18393 21.52034 22.29896 21.67297 21.87063 32.98093   100   a</code></pre>
+<p>Running the final solutions from the templated <code>inst/run-dayxx.R</code> file involves building the
+package (so that the daily functions are available) and running</p>
+<pre class="r"><code>library(adventofcode22)
+x &lt;- readLines(&quot;./inst/input01.txt&quot;)
+x &lt;- paste(x, collapse = &quot;\n&quot;)
+
+p1 &lt;- f01a(x)
+p2 &lt;- f01b(x)</code></pre>
+</div>
+<div id="rust" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/01.rs">Rust</a></h2>
+<p>Returning to these puzzles from Rust presents the same issue - how do I get the inputs
+and parse them? The equivalent to the {aoc} package in Rust is a template repository
+<a href="https://github.com/fspoettel/advent-of-code-rust">{advent-of-code-rust}</a> which adds some
+functionality to <code>cargo</code> to scaffold and solve each day’s puzzle.</p>
+<p>This crate also adds some helper functions for reading in the inputs and some tests for
+confirming that the solutions successfully solve with the example data.</p>
+<p>Working with arbitrary data in Rust was a bit of a learning experience for me - until
+this point I’d worked with known structures where I knew exactly what size and shape
+to expect, and as such I could define what needed to happen. With the puzzle input,
+I needed to learn how to work with unknown lengths and anticipate what might not work.</p>
+<p>I learned from my R solutions that a shared ‘helper’ function to read the data is
+quite useful, so I started there. As with the R solution, splitting the data into
+groups at a double newline produces the ‘elf’ groups. Splitting each of those groups
+involved a <code>map</code> which splits each group’s text into <code>lines()</code>, converts to integers (<code>u32</code>)
+with <code>parse()</code>, then <code>sum()</code>s each group, <code>collect()</code>ing the result from each group back
+into a vector. The <code>unwrap()</code> in the middle of this is because <code>parse()</code> can fail -
+something may not be representable as an integer - so <code>parse()</code> returns a <code>Result</code> type,
+which can be either a value, or an error. <code>unwrap()</code> simply says “this will never fail, but
+if it does, crash the entire program”.</p>
+<pre class="r"><code>fn parse01(input: &amp;str) -&gt; Vec&lt;u32&gt; {
+    let elf = input.split(&quot;\n\n&quot;).collect::&lt;Vec&lt;&amp;str&gt;&gt;();
+    let calories: Vec&lt;u32&gt; = elf
+        .into_iter()
+        .map(|x| x.lines().map(|l| l.parse::&lt;u32&gt;().unwrap()).sum())
+        .collect();
+    calories
+}</code></pre>
+<p>Actually solving the first part is then just converting the vector to an iterator and
+taking the maximum value</p>
+<pre class="r"><code>pub fn part_one(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let calories = parse01(input);
+    calories.into_iter().max()
+}</code></pre>
+<p>This returns an <code>Option</code> because a) that’s what the solution template requires, and b)
+<code>into_iter()</code> needs to be able to run out of values.</p>
+<p>For the second part I took advantage of the idea I should have had for the R solution
+and sorted the result (in-place), reversed it (in-place), took the first 3 values,
+and summed them</p>
+<pre class="r"><code>pub fn part_two(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let mut calories = parse01(input);
+    calories.sort();
+    calories.reverse();
+    let top3 = calories.iter().take(3);
+    Some(top3.sum())
+}</code></pre>
+<p>Running this solution, the timing seems impressive</p>
+<pre><code>cargo solve 01
+    Finished dev [unoptimized + debuginfo] target(s) in 0.02s
+     Running `target/debug/01`
+🎄 Part 1 🎄
+72718 (elapsed: 1.01ms)
+🎄 Part 2 🎄
+213089 (elapsed: 1.07ms)</code></pre>
+<p>(about 20x faster than the R solution) except that this is the debug build -
+it still has debug symbols and some other things
+that make it not as fast as it can be. Using a <code>release</code> build…</p>
+<pre><code>cargo solve 01 --release
+    Finished release [optimized + debuginfo] target(s) in 0.02s
+     Running `target/release/01`
+🎄 Part 1 🎄
+72718 (elapsed: 115.74µs)
+🎄 Part 2 🎄
+213089 (elapsed: 116.51µs)</code></pre>
+<p>Yes - one hundred microseconds. 🤯</p>
+</div>
+</div>
+<div id="day-2-rock-paper-scissors" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day2" href="#day2"><i class="fa fa-link" aria-hidden="true"></i></a> Day 2: Rock Paper Scissors</h1>
+<div id="r-1" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day02.R">R</a></h2>
+<p>This puzzle involves combinations of A, B, C and X, Y, Z which lead to different
+configurations. I don’t know if it’s quite cheating, but I just hardcoded the
+results into some helper functions</p>
+<pre class="r"><code>f02_helper &lt;- function(x) {
+  switch(x,
+         AX = 1 + 3,
+         AY = 2 + 6,
+         AZ = 3 + 0,
+         BX = 1 + 0,
+         BY = 2 + 3,
+         BZ = 3 + 6,
+         CX = 1 + 6,
+         CY = 2 + 0,
+         CZ = 3 + 3)
+}</code></pre>
+<p>and summed the matching values, dropping spaces</p>
+<pre class="r"><code>f02a &lt;- function(x) {
+  x &lt;- gsub(&quot; &quot;, &quot;&quot;, x)
+  sum(sapply(x, f02_helper))
+}</code></pre>
+<p>The second part is just a variation on this, so another helper and the same idea</p>
+<pre class="r"><code>f02b_helper &lt;- function(x) {
+  switch(x,
+         AX = 3 + 0,
+         AY = 1 + 3,
+         AZ = 2 + 6,
+         BX = 1 + 0,
+         BY = 2 + 3,
+         BZ = 3 + 6,
+         CX = 2 + 0,
+         CY = 3 + 3,
+         CZ = 1 + 6)
+}
+
+f02b &lt;- function(x) {
+  x &lt;- gsub(&quot; &quot;, &quot;&quot;, x)
+  sum(sapply(x, f02b_helper))
+}</code></pre>
+<p>There was probably an algorithmic way to achieve this, but the answer works.</p>
+<p>For comparison sake…</p>
+<pre class="r"><code>microbenchmark::microbenchmark(f02a(x), f02b(x), times = 100, check = NULL)
+Unit: milliseconds
+    expr      min       lq     mean   median       uq      max neval cld
+ f02a(x) 4.814174 4.921636 5.225773 4.992835 5.259293 8.873809   100   a
+ f02b(x) 4.837843 4.918625 5.142451 4.984148 5.117036 7.762490   100   a</code></pre>
+</div>
+<div id="rust-1" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/02.rs">Rust</a></h2>
+<p>I could do similar with Rust, using a <code>match</code> clause inside a <code>map</code></p>
+<pre class="r"><code>pub fn part_one(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let guide = parse02(input);
+    let res: Vec&lt;u32&gt; = guide
+        .into_iter()
+        .map(|x| match x.as_str() {
+            &quot;AX&quot; =&gt; 1 + 3,
+            &quot;AY&quot; =&gt; 2 + 6,
+            &quot;AZ&quot; =&gt; 3 + 0,
+            &quot;BX&quot; =&gt; 1 + 0,
+            &quot;BY&quot; =&gt; 2 + 3,
+            &quot;BZ&quot; =&gt; 3 + 6,
+            &quot;CX&quot; =&gt; 1 + 6,
+            &quot;CY&quot; =&gt; 2 + 0,
+            &quot;CZ&quot; =&gt; 3 + 3,
+            _ =&gt; 0,
+        })
+        .collect();
+    Some(res.iter().sum())
+}
+
+pub fn part_two(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let guide = parse02(input);
+    let res: Vec&lt;u32&gt; = guide
+        .into_iter()
+        .map(|x| match x.as_str() {
+            &quot;AX&quot; =&gt; 3 + 0,
+            &quot;AY&quot; =&gt; 1 + 3,
+            &quot;AZ&quot; =&gt; 2 + 6,
+            &quot;BX&quot; =&gt; 1 + 0,
+            &quot;BY&quot; =&gt; 2 + 3,
+            &quot;BZ&quot; =&gt; 3 + 6,
+            &quot;CX&quot; =&gt; 2 + 0,
+            &quot;CY&quot; =&gt; 3 + 3,
+            &quot;CZ&quot; =&gt; 1 + 6,
+            _ =&gt; 0,
+        })
+        .collect();
+    Some(res.iter().sum())
+}</code></pre>
+<p>This time, the difference in timing wasn’t so pronounced</p>
+<pre><code>cargo solve 02 --release
+    Finished release [optimized + debuginfo] target(s) in 0.02s
+     Running `target/release/02`
+🎄 Part 1 🎄
+15422 (elapsed: 699.20µs)
+🎄 Part 2 🎄
+15442 (elapsed: 527.74µs)</code></pre>
+<p>Still faster, but now we’re dealing with string comparisons.</p>
+</div>
+</div>
+<div id="day-3-rucksack-reorganization" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day3" href="#day3"><i class="fa fa-link" aria-hidden="true"></i></a> Day 3: Rucksack Reorganization</h1>
+<div id="r-2" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day03.R">R</a></h2>
+<p>This puzzle involves ‘rucksacks’ containing letters so we’re going to be doing more
+string comparisons. The problem statement says that we need to find the single
+character that is common between the first and second halves of a string. As will be
+a common theme, I approached this by first solving it for one input as a helper, then mapping
+over all the inputs. My solution involves splitting the first and second halves of the
+string with <code>strsplit()</code>, finding the intersection of these (which should be a single
+character), and matching that to either lowercase or uppercase letters, which R nicely
+has as inbuilt data structures <code>letters</code> and <code>LETTERS</code>, respectively. This makes for, I
+believe, a fairly compact solution</p>
+<pre class="r"><code>f03a &lt;- function(x) {
+  sum(sapply(x, f03_helper))
+}
+
+f03_helper &lt;- function(x) {
+  half &lt;- nchar(x)/2
+  comp1 &lt;- strsplit(substring(x, 1, half), &quot;&quot;)[[1]]
+  comp2 &lt;- strsplit(substring(x, half+1), &quot;&quot;)[[1]]
+  solo &lt;- intersect(comp1, comp2)
+  prio &lt;- match(solo, c(letters, LETTERS))
+  prio
+}</code></pre>
+<p>The second part expands to using 3 groups instead of the two halves. I needed a
+way to split the input (one string per line) into groups of 3. I haven’t used this
+in a very long time, but I remembered learning about “<strong>g</strong>enerate factor <strong>l</strong>evels” <code>gl()</code> back
+when I first learned R. This produces a sequence of factors which can be passed to <code>split()</code>,
+so splitting 12 lines into blocks of 3 would produce 4 levels:</p>
+<pre class="r"><code>gl(12/3, 3)</code></pre>
+<pre class="bg-success"><code>##  [1] 1 1 1 2 2 2 3 3 3 4 4 4
+## Levels: 1 2 3 4</code></pre>
+<p>Aside from that, the only other difference was the double intersection - it’s a shame
+that <code>intersect</code> only takes two arguments, so I just need to perform it twice</p>
+<pre class="r"><code>f03b &lt;- function(x) {
+  grps &lt;- split(x, as.integer(gl(length(x)/3, 3)))
+  sum(sapply(grps, f03b_helper))
+}
+
+f03b_helper &lt;- function(x) {
+  x1 &lt;- strsplit(x[1], &quot;&quot;)[[1]]
+  x2 &lt;- strsplit(x[2], &quot;&quot;)[[1]]
+  x3 &lt;- strsplit(x[3], &quot;&quot;)[[1]]
+  comm &lt;- intersect(intersect(x1, x2), x3)
+  prio &lt;- match(comm, c(letters, LETTERS))
+  prio
+}</code></pre>
+</div>
+<div id="rust-2" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/03.rs">Rust</a></h2>
+<p>Figuring out how to do this in Rust took a bit more effort. I don’t know if it was
+the <em>best</em> way, but I found I could take an intersection of a <code>HashSet</code> object. Rust
+has a nice <code>split_at()</code> method which helps split the strings, and (as with the <code>lines()</code> used
+earlier) a <code>chars()</code> method to split into individual characters. No inbuilt <code>letters</code>,
+though, so I used an ASCII lookup trick to calculate the priority.</p>
+<pre class="r"><code>use std::collections::HashSet;
+
+fn parse03(input: &amp;str) -&gt; Vec&lt;String&gt; {
+    input.lines().map(|x| x.to_string()).collect()
+}
+
+fn shared_item(rucksack: String) -&gt; Vec&lt;char&gt; {
+    let l = rucksack.len();
+    let (str1, str2) = rucksack.split_at(l / 2);
+
+    let comp1: HashSet&lt;char&gt; = HashSet::from_iter(str1.chars());
+    let comp2: HashSet&lt;char&gt; = HashSet::from_iter(str2.chars());
+
+    let common = comp1.intersection(&amp;comp2);
+
+    common.copied().collect()
+}
+
+fn priority(item: char) -&gt; u32 {
+    match item {
+        lowercase @ &#39;a&#39;..=&#39;z&#39; =&gt; lowercase as u32 - (&#39;a&#39; as u32) + 1,
+        uppercase @ &#39;A&#39;..=&#39;Z&#39; =&gt; uppercase as u32 - (&#39;A&#39; as u32) + 27,
+        _ =&gt; 0,
+    }
+}
+
+pub fn part_one(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let parsed = parse03(&amp;input);
+    let repeated: Vec&lt;_&gt; = parsed.iter().map(|x| shared_item(x.to_owned())).collect();
+    let mut s = 0;
+    for c in repeated {
+        s += priority(c[0])
+    }
+    Some(s)
+}</code></pre>
+<p>Definitely not as clean as the R solution, here. For the second part, I found
+some help in <a href="https://www.reddit.com/r/rust/comments/zbikje/comment/iys0sgr/">a Reddit thread</a>
+about a three-way intersection. Here, the <code>chunks(n)</code> method nicely produces the three
+groups</p>
+<pre class="r"><code>fn badge(rucksacks: Vec&lt;String&gt;) -&gt; Vec&lt;char&gt; {
+    let mut badges = vec![];
+
+    for group in rucksacks.chunks(3) {
+        let h1: HashSet&lt;char&gt; = HashSet::from_iter(group[0].chars());
+        let h2: HashSet&lt;char&gt; = HashSet::from_iter(group[1].chars());
+        let h3: HashSet&lt;char&gt; = HashSet::from_iter(group[2].chars());
+
+        let common: Vec&lt;_&gt; = h1
+            .iter()
+            .filter(|e| h2.contains(e) &amp;&amp; h3.contains(e))
+            .collect();
+        badges.push(*common[0]);
+    }
+
+    badges
+}
+
+pub fn part_two(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let parsed = parse03(&amp;input);
+    let badge: Vec&lt;_&gt; = badge(parsed);
+    let mut s = 0;
+    for c in badge {
+        s += priority(c)
+    }
+    Some(s)
+}</code></pre>
+</div>
+</div>
+<div id="day-4-camp-cleanup" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day4" href="#day4"><i class="fa fa-link" aria-hidden="true"></i></a> Day 4: Camp Cleanup</h1>
+<p>Now the parsing gets harder. This puzzle involves finding where ranges overlap, so</p>
+<pre><code>5-7: ....567..  
+7-9: ......789  </code></pre>
+<p>overlap at the 7, while</p>
+<pre><code>2-6: .23456...  
+4-8: ...45678.  </code></pre>
+<p>overlaps at 4, 5, and 6.</p>
+<div id="r-3" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day04.R">R</a></h2>
+<p>Again, taking the “do it once, then map” approach, I converted the format <code>a-b</code> into
+<code>a:b</code> and then <code>eval(parse(text))</code>’d the result. This worked surprisingly well. The
+puzzle then asks how many times one of the pair is entirely contained within the other,
+so <code>all()</code> and <code>%in%</code> are great help here.</p>
+<pre class="r"><code>f04a &lt;- function(x) {
+  sum(sapply(x, f04_helper))
+}
+
+f04_helper &lt;- function(x) {
+  both &lt;- sapply(sub(&quot;-&quot;, &quot;:&quot;, strsplit(x, &quot;,&quot;)[[1]]), \(y) eval(parse(text = y)), simplify = FALSE, USE.NAMES = FALSE)
+  all(both[[1]] %in% both[[2]]) || all(both[[2]] %in% both[[1]])
+}</code></pre>
+<p>The second part asks for how many overlap at all, so it’s just a change from <code>all()</code> to <code>any()</code></p>
+<pre class="r"><code>f04b &lt;- function(x) {
+  sum(sapply(x, f04b_helper))
+}
+
+f04b_helper &lt;- function(x) {
+  both &lt;- sapply(sub(&quot;-&quot;, &quot;:&quot;, strsplit(x, &quot;,&quot;)[[1]]), \(y) eval(parse(text = y)), simplify = FALSE, USE.NAMES = FALSE)
+  any(both[[1]] %in% both[[2]]) || any(both[[2]] %in% both[[1]])
+}</code></pre>
+</div>
+<div id="rust-3" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/04.rs">Rust</a></h2>
+<p>I created a structure to contain the ranges, parsed out the strings into
+actual ranges, and parsed the input</p>
+<pre class="r"><code>#[derive(Debug)]
+struct Assignments {
+    sections: String,
+}
+
+impl Assignments {
+    fn ids(&amp;self) -&gt; std::ops::Range&lt;u32&gt; {
+        let rangelimits = &amp;self.sections.split_once(&#39;-&#39;).unwrap();
+        let start = rangelimits.0.parse::&lt;u32&gt;().unwrap();
+        let end = rangelimits.1.parse::&lt;u32&gt;().unwrap();
+        start..end
+    }
+}
+
+fn create_assignments(line: &amp;str) -&gt; Vec&lt;Assignments&gt; {
+    let pair = line.split_once(&#39;,&#39;).unwrap();
+    let p1 = Assignments {
+        sections: pair.0.to_string(),
+    };
+    let p2 = Assignments {
+        sections: pair.1.to_string(),
+    };
+    vec![p1, p2]
+}
+
+fn parse04(input: &amp;str) -&gt; Vec&lt;Vec&lt;Assignments&gt;&gt; {
+    let l = input.lines();
+    l.into_iter().map(|x| create_assignments(x)).collect()
+}</code></pre>
+<p>Having to do this in Rust made me a happy that R has an <code>intersect()</code> function, because now I
+needed one and had to code it by hand (I think…)</p>
+<p>To determine if one range is fully contained within another, I compared the start
+and end values. Iterating over the pairs I just incremented a counter for those
+which were fully overlapping</p>
+<pre class="r"><code>fn fully_contains(pairs: Vec&lt;Assignments&gt;) -&gt; bool {
+    let p1 = pairs[0].ids();
+    let p2 = pairs[1].ids();
+    if p1.len() &gt;= p2.len() {
+        return p1.start &lt;= p2.start &amp;&amp; p1.end &gt;= p2.end;
+    } else {
+        return p2.start &lt;= p1.start &amp;&amp; p2.end &gt;= p1.end;
+    }
+}
+
+pub fn part_one(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let all_assignments = parse04(input);
+    let mut overlapping = 0;
+    for ass in all_assignments {
+        if fully_contains(ass) {
+            overlapping += 1;
+        }
+    }
+    Some(overlapping)
+}</code></pre>
+<p>For the second part, I needed another algorithm, so <a href="https://stackoverflow.com/a/325964/4168169">StackOverflow</a> to the rescue</p>
+<pre class="r"><code>fn overlap_at_all(pairs: Vec&lt;Assignments&gt;) -&gt; bool {
+    let p1 = pairs[0].ids();
+    let p2 = pairs[1].ids();
+    // https://stackoverflow.com/a/325964/4168169
+    // (StartA &lt;= EndB) and (EndA &gt;= StartB)
+    p1.start &lt;= p2.end &amp;&amp; p1.end &gt;= p2.start
+}
+
+pub fn part_two(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let all_assignments = parse04(input);
+    let mut overlapping = 0;
+    for ass in all_assignments {
+        if overlap_at_all(ass) {
+            overlapping += 1;
+        }
+    }
+    Some(overlapping)
+}</code></pre>
+</div>
+</div>
+<div id="day-5-supply-stacks" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day5" href="#day5"><i class="fa fa-link" aria-hidden="true"></i></a> Day 5: Supply Stacks</h1>
+<div id="r-4" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day05.R">R</a></h2>
+<p>This one made me a little more afraid as it involved parsing ASCII-art-like input</p>
+<pre><code>    [D]
+[N] [C]
+[Z] [M] [P]
+ 1   2   3
+
+move 1 from 2 to 1
+move 3 from 1 to 3
+move 2 from 2 to 1
+move 1 from 1 to 2</code></pre>
+<p>Starting with the “stacks”, I realised that a “crate” involved 4 characters and
+possibly a space (e.g. <code>[A]</code>) so I could substring into those. I reversed them
+so that the top “crate” was first</p>
+<pre class="r"><code>extract_stack &lt;- function(x) {
+  # split into stacks
+  n &lt;- seq(1, nc &lt;- nchar(x), by = 4)
+  stack &lt;- substring(x, n, c(n[-1]-1, nc))
+  stack &lt;- trimws(sub(&quot;]&quot;, &quot;&quot;, sub(&quot;[&quot;, &quot;&quot;, stack, fixed = TRUE), fixed = TRUE))
+  stack
+}
+
+get_stacks &lt;- function(x) {
+  x &lt;- x[1:(grep(&quot;^$&quot;, x)-1)]
+  y &lt;- t(sapply(x, extract_stack, USE.NAMES = FALSE))
+  stackno &lt;- y[nrow(y), ]
+  y &lt;- y[-nrow(y), ]
+  z &lt;- as.list(as.data.frame(y))
+  z &lt;- lapply(z, rev)
+  z &lt;- lapply(z, \(w) w[w != &quot;&quot;])
+  z
+}</code></pre>
+<p>Parsing the instructions was a great opportunity for something like <a href="https://github.com/moodymudskipper/unglue"><code>{unglue}</code></a>, if only I wasn’t limiting
+myself to strictly base R. Nonetheless, the instructions formed a straightforward
+pattern, so it wasn’t too hard to work with</p>
+<pre class="r"><code>get_instruction &lt;- function(x) {
+  x &lt;- sub(&quot;move &quot;, &quot;&quot;, x)
+  n &lt;- as.integer(sub(&quot;([0-9]+).*&quot;, &quot;\\1&quot;, x))
+  x &lt;- sub(&quot;^.*?from &quot;, &quot;&quot;, x)
+  from = as.integer(sub(&quot;([0-9]+).*&quot;, &quot;\\1&quot;, x))
+  to &lt;- as.integer(sub(&quot;^.*?to &quot;, &quot;&quot;, x))
+  data.frame(n, from, to)
+}
+
+get_instructions &lt;- function(x) {
+  x &lt;- x[(grep(&quot;^$&quot;, x)+1):length(x)]
+  y &lt;- lapply(x, get_instruction)
+  do.call(rbind, y)
+}</code></pre>
+<p>Performing the crane operations only involved selecting some number (1 or several)
+of elements from the <code>head</code> of some list and appending it to another</p>
+<pre class="r"><code>crane &lt;- function(stack, inst, model) {
+  for (r in seq_len(nrow(inst))) {
+    stack &lt;- .crane(stack, inst[r, ], model)
+  }
+  stack
+}
+
+.crane &lt;- function(stack, inst, model) {
+  sfrom &lt;- paste0(&quot;V&quot;, inst$from)
+  sto &lt;- paste0(&quot;V&quot;, inst$to)
+  pick &lt;- tail(stack[[sfrom]], inst$n)
+  if (model == 9000) {
+    pick &lt;- rev(pick)
+  }
+  stack[[sfrom]] &lt;- head(stack[[sfrom]], -inst$n)
+  stack[[sto]] &lt;- c(stack[[sto]], pick)
+  stack
+}</code></pre>
+<p>The flexibility and symmetry of <code>head(n)</code>, <code>head(-n)</code>, <code>tail(n)</code>, and <code>tail(-n)</code> made
+this particularly nice. This was one instance where I re-used my solution to the first
+part with an argument for the second part.</p>
+</div>
+<div id="rust-4" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/05.rs">Rust</a></h2>
+<p>If I thought the input parsing was hard in R, I wasn’t looking forward to doing it
+in Rust. I implemented the stacks in much the same way - taking 4 <code>chars</code> at a time</p>
+<pre class="r"><code>#[derive(Debug)]
+struct Stacks {
+    stacks: String,
+}
+
+impl Stacks {
+    fn crates(&amp;self) -&gt; Vec&lt;Vec&lt;char&gt;&gt; {
+        let stacklines = &amp;self
+            .stacks
+            .lines()
+            .into_iter()
+            .map(|x| x.chars().collect::&lt;Vec&lt;char&gt;&gt;())
+            .collect::&lt;Vec&lt;Vec&lt;char&gt;&gt;&gt;();
+        let mut stackentries = vec![];
+        for l in stacklines.iter() {
+            stackentries.push(l.iter().skip(1).step_by(4).collect::&lt;Vec&lt;&amp;char&gt;&gt;());
+        }
+        // reshape to stacks
+        let mut stack = vec![vec![&#39; &#39;; 50]; stackentries[1].len()];
+        for s in 0..stackentries.len() - 1 {
+            for el in 0..stackentries[s].len() {
+                stack[el][s] = stackentries[s][el].to_owned()
+            }
+        }
+        for s in 0..stack.len() {
+            stack[s].reverse();
+            stack[s].retain(|x| *x != &#39; &#39;);
+        }
+
+        stack
+    }
+}</code></pre>
+<p>The instructions invited a regex solution, but I found it to be (relatively) slow.
+I tried the ‘unglue’ approach</p>
+<pre class="r"><code>let re = Regex::new(r&quot;move (\d*) from (\d*) to (\d*)&quot;).unwrap();
+let caps = re.captures(&amp;self.input).unwrap();</code></pre>
+<p>and this ended up taking 89ms. The full R solution took 257ms which is certainly more,
+but I expected a better improvement moving to Rust. I refactored to avoid using the regex,
+instead just filtering to chars that parsed as numbers</p>
+<pre class="r"><code>#[derive(Debug)]
+struct Instructions {
+    input: String,
+}
+
+impl Instructions {
+    fn parse(&amp;self) -&gt; (usize, usize, usize) {
+        let instr = String::from(&amp;self.input);
+        let caps = instr
+            .split_whitespace()
+            .filter(|c| c.parse::&lt;usize&gt;().is_ok())
+            .collect::&lt;Vec&lt;_&gt;&gt;();
+        let moveto = caps[0].parse::&lt;usize&gt;().unwrap();
+        let from = caps[1].parse::&lt;usize&gt;().unwrap();
+        let to = caps[2].parse::&lt;usize&gt;().unwrap();
+
+        (moveto, from, to)
+    }
+}</code></pre>
+<p>and this version ran in 403µs - much better.</p>
+<p>Putting the two pieces together as a tuple</p>
+<pre class="r"><code>fn parse05(input: &amp;str) -&gt; (Stacks, Vec&lt;Instructions&gt;) {
+    let parts = input.split_once(&quot;\n\n&quot;).unwrap();
+    let stacks = Stacks {
+        stacks: String::from(parts.0),
+    };
+    let instr = parts
+        .1
+        .lines()
+        .map(|x| Instructions {
+            input: String::from(x),
+        })
+        .collect::&lt;Vec&lt;_&gt;&gt;();
+    (stacks, instr)
+}</code></pre>
+<p>Actually running the simulation required a <code>crane</code> function</p>
+<pre class="r"><code>fn crane(crates: Vec&lt;Vec&lt;char&gt;&gt;, instr: (usize, usize, usize)) -&gt; Vec&lt;Vec&lt;char&gt;&gt; {
+    let mut tmpcrates = crates.clone();
+    for _i in 0..instr.0 {
+        let tomove: char = tmpcrates[instr.1 - 1].pop().unwrap();
+        tmpcrates[instr.2 - 1].push(tomove);
+    }
+    tmpcrates
+}
+
+pub fn part_one(input: &amp;str) -&gt; Option&lt;String&gt; {
+    let (stacks, instr) = parse05(&amp;input);
+    let mut crates = stacks.crates();
+    for i in 0..instr.len() {
+        crates = crane(crates, instr[i].parse());
+    }
+    let tops = crates.iter().map(|s| s.last().unwrap()).collect::&lt;String&gt;();
+    Some(tops)
+}</code></pre>
+<p>and, not reusing the solution, part two</p>
+<pre class="r"><code>fn crane9001(crates: Vec&lt;Vec&lt;char&gt;&gt;, instr: (usize, usize, usize)) -&gt; Vec&lt;Vec&lt;char&gt;&gt; {
+    let mut tmpcrates = crates.clone(); 
+    let new_len = tmpcrates[instr.1 - 1].len();
+    let mut tomove = vec![];
+    for _i in 0..instr.0 {
+        tomove.push(tmpcrates[instr.1 - 1].pop().unwrap());
+    }
+    tomove.reverse();
+    tmpcrates[instr.1 - 1].truncate(new_len - instr.0);
+    for x in tomove.into_iter() {
+        tmpcrates[instr.2 - 1].push(x);
+    }
+    tmpcrates
+}
+
+pub fn part_two(input: &amp;str) -&gt; Option&lt;String&gt; {
+    let (stacks, instr) = parse05(&amp;input);
+    let mut crates = stacks.crates();
+
+    for i in 0..instr.len() {
+        crates = crane9001(crates, instr[i].parse());
+    }
+    let tops = crates.iter().map(|s| s.last().unwrap()).collect::&lt;String&gt;();
+    Some(tops)
+}</code></pre>
+<p>Not as bad as it could have been. The fact that Rust treats strings as a
+vector of Chars (as many other languages do) makes some of this a lot nicer. It’s
+something I do wish R did differently now that I’ve used it in other places, but
+strings are hard.</p>
+</div>
+</div>
+<div id="day-6-tuning-trouble" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day6" href="#day6"><i class="fa fa-link" aria-hidden="true"></i></a> Day 6: Tuning Trouble</h1>
+<p>After complaining about strings the previous day, parsing this one sounded potentially
+tricky, but I think it worked out nicely. The problem involves finiding the first
+group of 4 characters where they are all different.</p>
+<div id="r-5" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day06.R">R</a></h2>
+<p>Returning to the ’do it once, then <code>*apply</code> approach, I was happy to know that
+R’s <code>substring</code> is vectorised, so the <code>first</code> and <code>last</code> arguments can be
+vectors, e.g. taking 10 letters at a time of the alphabet</p>
+<pre class="r"><code>l &lt;- paste0(letters, collapse = &quot;&quot;)
+l</code></pre>
+<pre class="bg-success"><code>## [1] &quot;abcdefghijklmnopqrstuvwxyz&quot;</code></pre>
+<pre class="r"><code>substring(l, seq(1, 17), seq(10, 26))</code></pre>
+<pre class="bg-success"><code>##  [1] &quot;abcdefghij&quot; &quot;bcdefghijk&quot; &quot;cdefghijkl&quot; &quot;defghijklm&quot; &quot;efghijklmn&quot;
+##  [6] &quot;fghijklmno&quot; &quot;ghijklmnop&quot; &quot;hijklmnopq&quot; &quot;ijklmnopqr&quot; &quot;jklmnopqrs&quot;
+## [11] &quot;klmnopqrst&quot; &quot;lmnopqrstu&quot; &quot;mnopqrstuv&quot; &quot;nopqrstuvw&quot; &quot;opqrstuvwx&quot;
+## [16] &quot;pqrstuvwxy&quot; &quot;qrstuvwxyz&quot;</code></pre>
+<p>This is the exact sort of grouping I need for this puzzle. The rest is figuring
+out if the group contains 4 unique characters. The offset is to account for the
+number of characters since the start of the original string</p>
+<pre class="r"><code>f06_helper &lt;- function(x) {
+  grp4 &lt;- substring(x, seq(1, nchar(x)), seq(4, nchar(x)))
+  4 + which(sapply(strsplit(grp4, &quot;&quot;), \(y) length(unique(y))) == 4)[1] - 1
+}
+
+f06a &lt;- function(x) {
+  sapply(x, f06_helper)
+}</code></pre>
+<p>The second part really could have just been adding an argument to specify the group
+length, but I went the long way around</p>
+<pre class="r"><code>f06b_helper &lt;- function(x) {
+  grp14 &lt;- substring(x, seq(1, nchar(x)), seq(14, nchar(x)))
+  14 + which(sapply(strsplit(grp14, &quot;&quot;), \(y) length(unique(y))) == 14)[1] - 1
+}
+
+f06b &lt;- function(x) {
+  sapply(x, f06b_helper)
+}</code></pre>
+</div>
+<div id="rust-5" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/06.rs">Rust</a></h2>
+<p>Without R’s vectorised substring, I needed to parse 4 characters at a time - again I was
+thankful that Rust treats strings as a series of Chars. To keep track of which Chars
+had been seen in the last 4 Chars I used a <code>HashSet</code>. I was pleased to learn that R does
+in fact have <a href="https://stat.ethz.ch/R-manual/R-devel/library/utils/html/hashtab.html">such a structure in the form of <code>utils::hashtab()</code></a>
+but this is only available in newer versions of R</p>
+<pre class="r"><code>use std::collections::HashSet;
+
+pub fn part_one(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let mut i: u32 = 1;
+    let mut recent = HashSet::new();
+    let mut lastchars = vec![&#39; &#39;; 3];
+
+    for c in input.chars() {
+        for j in 0..3 {
+            recent.insert(lastchars[j]);
+        }
+        recent.insert(c);
+        if i &gt; 3 &amp;&amp; recent.len() == 4 {
+            break
+        };
+        for i in 0..2 {
+            lastchars[i] = lastchars[i+1];
+        }
+        lastchars[2] = c;
+        recent.clear();
+        i += 1;
+    }
+    Some(i)
+}</code></pre>
+<p>The second part is again very similar, and again rather than adapting my solution
+I wrote a new one for part two</p>
+<pre class="r"><code>pub fn part_two(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let mut i: u32 = 1;
+    let mut recent = HashSet::new();
+    let mut lastchars = vec![&#39; &#39;; 13];
+
+    for c in input.chars() {
+        for j in 0..13 {
+            recent.insert(lastchars[j]);
+        }
+        recent.insert(c);
+        if i &gt; 13 &amp;&amp; recent.len() == 14 {
+            break
+        };
+        for i in 0..12 {
+            lastchars[i] = lastchars[i+1];
+        }
+        lastchars[12] = c;
+        recent.clear();
+        i += 1;
+    }
+    Some(i)
+}</code></pre>
+</div>
+</div>
+<div id="day-7-no-space-left-on-device" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day7" href="#day7"><i class="fa fa-link" aria-hidden="true"></i></a> Day 7: No Space Left On Device</h1>
+<p>The input for this puzzle is a bit gnarly</p>
+<pre><code>$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+...</code></pre>
+<p>but it turned out a brute-force replacement approach didn’t work too badly.</p>
+<div id="r-6" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day07.R">R</a></h2>
+<p>There’s probably some good algorithm to deal with this, but instead I wrote a lot of
+for-loops to see what needed to be done. The tricky part of the recursion was having
+somewhere to keep track of a) which directory I was currently in, and b) what I’d already
+seen. I’m sure a recursive approach could be of help here, but instead I used an
+<code>environment</code> because I knew it was somewhat memory efficient; a global list would need
+to keep allocating and be slow.</p>
+<pre class="r"><code>f07a &lt;- function(x) {
+  dir_env &lt;- new.env()
+  current_dir &lt;- &quot;/&quot;
+  assign(current_dir, 0, envir = dir_env)
+  for (inst in x) {
+    if (inst == &quot;$ cd /&quot;) next
+    if (inst == &quot;$ cd ..&quot;) {
+      current_dir &lt;- head(current_dir, -1)
+      next
+    }
+    if (startsWith(inst, &quot;$ cd&quot;)) {
+      dir &lt;- sub(&quot;$ cd &quot;, &quot;&quot;, inst, fixed = TRUE)
+      current_dir &lt;- c(current_dir, dir)
+        assign(paste0(current_dir, collapse = &quot;/&quot;), 0, envir = dir_env)
+      next
+    }
+    if (inst == &quot;$ ls&quot;) next
+    if (startsWith(inst, &quot;dir&quot;)) {
+      dir &lt;- sub(&quot;dir &quot;, &quot;&quot;, inst)
+      next
+    } else if (grepl(&quot;^[0-9]&quot;, inst)) {
+      l &lt;- strsplit(inst, &quot; &quot;)[[1]]
+      size &lt;- l[1]
+      for (d in seq_along(current_dir)) {
+          this.d &lt;- paste0(current_dir[1:d], collapse = &quot;/&quot;)
+          assign(this.d, dir_env[[this.d]] + as.integer(size), envir = dir_env)
+      }
+      next
+    } else {
+      stop(&quot;what?&quot;)
+    }
+  }
+  sizes &lt;- sapply(ls(dir_env), get, env = dir_env)
+  res &lt;- sum(sizes[which(sizes &lt;= 100000)])
+  list(del = res, env = dir_env)
+}</code></pre>
+<p>This isn’t recursive, but it works. The second part is much shorter, since it
+can reuse the first part</p>
+<pre class="r"><code>f07b &lt;- function(x) {
+  alldirs &lt;- f07a(x)$env
+  todelete &lt;- alldirs[[&quot;/&quot;]] - 40000000
+  sizes &lt;- sapply(ls(alldirs), get, env = alldirs)
+  candidates &lt;- sizes[which(sizes &gt;= todelete)]
+  smallest &lt;- candidates[which.min(candidates)]
+  smallest
+}</code></pre>
+</div>
+<div id="rust-6" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/08.rs">Rust</a></h2>
+<p>Here I took the same approach, but using a <code>HashMap</code> as the filesystem</p>
+<pre class="rust"><code>use std::{collections::HashMap};
+
+pub fn part_one(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let mut dir_deque = vec![];
+    let mut current_dir = String::from(&quot;&quot;);
+    let mut filesystem = HashMap::new();
+    for l in input.lines() {
+        if l == &quot;$ cd ..&quot; {
+            dir_deque.pop().unwrap();
+            current_dir = dir_deque.join(&quot;&quot;);
+            continue;
+        } else if l == &quot;$ cd /&quot; {
+            current_dir = String::from(&quot;/&quot;);
+            filesystem.insert(current_dir.clone(), 0);
+            dir_deque = vec![String::from(&quot;/&quot;)];
+            continue;
+        } else if l.starts_with(&quot;dir&quot;) {
+            continue;
+        } else if l.starts_with(&quot;$ cd&quot;) {
+            let new_dir = l.replace(&quot;$ cd &quot;, &quot;&quot;);
+            dir_deque.push(new_dir.clone() + &amp;&quot;/&quot;);
+            current_dir = current_dir + &amp;new_dir.clone() + &amp;&quot;/&quot;;
+            filesystem.insert(current_dir.clone(), 0);
+            continue;
+        } else if char::is_digit(l.chars().nth(1).unwrap(), 10) {
+            let parts = l.split_whitespace().collect::&lt;Vec&lt;_&gt;&gt;();
+            let dir_size = parts[0].parse::&lt;u32&gt;().unwrap();
+            for d in 0..dir_deque.len() {
+                let this_d = dir_deque[0..=d].join(&quot;&quot;);
+                let known_size = filesystem.get(&amp;this_d).unwrap();
+                filesystem.insert(this_d, known_size + dir_size);
+            }
+            continue;
+        }
+    }
+
+    let totalsize = filesystem.iter()
+            .filter(|&amp;(_k, v)| *v &lt;= 1e5 as u32)
+            .map(|(_k, v)| *v)
+            .collect::&lt;Vec&lt;u32&gt;&gt;()
+            .iter()
+            .sum();
+
+    Some(totalsize)
+        
+}
+
+pub fn part_two(input: &amp;str) -&gt; Option&lt;u32&gt; {
+    let mut dir_deque = vec![];
+    let mut current_dir = String::from(&quot;&quot;);
+    let mut filesystem = HashMap::new();
+    for l in input.lines() {
+        if l == &quot;$ cd ..&quot; {
+            dir_deque.pop().unwrap();
+            current_dir = dir_deque.join(&quot;&quot;);
+            continue;
+        } else if l == &quot;$ cd /&quot; {
+            current_dir = String::from(&quot;/&quot;);
+            filesystem.insert(current_dir.clone(), 0);
+            dir_deque = vec![String::from(&quot;/&quot;)];
+            continue;
+        } else if l.starts_with(&quot;dir&quot;) {
+            continue;
+        } else if l.starts_with(&quot;$ cd&quot;) {
+            let new_dir = l.replace(&quot;$ cd &quot;, &quot;&quot;);
+            dir_deque.push(new_dir.clone() + &amp;&quot;/&quot;);
+            current_dir = current_dir + &amp;new_dir.clone() + &amp;&quot;/&quot;;
+            filesystem.insert(current_dir.clone(), 0);
+            continue;
+        } else if char::is_digit(l.chars().nth(1).unwrap(), 10) {
+            let parts = l.split_whitespace().collect::&lt;Vec&lt;_&gt;&gt;();
+            let dir_size = parts[0].parse::&lt;u32&gt;().unwrap();
+            for d in 0..dir_deque.len() {
+                let this_d = dir_deque[0..=d].join(&quot;&quot;);
+                let known_size = filesystem.get(&amp;this_d).unwrap();
+                filesystem.insert(this_d, known_size + dir_size);
+            }
+            continue;
+        }
+    }
+
+    let to_delete = filesystem.get(&quot;/&quot;).unwrap() - (4e7 as u32);
+    let candidates = filesystem.iter()
+        .filter(|&amp;(_k, v)| *v &gt;= to_delete)
+        .map(|(_k, v)| *v)
+        .collect::&lt;Vec&lt;u32&gt;&gt;();
+    Some(*candidates.iter().min().unwrap())
+
+}</code></pre>
+</div>
+</div>
+<div id="day-8-treetop-tree-house" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day8" href="#day8"><i class="fa fa-link" aria-hidden="true"></i></a> Day 8: Treetop Tree House</h1>
+<p>(see links)</p>
+<div id="r-7" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day08.R">R</a></h2>
+</div>
+<div id="rust-7" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/09.rs">Rust</a></h2>
+</div>
+</div>
+<div id="day-9-rope-bridge" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day9" href="#day9"><i class="fa fa-link" aria-hidden="true"></i></a> Day 9: Rope Bridge</h1>
+<p>This one involves keeping track of the positions of several ‘knots’ in a rope as it moves.</p>
+<div id="r-8" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day09.R">R</a></h2>
+<p>I wrote a <em>lot</em> of helper functions for this one</p>
+<pre class="r"><code>f09a &lt;- function(x) {
+  visited &lt;- list()
+  head_pos &lt;- c(5, 1)
+  tail_pos &lt;- c(5, 1)
+  # print_grid(head_pos, tail_pos)
+  visited &lt;- c(visited, list(tail_pos))
+  for (instr in x) {
+    tmp &lt;- move_rope(head_pos, tail_pos, instr)
+    head_pos &lt;- tmp[[1]]
+    tail_pos &lt;- tmp[[2]]
+    visited &lt;- c(visited, tmp[[3]])
+  }
+  length(unique(visited))
+}
+
+print_grid &lt;- function(head_pos, tail_pos, size = 6) {
+  grid &lt;- matrix(&quot;.&quot;, nrow = size, ncol = size)
+  grid[matrix(tail_pos, ncol = 2)] &lt;- &quot;T&quot;
+  grid[matrix(head_pos, ncol = 2)] &lt;- &quot;H&quot;
+  print(grid)
+}
+
+print_knots &lt;- function(k, size = 10) {
+  grid &lt;- matrix(&quot;.&quot;, nrow = size, ncol = size)
+  for (i in seq_len(length(k))) {
+    grid[matrix(k[[i]], ncol = 2)] &lt;- i
+  }
+  print(grid)
+}
+
+move_head &lt;- function(head_pos, dir) {
+  if (dir == &quot;L&quot;) return(c(head_pos[1], head_pos[2] - 1))
+  if (dir == &quot;R&quot;) return(c(head_pos[1], head_pos[2] + 1))
+  if (dir == &quot;U&quot;) return(c(head_pos[1] - 1, head_pos[2]))
+  if (dir == &quot;D&quot;) return(c(head_pos[1] + 1, head_pos[2]))
+}
+
+move_rope &lt;- function(head_pos, tail_pos, x) {
+  visited &lt;- list()
+  dir &lt;- sub(&quot; .*&quot;, &quot;&quot;, x)
+  dist &lt;- as.integer(sub(&quot;[LRUD] &quot;, &quot;&quot;, x))
+  for (i in seq_len(dist)) {
+    head_pos &lt;- move_head(head_pos, dir)
+    tail_pos &lt;- move_tail(head_pos, tail_pos)
+    visited &lt;- c(visited, list(tail_pos))
+  }
+  return(list(head_pos, tail_pos, visited))
+}
+
+move_knots &lt;- function(knots, x) {
+  visited &lt;- list()
+  dir &lt;- sub(&quot; .*&quot;, &quot;&quot;, x)
+  dist &lt;- as.integer(sub(&quot;[LRUD] &quot;, &quot;&quot;, x))
+  for (i in seq_len(dist)) {
+    knots[[1]] &lt;- move_head(knots[[1]], dir)
+    for (i in 2:10) {
+      knots[[i]] &lt;- move_tail(knots[[i-1]], knots[[i]])
+    }
+    visited &lt;- c(visited, list(knots[[10]]))
+  }
+  return(list(knots, visited))
+}
+
+touching &lt;- function(head_pos, tail_pos) {
+  (head_pos[1] == tail_pos[1] &amp;&amp; head_pos[2] == tail_pos[2]) ||
+  (abs(head_pos[1] - tail_pos[1]) &lt;= 1 &amp;&amp; abs(head_pos[2] - tail_pos[2]) &lt;= 1)
+}
+
+move_tail &lt;- function(head_pos, tail_pos) {
+  if (touching(head_pos, tail_pos)) return(tail_pos)
+  if (tail_pos[1] == head_pos[1]) return(c(tail_pos[1], tail_pos[2] + sign(head_pos[2] - tail_pos[2])*1))
+  if (tail_pos[2] == head_pos[2]) return(c(tail_pos[1] + sign(head_pos[1] - tail_pos[1]*1), tail_pos[2]))
+  return(c(tail_pos[1] + sign(head_pos[1] - tail_pos[1])*1, tail_pos[2] + sign(head_pos[2] - tail_pos[2])*1))
+}</code></pre>
+<p>This was also the first one I found the time to plot - here I plotted the path of the 10th knot,
+as well as the positions of the other knots after each step</p>
+<p><img src="images/vis-day09.png" /></p>
+</div>
+<div id="rust-8" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/09.rs">Rust</a></h2>
+</div>
+</div>
+<div id="day-10-cathode-ray-tube" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day10" href="#day10"><i class="fa fa-link" aria-hidden="true"></i></a> Day 10: Cathode-Ray Tube</h1>
+<p>(see links)</p>
+<div id="r-9" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day10.R">R</a></h2>
+</div>
+<div id="rust-9" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/10.rs">Rust</a></h2>
+</div>
+</div>
+<div id="day-11-monkey-in-the-middle" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day11" href="#day11"><i class="fa fa-link" aria-hidden="true"></i></a> Day 11: Monkey in the Middle</h1>
+<p>(see links)</p>
+<div id="r-10" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day11.R">R</a></h2>
+</div>
+<div id="rust-10" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/11.rs">Rust</a></h2>
+</div>
+</div>
+<div id="day-12-hill-climbing-algorithm" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day12" href="#day12"><i class="fa fa-link" aria-hidden="true"></i></a> Day 12: Hill Climbing Algorithm</h1>
+<p>This one required that I learn a pathfinding algorithm - something I hadn’t really done before. I ended up
+learning (and implementing) Dijkstra’s Algorithm for finding the shortest paths between nodes in a graph.</p>
+<div id="r-11" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day12.R">R</a></h2>
+<pre class="r"><code>f12a &lt;- function(x) {
+  rows &lt;- strsplit(x, &quot;&quot;)
+  grid &lt;- matrix(unlist(rows), ncol = nchar(x[1]), byrow = TRUE)
+  ngrid &lt;- grid
+  ngrid[which(grid == &quot;S&quot;, arr.ind = TRUE)] &lt;- &quot;a&quot;
+  ngrid[which(grid == &quot;E&quot;, arr.ind = TRUE)] &lt;- &quot;z&quot;
+  ngrid[] &lt;- match(ngrid[], letters)
+  mode(ngrid) &lt;- &quot;integer&quot;
+  startat &lt;- which(t(grid) == &quot;S&quot;)
+  endat &lt;- which(t(grid) == &quot;E&quot;)
+  min_path &lt;- dijkstra(ngrid, endat, dir = -1)
+  min_pathp[startat]
+}
+
+get_pos &lt;- function(grid, v) {
+  i &lt;- floor((v-1)/ncol(grid))+1
+  j &lt;- ((v-1) %% ncol(grid))+1
+  return(c(i, j))
+}
+
+can_reach &lt;- function(ngrid, v, dir = 1) {
+  x &lt;- get_pos(ngrid, v)
+  i &lt;- x[1]
+  j &lt;- x[2]
+  # can only move 1 row away
+  res &lt;- abs(floor(0:(prod(dim(ngrid))-1) / ncol(ngrid)) + 1 - i) &lt;= 1 &amp;
+    # can only move 1 col away
+    abs((0:(prod(dim(ngrid))-1)%%ncol(ngrid)) + 1 - j) &lt;= 1 &amp;
+    # can&#39;t move diagonally
+    abs(floor(0:(prod(dim(ngrid))-1) / ncol(ngrid)) + 1 - i) + abs((0:(prod(dim(ngrid))-1)%%ncol(ngrid)) + 1 - j) == 1
+    if (dir == 1) {
+    # can only step up 1
+      res &lt;- res &amp; c(t(ngrid - ngrid[i, j] &lt;= 1))
+    } else {
+      res &lt;- res &amp; c(t(ngrid[i, j] - ngrid &lt;= 1))
+    }
+  as.integer(res)
+}
+
+dijkstra &lt;- function(grid, start, dir = -1){
+  #&#39; Implementation of dijkstra using on-demand query
+  #&#39; derived from https://www.algorithms-and-technologies.com/dijkstra/r
+  #&#39; This returns an array containing the length of the shortest path from the start node to each other node.
+  #&#39; It is only guaranteed to return correct results if there are no negative edges in the graph. Positive cycles are fine.
+  #&#39; This has a runtime of O(|V|^2) (|V| = number of Nodes), for a faster implementation see @see ../fast/Dijkstra.java (using adjacency lists)
+  #&#39; @param graph an adjacency-matrix-representation of the graph where (x,y) is the weight of the edge or 0 if there is no edge.
+  #&#39; @param start the node to start from.
+  #&#39; @param dir are we going up or down? passed to can_reach()
+  #&#39; @return an array containing the shortest distances from the given start node to each other node
+
+  # This contains the distances from the start node to all other nodes
+  distances = rep(Inf, prod(dim(grid)))
+  paths = rep(list(), prod(dim(grid)))
+
+  # This contains whether a node was already visited
+  visited = rep(FALSE, prod(dim(grid)))
+
+  # The distance from the start node to itself is of course 0
+  distances[start] = 0
+  paths[[start]] = start
+
+  # While there are nodes left to visit...
+  repeat{
+
+    # ... find the node with the currently shortest distance from the start node...
+    shortest_distance = Inf
+    shortest_index = -1
+    for(i in seq_along(distances)) {
+      # ... by going through all nodes that haven&#39;t been visited yet
+      if(distances[i] &lt; shortest_distance &amp;&amp; !visited[i]){
+        shortest_distance = distances[i]
+        shortest_index = i
+      }
+    }
+
+    if(shortest_index == -1){
+      # There was no node not yet visited --&gt; We are done
+      return (list(distances, paths))
+    }
+    # ...then, for all neighboring nodes that haven&#39;t been visited yet....
+    g &lt;- can_reach(grid, shortest_index, dir = dir)
+    for(i in seq_along(g)) {
+      # ...if the path over this edge is shorter...
+      if(g[i] != 0 &amp;&amp; distances[i] &gt; distances[shortest_index] + g[i]){
+        # ...Save this path as new shortest path.
+        distances[i] = distances[shortest_index] + g[i]
+        paths[[i]] &lt;- c(paths[[shortest_index]], i)
+      }
+      # Lastly, note that we are finished with this node.
+      visited[shortest_index] = TRUE
+    }
+  }
+}</code></pre>
+<p>With a decent amount of plotting code, I ended up with an animation showing the solution
+for the test data</p>
+<p><img src="images/vis-day12_test.gif" /></p>
+<p>which I was very pleased about. Even better, was the full solution animation</p>
+<p><img src="images/vis-day12.gif" /></p>
+</div>
+<div id="rust-11" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/12.rs">Rust</a></h2>
+</div>
+</div>
+<div id="day-13-distress-signal" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day13" href="#day13"><i class="fa fa-link" aria-hidden="true"></i></a> Day 13: Distress Signal</h1>
+<p>This one involves comparing nested lists like <code>[[1],[2,3,4]]</code> vs <code>[[1],4]</code>. I really want to go back
+and try this one in Haskell because those comparisons are (I believe) built-in.</p>
+<div id="r-12" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day13.R">R</a></h2>
+</div>
+<div id="rust-12" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/Rust/src/bin/13.rs">Rust</a></h2>
+</div>
+</div>
+<div id="day-14-regolith-reservoir" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day14" href="#day14"><i class="fa fa-link" aria-hidden="true"></i></a> Day 14: Regolith Reservoir</h1>
+<p>I didn’t finish my Rust solution for this one, but I was very happy with my R solution. The goal here
+is to fill the area with falling sand, allowing for some obstacles.</p>
+<div id="r-13" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day14.R">R</a></h2>
+<pre class="r"><code>f14a &lt;- function(x) {
+  allrocks &lt;- lapply(x, rocks)
+  cave &lt;- matrix(&quot;.&quot;, nrow = 200, ncol = 1500)
+  for (r in allrocks) {
+    for (rr in seq_along(r[-1])) {
+      f &lt;- fill_rocks(r[rr], r[rr+1])
+      cave[f] &lt;- &quot;#&quot;
+    }
+  }
+  done &lt;- FALSE
+  while(!done) {
+    cave &lt;- fall(cave, c(1, 500+500))
+    done &lt;- cave[matrix(c(1,1), ncol = 2)] == &quot;X&quot;
+  }
+  sum(cave == &quot;o&quot;)
+}
+
+fall &lt;- function(cave, sand, crit = &quot;fall&quot;) {
+  down &lt;- c(sand[1]+1, sand[2])
+  if (crit == &quot;fall&quot; &amp;&amp; down[1] &gt; 200) {
+    cave[matrix(c(1,1), ncol = 2)] &lt;- &quot;X&quot;
+    return(cave)
+  } else if (blocked(cave, c(1, 500+500))) {
+    sandmat &lt;&lt;- rbind(sandmat, c(1, 500+500))
+    cave[matrix(c(1,500+500), ncol = 2)] &lt;- &quot;o&quot;
+    cave[matrix(c(1,1), ncol = 2)] &lt;- &quot;X&quot;
+    return(cave)
+  }
+  if (blocked(cave, down)) {
+    downleft &lt;- c(sand[1]+1, sand[2]-1)
+    if (blocked(cave, downleft)) {
+      downright &lt;- c(sand[1]+1, sand[2]+1)
+      if (blocked(cave, downright)) {
+        sandmat &lt;&lt;- rbind(sandmat, sand)
+        cave[matrix(sand, ncol = 2)] &lt;- &quot;o&quot;
+      } else {
+        return(fall(cave, downright))
+      }
+    } else {
+      return(fall(cave, downleft))
+    }
+  } else {
+    return(fall(cave, down))
+  }
+  return(cave)
+}
+
+blocked &lt;- function(cave, x) {
+  cave[matrix(x, ncol = 2)] %in% c(&quot;#&quot;, &quot;o&quot;)
+}
+
+rocks &lt;- function(x) {
+  rocks &lt;- strsplit(x, &quot; -&gt; &quot;)[[1]]
+  rocks &lt;- strsplit(rocks, &quot;,&quot;)
+  for (r in seq_along(rocks)) {
+    rocks[[r]] &lt;- as.integer(rocks[[r]])
+    rocks[[r]][1] &lt;- rocks[[r]][1] + 500
+  }
+  rocks
+}
+
+fill_rocks &lt;- function(x, y) {
+  x &lt;- x[[1]]
+  x[2] &lt;- x[2] + 1
+  y &lt;- y[[1]]
+  y[2] &lt;- y[2] + 1
+  # horizontal
+  if (x[1] == y[1]) {
+    span &lt;- x[2]:y[2]
+    return(matrix(c(span, rep(x[1], length(span))), ncol = 2, byrow = FALSE))
+  }
+  # vertical
+  if (x[2] == y[2]) {
+    span &lt;- x[1]:y[1]
+    return(matrix(c(rep(x[2], length(span)), span), ncol = 2, byrow = FALSE))
+  }
+}</code></pre>
+<p>I animated the falling sand, filling up the cave, but with <em>so</em> many particles it didn’t go very well,
+especially when limiting the frames</p>
+<p><img src="images/vis-day14.gif" /></p>
+<p>Instead, a render of the final solution, with the sand coloured by the time at which it came to
+rest, looked much cooler</p>
+<p><img src="images/vis-day14.png" /></p>
+</div>
+</div>
+<div id="day-15-beacon-exclusion-zone" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day15" href="#day15"><i class="fa fa-link" aria-hidden="true"></i></a> Day 15: Beacon Exclusion Zone</h1>
+<p>(see links)</p>
+<div id="r-14" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day15.R">R</a></h2>
+</div>
+</div>
+<div id="day-16-proboscidea-volcanium" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day16" href="#day16"><i class="fa fa-link" aria-hidden="true"></i></a> Day 16: Proboscidea Volcanium</h1>
+<p>(see links)</p>
+<div id="r-15" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day16.R">R</a></h2>
+</div>
+</div>
+<div id="day-17-pyroclastic-flow" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day17" href="#day17"><i class="fa fa-link" aria-hidden="true"></i></a> Day 17: Pyroclastic Flow</h1>
+<p>While it was never mentioned by name, this one was essentially a game of Tetris.</p>
+<div id="r-16" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day17.R">R</a></h2>
+<p>At this point, there’s too much code to copy inline. Check out the repo links.</p>
+<p>I couldn’t help but plot this one as an animation…</p>
+<p><img src="images/vis-day17.gif" /></p>
+</div>
+</div>
+<div id="day-18-boiling-boulders" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day18" href="#day18"><i class="fa fa-link" aria-hidden="true"></i></a> Day 18: Boiling Boulders</h1>
+<p>I got to learn even more algorithms for this one - this time a flood-fill algorithm.</p>
+<div id="r-17" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day18.R">R</a></h2>
+<p>I took advantage of one of coolbutuseless’ packages <a href="https://github.com/coolbutuseless/isocubes">{isocubes}</a>
+to plot the shape of the lava droplet</p>
+<p><img src="images/vis-day18.png" /></p>
+</div>
+</div>
+<div id="day-19-not-enough-minerals" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day19" href="#day19"><i class="fa fa-link" aria-hidden="true"></i></a> Day 19: Not Enough Minerals</h1>
+<p>(see links)</p>
+<div id="r-18" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day19.R">R</a></h2>
+</div>
+</div>
+<div id="day-20-grove-positioning-system" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day20" href="#day20"><i class="fa fa-link" aria-hidden="true"></i></a> Day 20: Grove Positioning System</h1>
+<p>(see links)</p>
+<div id="r-19" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day20.R">R</a></h2>
+</div>
+</div>
+<div id="day-21-monkey-math" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day21" href="#day21"><i class="fa fa-link" aria-hidden="true"></i></a> Day 21: Monkey Math</h1>
+<p>I had no intentions of making it on to the leaderboard for timing, even though the puzzles were
+released at an entirely reasonable time for me. I actually got to this one late in the
+evening due to some other commitments, but I am quietly confident that my R solution could
+have been one of the fastest solves…</p>
+<p>The problem is figuring out what the value of the ‘root’ monkey is, given the following operations</p>
+<pre><code>root: pppw + sjmn
+dbpl: 5
+cczh: sllz + lgvd
+zczc: 2
+ptdq: humn - dvpt
+dvpt: 3
+lfqf: 4
+humn: 5
+ljgn: 2
+sjmn: drzm * dbpl
+sllz: 4
+pppw: cczh / lfqf
+lgvd: ljgn * ptdq
+drzm: hmdt - zczc
+hmdt: 32</code></pre>
+<div id="r-20" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day21.R">R</a></h2>
+<p>I realised fairly quickly that I could just make each of the connections a function call,
+and evaluate the entire stack! This was very fast to write, and I got to my full solution
+faster than most of those at the top of the leaderboard, but much later in the day.</p>
+<pre class="r"><code>f21a &lt;- function(x) {
+  defs &lt;- sapply(x, parseInput)
+  for (d in defs) {
+    eval(parse(text = d))
+  }
+  format(root(), scientific = FALSE)
+}
+
+parseInput &lt;- function(x) {
+  monkey &lt;- sub(&quot;^(.*):.*&quot;, &quot;\\1&quot;, x)
+  ret &lt;- sub(&quot;.*: (.*)$&quot;, &quot;\\1&quot;, x)
+  if (is.na(suppressWarnings(as.integer(ret)))) {
+    ret &lt;- strsplit(ret, &quot; &quot;)[[1]]
+    v1 &lt;- ret[1]
+    op &lt;- ret[2]
+    v2 &lt;- ret[3]
+    def &lt;- paste0(monkey, &quot; &lt;- function() { &quot;, v1, &quot;() &quot;, op, &quot; &quot;, v2, &quot;() }&quot;)
+  } else {
+    def &lt;- paste0(monkey, &quot; &lt;- function() { &quot;, ret, &quot; }&quot;)
+  }
+}</code></pre>
+<p>Sure, sometimes (most of the time), <code>eval(parse(text = ))</code> is a terrible idea, but in
+this case it worked out great!</p>
+</div>
+</div>
+<div id="day-22-monkey-map" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day22" href="#day22"><i class="fa fa-link" aria-hidden="true"></i></a> Day 22: Monkey Map</h1>
+<p>(see links)</p>
+<div id="r-21" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day22.R">R</a></h2>
+</div>
+</div>
+<div id="day-23-unstable-diffusion" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day23" href="#day23"><i class="fa fa-link" aria-hidden="true"></i></a> Day 23: Unstable Diffusion</h1>
+<p>(see links)</p>
+<div id="r-22" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day23.R">R</a></h2>
+</div>
+</div>
+<div id="day-24-blizzard-basin" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day24" href="#day24"><i class="fa fa-link" aria-hidden="true"></i></a> Day 24: Blizzard Basin</h1>
+<p>(see links)</p>
+<div id="r-23" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day24.R">R</a></h2>
+</div>
+</div>
+<div id="day-25-full-of-hot-air" class="section level1">
+<h1><a rel="noopener" target="_blank" id="day25" href="#day25"><i class="fa fa-link" aria-hidden="true"></i></a> Day 25: Full of Hot Air</h1>
+<p>(see links)</p>
+<div id="r-24" class="section level2">
+<h2><a href="https://github.com/jonocarroll/advent-of-code/blob/main/2022/R/R/day25.R">R</a></h2>
+</div>
+</div>
+<div id="summary" class="section level1">
+<h1>Summary</h1>
+<p>I really enjoyed advent of code, and I ended up donating as thanks for providing such
+a nice experience. I’ll be having a go at AoC 2023 but won’t be so strict; I may not
+solve each puzzle <em>on the day it’s released</em> and I will be allowing myself to use whatever
+libraries and whatever languages I want.</p>
+<p>Will you be participating? I’d love to compare solutions once we’re done! I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> and I’ll be commenting on the puzzles as I go.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.2 (2023-10-31)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-11-28
+##  pandoc   3.1.8 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.18    2023-06-19 [1] CRAN (R 4.3.2)
+##  bookdown      0.36    2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.5.1   2023-08-11 [3] CRAN (R 4.3.1)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.22    2023-09-29 [3] CRAN (R 4.3.1)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.6.1 2023-10-06 [3] CRAN (R 4.3.1)
+##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  knitr         1.44    2023-09-11 [3] CRAN (R 4.3.1)
+##  later         1.3.1   2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.3.2)
+##  pkgbuild      1.4.2   2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgload       1.3.3   2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0   2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.8   2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1   2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.2   2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.11  2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1 2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.1   2023-04-28 [3] CRAN (R 4.3.0)
+##  rmarkdown     2.25    2023-09-18 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1 2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.7.12  2023-01-11 [3] CRAN (R 4.2.2)
+##  stringr       1.5.0   2022-12-02 [3] CRAN (R 4.3.0)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       2.2.2   2023-07-06 [1] CRAN (R 4.3.2)
+##  vctrs         0.6.4   2023-10-12 [3] CRAN (R 4.3.1)
+##  xfun          0.40    2023-08-09 [3] CRAN (R 4.3.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
