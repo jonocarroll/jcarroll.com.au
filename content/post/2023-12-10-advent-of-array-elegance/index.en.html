@@ -1,15 +1,17 @@
 ---
-title: Advent of Array Elegance
+title: Advent of Array Elegance (AoC2023 Day 7)
 author: Jonathan Carroll
 date: '2023-12-10'
 categories:
   - APL
   - Kap
   - rstats
+  - Uiua
 tags:
   - APL
   - Kap
   - rstats
+  - Uiua
 slug: advent-of-array-elegance
 editor_options:
   chunk_output_type: console
@@ -65,17 +67,24 @@ require you to first calculate the size of the matrix, maybe even perform a loop
 APL, it’s</p>
 <pre><code>    +⌿m
 12 15 18</code></pre>
-<p><code>⌿</code> is the glyph for “reduce along second axis”, or perform some operation
+<p><code>⌿</code> is the glyph for “reduce along first axis”, or perform some operation
 (supplied as its left argument) to its right argument. <code>+⌿</code> is therefore “sum
 columns”. No boilerplate, just a direct explanation (the glyphs themselves are
 better names than any word you could attach to them) of what needs to be done.</p>
+<p>Sure, you need to learn the glyphs, and potentially even how to enter them; one option
+being a prefix key then a corresponding key. How committed am I to learning
+those, you ask? Well, here’s my laptop</p>
+<div class="float">
+<img src="images/aplkeyboard_800.jpg" alt="My laptop with APL stickers on the keys" />
+<div class="figcaption">My laptop with APL stickers on the keys</div>
+</div>
 <p>I considered using APL for my Day 7 solution, but it was so many functions
 defined, and fiddly if/else logic, I figured it was just ill-suited to APL. Then
 I saw a <a href="https://www.youtube.com/watch?v=C395wCEDvOQ">video recap of an APL solution for Day
 7</a> and my mind was blown.</p>
 <p>Meanwhile, I saw a post from <a href="https://fosstodon.org/@loke@functional.cafe">Elias
 Mårtenson</a>, creator of the Kap
-language, promoting some examples of Kap and was even more interested give that
+language, promoting some examples of Kap and was even more interested given that
 it can do some things that (Dyalog) APL can’t, like produce graphics.</p>
 <p>Can your APL do this?</p>
 <pre class="r"><code>    chart:line mtcars 
@@ -87,6 +96,28 @@ it can do some things that (Dyalog) APL can’t, like produce graphics.</p>
 <div class="float">
 <img src="images/kap_mtcars.png" alt="chart:line mtcars in Kap" />
 <div class="figcaption">chart:line mtcars in Kap</div>
+</div>
+<p><a href="https://kapdemo.dhsdevelopments.com/">Kap</a> is a fairly new APL-based language
+(written in Kotlin) that supports most of Dyalog APL, but adds some cool
+extensions and alterations like lazy evaluation and parallel execution.</p>
+<p><a href="https://www.uiua.org/">Uiua</a> is another new language on the scene (written in
+Rust) which also supports graphics; the Uiua logo itself is written in Uiua</p>
+<pre class="r"><code>Xy ← °⍉⊞⊟. ÷÷2: -÷2,⇡.200
+Rgb ← [:°⊟×.Xy ↯△⊢Xy0.5]
+u ← ↥&lt;0.2:&gt;0.7.+×2 ×.:°⊟Xy
+c ← &lt;:⍜°√/+ Xy
+⍉⊂:-¬u c1 +0.1 ↧¤c0.95Rgb</code></pre>
+<div class="float">
+<img src="images/uiua.png" alt="Uiua logo, coded in Uiua" />
+<div class="figcaption">Uiua logo, coded in Uiua</div>
+</div>
+<p>The online editor for Uiua uses colours to distinguish different
+functions/operators, and the author has the flexibility to do what they want
+with that, so it’s awesome to see what they’ve used for “all” (<code>⋔</code>) and
+“<strong>trans</strong>pose” (<code>⍉</code>)…</p>
+<div class="float">
+<img src="images/uaua_all_trans.png" alt="Uiua coloured glyphs for ‘all’ and ‘transpose’" />
+<div class="figcaption">Uiua coloured glyphs for ‘all’ and ‘transpose’</div>
 </div>
 <p>I figured I’d try to reproduce the APL solution in Kap as a way to learn more
 about that language. The APL/Kap solution is so elegant! Additionally, I tried
@@ -474,6 +505,22 @@ the tools are at hand.</p>
 (can do new things) and disadvantages (things need to be implemented, and they
 won’t necessarily carry over 1:1).</p>
 <p>Advent of Code once again proves to be a useful exercise.</p>
+</div>
+<div id="one-more-thing" class="section level2">
+<h2>One more thing</h2>
+<p>I saw <a href="https://mastodon.social/@jstepien/111549757943773283">a solution in Uiua on
+Mastodon</a> and had to give
+it a go, too…</p>
+<pre class="r"><code>Input ← ⊜(⊜□≠@ .)≠@\n.&amp;fras&quot;p07.txt&quot;
+Label ← ⇌&quot;AKQJT98765432&quot;
+Bids ← ⋕⊢↘1⍉
+Cards ← ⊐≡(⊗:Label)⊢⍉
+Types ← 0_1_2_4_8_5_10_9_3_6_12_11_13_7_14_15⊚1_4_3_3_2_2_1
+TypeStr ← ⊏⊗⊙Types≡(°⋯≡/=◫2⊏⍏.)
+/+×+1⍏⍏/+×ⁿ⇌⇡6⧻Label⊂⊃TypeStr⍉⊃Cards Bids Input</code></pre>
+<p>I <em>think</em> this is taking the same approach, though unpacking this is even
+trickier.</p>
+<hr>
 <p>Comments and improvements most welcome. I can be found on
 <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
 <br />
@@ -491,7 +538,7 @@ won’t necessarily carry over 1:1).</p>
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2023-12-09
+##  date     2023-12-10
 ##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
