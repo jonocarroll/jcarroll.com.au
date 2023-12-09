@@ -1,0 +1,560 @@
+---
+title: Advent of Array Elegance
+author: Jonathan Carroll
+date: '2023-12-10'
+categories:
+  - APL
+  - Kap
+  - rstats
+tags:
+  - APL
+  - Kap
+  - rstats
+slug: advent-of-array-elegance
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>I’m solving <a href="https://adventofcode.com/">Advent of Code</a> this year using a
+relaxed criteria compared to <a href="https://jcarroll.com.au/2023/11/28/advent-of-code-2022/">last
+year</a> in that I’m
+allowing myself to use packages where they’re helpful, rather than <em>strictly</em>
+base R. Last year I re-solved half of the exercises using Rust which helped me
+learn a lot about Rust. This year I’m enamored with APL, and I wanted to share a
+particularly beautiful solution.</p>
+<!--more-->
+<p>I’m solving <a href="https://adventofcode.com/">Advent of Code</a> this year using a
+relaxed criteria compared to <a href="https://jcarroll.com.au/2023/11/28/advent-of-code-2022/">last
+year</a> in that I’m
+allowing myself to use packages where they’re helpful, rather than <em>strictly</em>
+base R. Last year I re-solved half of the exercises using Rust which helped me
+learn a lot about Rust. This year I’m enamored with APL, and I wanted to share a
+particularly beautiful solution.</p>
+<p>⚠⚠⚠⚠⚠</p>
+<p>Spoilers ahead for Day 7, in case you haven’t yet completed it yourself.</p>
+<p>⚠⚠⚠⚠⚠</p>
+<p>I solved Day 7 of Advent of Code using base R by testing whether or not a given
+hand was of each type with an individual function, either returning 0 (if it was
+not of that type) or <code>N</code> + a score, where <code>N</code> was sufficiently different between
+each type that they would sort nicely. For the score, I initially tried
+offsetting each card in a poor-man’s base-15 as <code>15^(4:0)*card_score</code> but later
+improved on that by using hex digits (which automatically sort nicer). The large <code>N</code>
+values ensured that ‘type’ would be sorted before the first/second/etc.. card.</p>
+<p>That was sufficient to do an <code>apply(strength, hands)</code>, calculate the <code>order</code> of
+those, and multiply by the relevant bids. Aside from a bug not caught by the
+test case (the difference between <code>bid*order(x)</code> and
+<code>bid[order(x)]*seq_along(x)</code>) it was an okay solution to the problem, and it
+worked.</p>
+<p>After solving each day, I’ve been trying to re-solve using APL; in particular Dyalog
+APL. For those who don’t know, APL is an old language (circa 1960s) borne from a
+mathematical notation in which a single glyph (symbol) represents some operation
+or application of a function. This makes it look very different to more modern
+languages, partly because of the glyphs, but also because it requires no boilerplate
+whatsoever. As an array language, it deals with vectors and matrices without needing
+to “loop over columns” or “for i in values”. It looks scary at first, but it’s really
+not - once you’re familiar with the glyphs it’s actually beautiful!</p>
+<p>Let’s say you have a matrix <code>m</code> which contains the values <code>1</code> through <code>9</code></p>
+<pre><code>    m
+1 2 3
+4 5 6
+7 8 9</code></pre>
+<p>and you want to sum the columns. Chances are, the language you normally use will
+require you to first calculate the size of the matrix, maybe even perform a loop. In
+APL, it’s</p>
+<pre><code>    +⌿m
+12 15 18</code></pre>
+<p><code>⌿</code> is the glyph for “reduce along second axis”, or perform some operation
+(supplied as its left argument) to its right argument. <code>+⌿</code> is therefore “sum
+columns”. No boilerplate, just a direct explanation (the glyphs themselves are
+better names than any word you could attach to them) of what needs to be done.</p>
+<p>I considered using APL for my Day 7 solution, but it was so many functions
+defined, and fiddly if/else logic, I figured it was just ill-suited to APL. Then
+I saw a <a href="https://www.youtube.com/watch?v=C395wCEDvOQ">video recap of an APL solution for Day
+7</a> and my mind was blown.</p>
+<p>Meanwhile, I saw a post from <a href="https://fosstodon.org/@loke@functional.cafe">Elias
+Mårtenson</a>, creator of the Kap
+language, promoting some examples of Kap and was even more interested give that
+it can do some things that (Dyalog) APL can’t, like produce graphics.</p>
+<p>Can your APL do this?</p>
+<pre class="r"><code>    chart:line mtcars 
+┌→──────────────────────────────────────────────────────────────┐
+↓1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 0 1 1 1 1 1 1 1│
+│4 4 4 3 3 3 3 4 4 4 4 3 3 3 3 3 3 4 4 4 3 3 3 3 3 4 5 5 5 5 5 4│
+│4 4 1 1 2 1 4 2 2 4 4 3 3 3 4 4 4 1 2 1 1 2 2 4 2 1 2 2 4 6 8 2│
+└───────────────────────────────────────────────────────────────┘</code></pre>
+<div class="float">
+<img src="images/kap_mtcars.png" alt="chart:line mtcars in Kap" />
+<div class="figcaption">chart:line mtcars in Kap</div>
+</div>
+<p>I figured I’d try to reproduce the APL solution in Kap as a way to learn more
+about that language. The APL/Kap solution is so elegant! Additionally, I tried
+writing equivalent R code. I’ll interleave all three in this post (a nice excuse
+to get <a href="https://yihui.org/en/2023/10/section-tabsets/">tabsets</a> working!).</p>
+<div id="reading-input" class="section level2">
+<h2>Reading Input</h2>
+<p>To start with, get the data into the workspace - this reads in a vector with
+each element representing a row of input</p>
+<div class="tabset">
+
+</div>
+<ul>
+<li><p>APL</p>
+<p>Reading from a file is performed using <code>⎕NGET</code></p>
+<pre class="r"><code>    ⊃⎕NGET&#39;p07.txt&#39;1</code></pre>
+<pre class="r bg-success"><code> 32T3K 765  T55J5 684  KK677 28  KTJJT 220  QQQJA 483</code></pre></li>
+<li><p>Kap</p>
+<p>Kap uses some namespaces, which makes reading in a bit nicer, and the output is
+boxed, with explicit quotes for strings</p>
+<pre class="r"><code>p ← io:read &quot;p07.txt&quot;</code></pre>
+<pre class="r bg-success"><code>┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃&quot;32T3K 765&quot; &quot;T55J5 684&quot; &quot;KK677 28&quot; &quot;KTJJT 220&quot; &quot;QQQJA 483&quot;┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛</code></pre></li>
+<li><p>R</p>
+<p><code>readLines</code> reads in each line as an element of a vector</p>
+<pre class="r"><code>p &lt;- readLines(&quot;example07.txt&quot;)
+p</code></pre>
+<pre class="bg-success"><code>## [1] &quot;32T3K 765&quot; &quot;T55J5 684&quot; &quot;KK677 28&quot;  &quot;KTJJT 220&quot; &quot;QQQJA 483&quot;</code></pre></li>
+</ul>
+</div>
+<div id="preprocessing" class="section level2">
+<h2>Preprocessing</h2>
+<p>The input consists of hands of cards juxtaposed with a bid value, separated by
+a space. The approach here is not to treat them individually, but to create a
+matrix containing columns of hands and columns of bids.</p>
+<div class="tabset">
+
+</div>
+<ul>
+<li><p>APL</p>
+<p>Partition (<code>(≠⊆⊢)</code>) on spaces (<code>' '</code>) for each (<code>¨</code>) row</p>
+<pre class="r"><code>    &#39; &#39;(≠⊆⊢)¨⊃⎕NGET&#39;p07.txt&#39;1</code></pre>
+<pre class="r bg-success"><code> 32T3K  765    T55J5  684    KK677  28    KTJJT  220    QQQJA  483</code></pre>
+<p>It’s not entirely clear from this layout, but this is a vector of length-2 vectors.</p>
+<p>These are “mixed” (stacked; <code>↑</code>), and the result assigned (<code>←</code>) to <code>p</code></p>
+<pre class="r"><code>p←↑&#39; &#39;(≠⊆⊢)¨⊃⎕NGET&#39;p07.txt&#39;1</code></pre>
+<pre class="r bg-success"><code> 32T3K  765 
+ T55J5  684 
+ KK677  28  
+ KTJJT  220 
+ QQQJA  483 </code></pre>
+<p>This is now a matrix, where the first column contains the hands, the second
+(last) column contains the bids.</p></li>
+<li><p>Kap</p>
+<p>Rather than the partition idiom, Kap has regex support, so splitting the
+components involes <code>regex:split</code> for each (<code>¨</code>) element of input</p>
+<pre class="r"><code>p←⊃{&quot; &quot; regex:split ⍵}¨p</code></pre>
+<pre class="r bg-success"><code>┌→────────────┐
+↓&quot;32T3K&quot; &quot;765&quot;│
+│&quot;T55J5&quot; &quot;684&quot;│
+│&quot;KK677&quot;  &quot;28&quot;│
+│&quot;KTJJT&quot; &quot;220&quot;│
+│&quot;QQQJA&quot; &quot;483&quot;│
+└─────────────┘</code></pre></li>
+<li><p>R</p>
+<p>The boilerplate of R’s matrix construction takes a toll after using APL/Kap…</p>
+<pre class="r"><code>p &lt;- matrix(unlist(strsplit(p, &quot; &quot;)), ncol = 2, byrow = TRUE)
+p</code></pre>
+<pre class="bg-success"><code>##      [,1]    [,2] 
+## [1,] &quot;32T3K&quot; &quot;765&quot;
+## [2,] &quot;T55J5&quot; &quot;684&quot;
+## [3,] &quot;KK677&quot; &quot;28&quot; 
+## [4,] &quot;KTJJT&quot; &quot;220&quot;
+## [5,] &quot;QQQJA&quot; &quot;483&quot;</code></pre></li>
+</ul>
+</div>
+<div id="extraction" class="section level2">
+<h2>Extraction</h2>
+<p>The hands and bids can be extracted into their own variables.</p>
+<div class="tabset">
+
+</div>
+<ul>
+<li><p>APL</p>
+<p>This can be achieved several ways, but a clean way is by reducing (<code>/</code>) with
+either the ‘leftmost’ (<code>⊣</code>) or ‘rightmost’ (<code>⊢</code>) operator, and evaluating
+(executing <code>⍎</code>) each (<code>¨</code>) of the bids to convert from strings to numbers</p>
+<pre class="r"><code>hands←⊣/p
+bids←⍎¨⊢/p</code></pre></li>
+<li><p>Kap</p>
+<p>Kap uses exactly the same approach as APL for this</p>
+<pre class="r"><code>hands←⊣/p
+bids←⍎¨⊢/p</code></pre></li>
+<li><p>R</p>
+<p>R’s ‘subset by index’ works just fine, but if this was generalised I’d use
+something like <code>p[, ncol(p)]</code> to get to the last column</p>
+<pre class="r"><code>hands &lt;- p[,1]
+hands</code></pre>
+<pre class="bg-success"><code>## [1] &quot;32T3K&quot; &quot;T55J5&quot; &quot;KK677&quot; &quot;KTJJT&quot; &quot;QQQJA&quot;</code></pre>
+<pre class="r"><code>bids &lt;- as.integer(p[,2])
+bids</code></pre>
+<pre class="bg-success"><code>## [1] 765 684  28 220 483</code></pre></li>
+</ul>
+</div>
+<div id="tabulate" class="section level2">
+<h2>Tabulate</h2>
+<p>Now comes the interesting part! Rather than deal with the types separately, one
+approach is to identify them by their relative counts; a five-of-a-kind has 5 of
+one card and nothing elese; a four-of-a-kind has four of one and one of another.</p>
+<div class="tabset">
+
+</div>
+<ul>
+<li><p>APL</p>
+<p>APL has a “key” (<code>⌸</code>) which takes a function as a left argument, which can be to
+count the occurrences of each element with “tally” (<code>≢</code>)</p>
+<pre class="r"><code>      {⍺,≢⍵}⌸&#39;TGGATAACTTGAAC&#39;</code></pre>
+<pre class="r bg-success"><code>T 4
+G 3
+A 5
+C 2</code></pre>
+<p>In this case, we can get just the tallied count of each card in the hand with</p>
+<pre class="r"><code>    {⊢∘≢⍵}⌸¨hands</code></pre>
+<pre class="r bg-success"><code>2 1 1 1  1 3 1  2 1 2  1 2 2  3 1 1</code></pre>
+<p>We can then sort (<code>⍵[⍒⍵]</code>) these, take just the first two values (<code>2↑</code>), and
+decode (<code>⊥</code>) using base 10 to a single number. A nice feature of APL is that
+trying to take the “first N” elements of a single element pads to the full N
+with zeroes.</p>
+<pre class="r"><code>    f←{10⊥2↑{⍵[⍒⍵]}⊢∘≢⌸⍵}
+    f¨hands</code></pre>
+<pre class="r bg-success"><code>21 31 22 22 31</code></pre></li>
+<li><p>Kap</p>
+<p>Kap doesn’t have the equivalent Key, but after some discussion with the creator,
+it’s entirely possible to get something that does the same</p>
+<pre class="r"><code>  key⇐(⍪+⌿≡⌻)∘∪ ⍝ using outer product - see the R solution
+  key2⇐{u←∪⍵ ⋄ c←⍸˝∧u⍳⍵} ⍝ using inverse &#39;where&#39; and &#39;index of&#39;
+
+  key2¨hands</code></pre>
+<pre class="r bg-success"><code>┌→────────────────────────────────────────┐
+│┌→──────┐ ┌→────┐ ┌→────┐ ┌→────┐ ┌→────┐│
+││2 1 1 1│ │1 3 1│ │2 1 2│ │1 2 2│ │3 1 1││
+│└───────┘ └─────┘ └─────┘ └─────┘ └─────┘│
+└─────────────────────────────────────────┘</code></pre>
+<p>The rest is the same as APL, except Kap uses a dedicated sort (<code>∨</code>)</p>
+<pre class="r"><code>    handrank⇐{10⊥2↑∨⊢/key ⍵}
+    handrank¨hands</code></pre>
+<pre class="r bg-success"><code>┏━━━━━━━━━━━━━━┓
+┃21 31 22 22 31┃
+┗━━━━━━━━━━━━━━┛</code></pre></li>
+<li><p>R</p>
+<p>I wanted to recreate the above approach in R, so this will take the long way ’round.</p>
+<p>First, we need a ‘key’ function</p>
+<pre class="r"><code>key &lt;- function(x) {
+  l &lt;- strsplit(x, &quot;&quot;)[[1]]
+  setNames(colSums(outer(l, unique(l), &quot;==&quot;)), unique(l))
+}
+
+sapply(hands, key)</code></pre>
+<pre class="bg-success"><code>## $`32T3K`
+## 3 2 T K 
+## 2 1 1 1 
+## 
+## $T55J5
+## T 5 J 
+## 1 3 1 
+## 
+## $KK677
+## K 6 7 
+## 2 1 2 
+## 
+## $KTJJT
+## K T J 
+## 1 2 2 
+## 
+## $QQQJA
+## Q J A 
+## 3 1 1</code></pre>
+<p>The idea of this is to create an outer product between the set of
+unique letters in the string, and the individual letters, performing
+an <code>==</code> check on each combination</p>
+<pre class="r"><code>y &lt;- strsplit(hands[2], &quot;&quot;)[[1]]
+outer(y, unique(y), &quot;==&quot;)</code></pre>
+<pre class="bg-success"><code>##       [,1]  [,2]  [,3]
+## [1,]  TRUE FALSE FALSE
+## [2,] FALSE  TRUE FALSE
+## [3,] FALSE  TRUE FALSE
+## [4,] FALSE FALSE  TRUE
+## [5,] FALSE  TRUE FALSE</code></pre>
+<p>This is, of course, unnecessary as R has a way to do this</p>
+<pre class="r"><code>table(y)</code></pre>
+<pre class="bg-success"><code>## y
+## 5 J T 
+## 3 1 1</code></pre>
+<p>but I wanted to see how to do it from scratch.</p>
+<p>Applying this over the hands, we can sort each of the counts again, but now
+taking the first two values fails for the five-of-a-kind which only has a <code>5</code>,
+so in that case I add the missing 0. Decoding as base 10 can be done a couple
+of ways, but pasting and converting seems to work fine.</p>
+<pre class="r"><code>handrank &lt;- function(x) {
+  rank &lt;- sort(sapply(x, key), decreasing = TRUE)
+  if (length(rank) == 1) rank &lt;- c(rank, 0)
+  as.integer(paste(rank[1:2], collapse = &quot;&quot;))
+}
+
+sapply(hands, handrank)</code></pre>
+<pre class="bg-success"><code>## 32T3K T55J5 KK677 KTJJT QQQJA 
+##    21    31    22    22    31</code></pre></li>
+</ul>
+</div>
+<div id="subsequent-rankings-and-answer" class="section level2">
+<h2>Subsequent Rankings and Answer</h2>
+<p>Finally, the part where the ‘array’ approach shines! Rather than constructing some
+sortable number for each hand, we can just score each card and use an array.</p>
+<div class="tabset">
+
+</div>
+<ul>
+<li><p>APL</p>
+<p>Creating a vector of all the cards is aided by the ‘numbers as a string’
+helper <code>⎕D</code>. Drop the first two of these (<code>2↓</code>) then append the ‘face’ cards</p>
+<pre class="r"><code>    r←&#39;TJQKA&#39;,⍨2↓⎕D
+    r</code></pre>
+<pre class="r bg-success"><code>23456789TJQKA</code></pre>
+<p>Stacking the hands into a matrix of cards</p>
+<pre class="r"><code>    ↑hands</code></pre>
+<pre class="r bg-success"><code>32T3K
+T55J5
+KK677
+KTJJT
+QQQJA</code></pre>
+<p>we can ask for the index of matches to the individual cards with <code>⍳</code></p>
+<pre class="r"><code>    r⍳↑hands</code></pre>
+<pre class="r bg-success"><code> 2  1  9  2 12
+ 9  4  4 10  4
+12 12  5  6  6
+12  9 10 10  9
+11 11 11 10 13</code></pre>
+<p>Prepending (<code>,</code>) each column with the tabulated type of each hand</p>
+<pre class="r"><code>    r{⍵,⍺⍳↑hands}f¨hands</code></pre>
+<pre class="r bg-success"><code>21  2  1  9  2 12
+31  9  4  4 10  4
+22 12 12  5  6  6
+22 12  9 10 10  9
+31 11 11 11 10 13</code></pre>
+<p>Now, some real magic… APL support <a href="https://aplwiki.com/wiki/Total_array_ordering">“total array
+ordering”</a> which means we can just
+sort the entire thing - it will sort by the first column, using the second and
+subsequent columns for ties. Given that the first column is the ‘type’ of hand,
+and subsequent columns are values of each card in order, that’s precisely
+the sorting we need!</p>
+<pre class="r"><code>    r{⍋⍋⍵,⍺⍳↑hands}f¨hands</code></pre>
+<pre class="r bg-success"><code>1 4 3 2 5</code></pre>
+<p>There’s a nice discussion about why the double grading from
+<a href="https://github.com/mlochbaum/BQN/blob/master/doc/order.md#ordinals">BQN</a></p>
+<p>Finally, multiplying by the bids themselves, and sum-reducing gives the final
+answer</p>
+<pre class="r"><code>  +/r{bids×⍋⍋⍵,⍺⍳↑hands}f¨hands</code></pre>
+<pre class="r bg-success"><code>6440</code></pre></li>
+<li><p>Kap</p>
+<p>This is mostly the same solution as APL, except I couldn’t find the ‘numbers
+as string’ so i just typed it out. Kap also uses ‘disclose’ (<code>⊃</code>) in place of
+mix (<code>↑</code>)
+(<a href="https://kapdemo.dhsdevelopments.com/kap-comparison.html#_enclose_and_disclose:~:text=If%20%E2%8A%83%20is%20called%20on%20an%20array%2C">ref</a>).</p>
+<pre class="r"><code>    ranks←&quot;23456789TJQKA&quot;
+    +/ranks{bids×1+⍋⍋⍵,⍺⍳⊃hands}handrank¨hands</code></pre>
+<pre class="r bg-success"><code>6440</code></pre></li>
+<li><p>R</p>
+<p>R doesn’t support Total Array Ordering, but it does seem to have a way to do it,
+so say the documentation examples for <code>order</code></p>
+<pre class="r"><code>## or along 1st column, ties along 2nd, ... *arbitrary* no.{columns}:
+dd[ do.call(order, dd), ]</code></pre>
+<p>That only works for a <code>data.frame</code>, which <em>is</em> a <code>list</code> (per <code>do.call</code>’s requirement). We
+can still work with that. First, smoosh together all the hands and convert the
+individual cards to a matrix - again, a long line of commands for what is reasonably
+straightforward in APL… <code>3 3⍴'abcdefghi'</code> reshapes those 9 letters into a 3x3 matrix.</p>
+<pre class="r"><code>m &lt;- matrix(strsplit(paste0(hands, collapse = &quot;&quot;), &quot;&quot;)[[1]], ncol = 5, byrow = TRUE)
+m</code></pre>
+<pre class="bg-success"><code>##      [,1] [,2] [,3] [,4] [,5]
+## [1,] &quot;3&quot;  &quot;2&quot;  &quot;T&quot;  &quot;3&quot;  &quot;K&quot; 
+## [2,] &quot;T&quot;  &quot;5&quot;  &quot;5&quot;  &quot;J&quot;  &quot;5&quot; 
+## [3,] &quot;K&quot;  &quot;K&quot;  &quot;6&quot;  &quot;7&quot;  &quot;7&quot; 
+## [4,] &quot;K&quot;  &quot;T&quot;  &quot;J&quot;  &quot;J&quot;  &quot;T&quot; 
+## [5,] &quot;Q&quot;  &quot;Q&quot;  &quot;Q&quot;  &quot;J&quot;  &quot;A&quot;</code></pre>
+<p>The individual cards vector benefits from coercing the digits to characters</p>
+<pre class="r"><code>ranks &lt;- c(2:9, &quot;T&quot;, &quot;J&quot;, &quot;Q&quot;, &quot;K&quot;, &quot;A&quot;)</code></pre>
+<p>The index mapping does actually work nicely with <code>match</code>, except it returns a single
+vector, not a matrix, so we need to reshape yet again. Plus, this time, the matches went
+down columns not along rows, so we need to use <code>byrow = FALSE</code></p>
+<pre class="r"><code>mm &lt;- matrix(match(m, ranks), ncol = 5, byrow = FALSE)
+mm</code></pre>
+<pre class="bg-success"><code>##      [,1] [,2] [,3] [,4] [,5]
+## [1,]    2    1    9    2   12
+## [2,]    9    4    4   10    4
+## [3,]   12   12    5    6    6
+## [4,]   12    9   10   10    9
+## [5,]   11   11   11   10   13</code></pre>
+<p>Prepending with the type rankings does work nicely via <code>cbind</code></p>
+<pre class="r"><code>g &lt;- cbind(sapply(hands, handrank), mm)
+g</code></pre>
+<pre class="bg-success"><code>##       [,1] [,2] [,3] [,4] [,5] [,6]
+## 32T3K   21    2    1    9    2   12
+## T55J5   31    9    4    4   10    4
+## KK677   22   12   12    5    6    6
+## KTJJT   22   12    9   10   10    9
+## QQQJA   31   11   11   11   10   13</code></pre>
+<p>Then ordering with the <code>do.call</code> idiom</p>
+<pre class="r"><code>gdf &lt;- as.data.frame(g)
+gdf[do.call(order, gdf), ]</code></pre>
+<pre class="bg-success"><code>##       V1 V2 V3 V4 V5 V6
+## 32T3K 21  2  1  9  2 12
+## KTJJT 22 12  9 10 10  9
+## KK677 22 12 12  5  6  6
+## T55J5 31  9  4  4 10  4
+## QQQJA 31 11 11 11 10 13</code></pre>
+<p>Putting this all together into a function</p>
+<pre class="r"><code>sortrank &lt;- function(x, y) {
+  m &lt;- matrix(strsplit(paste0(y, collapse = &quot;&quot;), &quot;&quot;)[[1]], ncol = 5, byrow = TRUE)
+  mm &lt;- matrix(match(m, x), ncol = 5, byrow = FALSE)
+  g &lt;- cbind(sapply(y, handrank), mm)
+  do.call(order, as.data.frame(g))
+}
+
+sortrank(ranks, hands)</code></pre>
+<pre class="bg-success"><code>## [1] 1 4 3 2 5</code></pre>
+<p>This <em>isn’t</em> the double sorting that APL and Kap used, and that little
+difference is what held me up for all too long trying to figure out why my
+solution passed tests but gave the wrong answer. Annoyingly, this mistake
+doesn’t show up in the test case because the ranks only differ by a switched
+place. The true input was not so kind.</p>
+<p>This result <em>is</em> the order in which we need to place the bids, so doing that, then
+multiplying by the position (since it’s sorted, this is just a vector from <code>1</code> to the
+number of elements) we get the answer</p>
+<pre class="r"><code>sum(bids[sortrank(ranks, hands)]*seq_along(bids))</code></pre>
+<pre class="bg-success"><code>## [1] 6440</code></pre></li>
+</ul>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>So, how do these solutions all look? I’ll stop with the tabsets for a side-by-side comparison.</p>
+<p>Compacting the APL solution (which does involve some duplication) it’s as simple as</p>
+<pre class="r"><code>p←↑&#39; &#39;(≠⊆⊢)¨⊃⎕NGET&#39;p07.txt&#39;1
++/(&#39;TJQKA&#39;,⍨2↓⎕D){(⍎¨⊢/p)×⍋⍋⍵,⍺⍳↑⊣/p}{10⊥2↑{⍵[⍒⍵]}⊢∘≢⌸⍵}¨⊣/p</code></pre>
+<p>which, admittedly, requires a fair amount of unpacking to read. In full form, it’s</p>
+<pre class="r"><code>p←↑&#39; &#39;(≠⊆⊢)¨⊃⎕NGET&#39;p07.txt&#39;1
+hands←⊣/p
+bids←⍎¨⊢/p
+f←{10⊥2↑{⍵[⍒⍵]}⊢∘≢⌸⍵}
+r←&#39;TJQKA&#39;,⍨2↓⎕D
++/r{bids×⍋⍋⍵,⍺⍳↑hands}f¨hands</code></pre>
+<p>which is still pretty nice, considering what it’s doing.</p>
+<p>The R solution, somewhat minimally, and leveraging <code>table</code>, is</p>
+<pre class="r"><code>handrank &lt;- function(x) {
+  rank &lt;- sort(sapply(strsplit(x, &quot;&quot;), table), decreasing = TRUE)
+  if (length(rank) == 1) rank &lt;- c(rank, 0)
+  as.integer(paste(rank[1:2], collapse = &quot;&quot;))
+}
+
+sortrank &lt;- function(x, y) {
+  m &lt;- matrix(strsplit(paste0(y, collapse = &quot;&quot;), &quot;&quot;)[[1]], ncol = 5, byrow = TRUE)
+  mm &lt;- matrix(match(m, x), ncol = 5, byrow = FALSE)
+  g &lt;- cbind(sapply(y, handrank), mm)
+  do.call(order, as.data.frame(g))
+}
+
+solve &lt;- function(x) {
+  p &lt;- matrix(unlist(strsplit(x, &quot; &quot;)), ncol = 2, byrow = TRUE)
+  hands &lt;- p[,1]
+  bids &lt;- as.integer(p[,2])
+  ranks &lt;- c(2:9, &quot;T&quot;, &quot;J&quot;, &quot;Q&quot;, &quot;K&quot;, &quot;A&quot;)
+  sum(bids[sortrank(ranks, hands)]*seq_along(bids))
+}
+
+solve(readLines(&quot;example07.txt&quot;))</code></pre>
+<p>Certainly more typing, but still a much shorter solution than the one I originally
+came up with.</p>
+</div>
+<div id="takeaways" class="section level2">
+<h2>Takeaways</h2>
+<p>Both APL and Kap (and so many other languages) benefit greatly from treating a string
+as an array of characters. This always hurts in R, where <code>strsplit(x, "")</code> is needed.</p>
+<p>The array approach here highlights how one can think differently about a problem, provided
+the tools are at hand.</p>
+<p>Kap has a lot to offer - it’s (vastly) newer, which comes with both advantages
+(can do new things) and disadvantages (things need to be implemented, and they
+won’t necessarily carry over 1:1).</p>
+<p>Advent of Code once again proves to be a useful exercise.</p>
+<p>Comments and improvements most welcome. I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.2 (2023-10-31)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2023-12-09
+##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.18    2023-06-19 [1] CRAN (R 4.3.2)
+##  bookdown      0.36    2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.5.1   2023-08-11 [3] CRAN (R 4.3.1)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.22    2023-09-29 [3] CRAN (R 4.3.1)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.6.1 2023-10-06 [3] CRAN (R 4.3.1)
+##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  knitr         1.44    2023-09-11 [3] CRAN (R 4.3.1)
+##  later         1.3.1   2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.3   2022-10-07 [3] CRAN (R 4.2.1)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.3.2)
+##  pkgbuild      1.4.2   2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgload       1.3.3   2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0   2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.8   2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1   2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.2   2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.11  2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1 2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.1   2023-04-28 [3] CRAN (R 4.3.0)
+##  rmarkdown     2.25    2023-09-18 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1 2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.7.12  2023-01-11 [3] CRAN (R 4.2.2)
+##  stringr       1.5.0   2022-12-02 [3] CRAN (R 4.3.0)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       2.2.2   2023-07-06 [1] CRAN (R 4.3.2)
+##  vctrs         0.6.4   2023-10-12 [3] CRAN (R 4.3.1)
+##  xfun          0.40    2023-08-09 [3] CRAN (R 4.3.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
