@@ -12,7 +12,7 @@ subtitle: ''
 image: ''
 ---
 
-![](images/triangularbird.png)
+![](https://jcarroll.com.au/2024/02/04/my-first-julia-package-triangulart-jl/images/triangularbird.png)
 
 I've tried to get this same image transformation working at least three times now, but 
 I can finally celebrate that it's working! I've been (re-)learning Julia and I still 
