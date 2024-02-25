@@ -42,7 +42,7 @@ This all started out innocently enough - I've been using
 [Exercism.org](https://exercism.org/) to get a feel for a lot of other
 programming languages. Last year they hosted the 12in23 challenge where they
 invited users to try out one programming language each month, solving 5
-non-trivial (beyond printing `"Hello, World!"`) exercies in any of a handful of
+non-trivial (beyond printing `"Hello, World!"`) exercises in any of a handful of
 featured languages, with a different 'theme' (functional, object-oriented,
 low-level, ...) each month.
 
@@ -293,7 +293,7 @@ from when I was digging through the source.
 
 I took the first of these `src/library/utils/all.R` and edited the value from 3899 to 3999 
 then ran `svn status` and a lot of files were marked `?` (untracked) while none were 
-`M` (modified). This confused me, until I relised that as part of the build process, R creates 
+`M` (modified). This confused me, until I realised that as part of the build process, R creates 
 these `all.R` files which aren't the source-of-truth for the code. Changing, instead, 
 `src/library/utils/R/format.R` the changes were reflected in `svn status`.
 

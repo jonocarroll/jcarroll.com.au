@@ -32,7 +32,7 @@ to the open-source nature of programming languages.</p>
 <a href="https://exercism.org/">Exercism.org</a> to get a feel for a lot of other
 programming languages. Last year they hosted the 12in23 challenge where they
 invited users to try out one programming language each month, solving 5
-non-trivial (beyond printing <code>"Hello, World!"</code>) exercies in any of a handful of
+non-trivial (beyond printing <code>"Hello, World!"</code>) exercises in any of a handful of
 featured languages, with a different ‘theme’ (functional, object-oriented,
 low-level, …) each month.</p>
 <p>I ended up earning the “polyglot” badge for completing this, but I actually ended
@@ -203,7 +203,7 @@ tests/Examples/stats-Ex.Rout:9   0.7335126 -1.3468740  2.8138992</code></pre>
 from when I was digging through the source.</p>
 <p>I took the first of these <code>src/library/utils/all.R</code> and edited the value from 3899 to 3999
 then ran <code>svn status</code> and a lot of files were marked <code>?</code> (untracked) while none were
-<code>M</code> (modified). This confused me, until I relised that as part of the build process, R creates
+<code>M</code> (modified). This confused me, until I realised that as part of the build process, R creates
 these <code>all.R</code> files which aren’t the source-of-truth for the code. Changing, instead,
 <code>src/library/utils/R/format.R</code> the changes were reflected in <code>svn status</code>.</p>
 <p>The <code>format</code> changes were from formatting functions I wasn’t previously familiar with, namely
