@@ -451,6 +451,8 @@ right direction
 * "it takes a village" - if you want it to get fixed, you might need to put in 
 some work.
 
+And who knows, maybe it _is_ a bug that's been there for the last 15+ years?
+
 This definitely ended up being more of an exercise than I planned, but I'm grateful 
 for Exercism prompting me to try out both languages I do and don't know; for R being 
 open-source so I could find this bug; and for the wealth of knowledge out there 
