@@ -1,0 +1,381 @@
+---
+title: I Patched R to Solve an Exercism Problem
+author: Jonathan Carroll
+date: '2024-02-26'
+slug: i-patched-r-to-solve-an-exercism-problem
+categories:
+  - rstats
+tags:
+  - rstats
+  - r-bugs
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>With a serious yak shaving deviation, I have a really short “cheat” solution to
+one of the featured Exercism problems. It’s been a really insightful journey
+getting to this point, and as always I’ve learned a lot along the way. The fact
+that I <em>was</em> able to understand the required changes and propose them is thanks
+to the open-source nature of programming languages.</p>
+<!--more-->
+<p>With a serious yak shaving deviation, I have a really short “cheat” solution to
+one of the featured Exercism problems. It’s been a really insightful journey
+getting to this point, and as always I’ve learned a lot along the way. The fact
+that I <em>was</em> able to understand the required changes and propose them is thanks
+to the open-source nature of programming languages.</p>
+<p>This all started out innocently enough - I’ve been using
+<a href="https://exercism.org/">Exercism.org</a> to get a feel for a lot of other
+programming languages. Last year they hosted the 12in23 challenge where they
+invited users to try out one programming language each month, solving 5
+non-trivial (beyond printing <code>"Hello, World!"</code>) exercies in any of a handful of
+featured languages, with a different ‘theme’ (functional, object-oriented,
+low-level, …) each month.</p>
+<p>I ended up earning the “polyglot” badge for completing this, but I actually ended
+up doing a lot more</p>
+<p><img src="images/12in23.png" /></p>
+<p>I found this to be an extremely useful exercise in finding out what I did and
+didn’t like about different languages, and I’m diving a lot deeper into the ones
+I enjoyed the most. Worthwhile, but certainly an involved challenge as I solved
+all the exercises locally on my own machine, which means I had to install each
+of the languages and get their test suites working. My laptop is now capable of
+running code in more than 20 languages.</p>
+<p>This year, Exercism are hosting a 48in24 challenge where rather than just
+needing to use one language to solve several problems in a month, it’s one
+problem in three languages in a week. Spending a month to get up to speed with a
+language I’d never seen (or installed) was one thing, but now I potentially need
+to do that three times over in a week when the languages are all new to me. Still, I
+persist, and so far I’m keeping up.</p>
+<p><img src="images/48in24_feb.png" /></p>
+<p>One of the featured problems was ‘Roman Numerals’ where we need to write an
+algorithm to convert integers into Roman numerals. The featured languages were Julia
+(I’m already familiar, nice), Elixir (fine, I get to learn what that looks like), and
+(Pharo) smalltalk, which needs its own IDE and is a workflow entirely distinct from
+anything I’ve done before. I won’t be willingly writing any more smalltalk in the
+near future.</p>
+<p>When I saw that this was the challenge problem I was delighted - I know that R
+already has <code>as.roman()</code> in the standard library!</p>
+<pre class="r"><code>as.roman(2024)</code></pre>
+<pre class="bg-success"><code>## [1] MMXXIV</code></pre>
+<p>It even does math with these values - I base most of my real-life conversations with
+my wife around Simpsons quotes so I’m all-too familiar with this bit</p>
+<p><img src="images/bart_roman.jpg" /></p>
+<p>Bart enters the backstage of the lion enclosure at a zoo and sees a sign:</p>
+<blockquote>
+<p>“Caution: exit through door 7 only. All other rooms contain man-eating tigers.”</p>
+</blockquote>
+<blockquote>
+<p>“Think, Bart. Where have you seen Roman numerals before? I know… Rocky V! That was the fifth one. So, Rocky five plus Rocky two equals… Rocky VII!”Adrian’s Revenge”!”</p>
+</blockquote>
+<p>R can do this math just fine</p>
+<pre class="r"><code>(five &lt;- as.roman(5))</code></pre>
+<pre class="bg-success"><code>## [1] V</code></pre>
+<pre class="r"><code>(two &lt;- as.roman(2))</code></pre>
+<pre class="bg-success"><code>## [1] II</code></pre>
+<pre class="r"><code>five + two</code></pre>
+<pre class="bg-success"><code>## [1] VII</code></pre>
+<p>It’s more than just concatenating those, of course</p>
+<pre class="r"><code>(five + two) * 2</code></pre>
+<pre class="bg-success"><code>## [1] XIV</code></pre>
+<p>I downloaded the exercise and fired up RStudio. I edited the exercise template
+to just pass the input argument to <code>as.roman()</code> and hit ‘Run Tests’… all tests
+failed 😢</p>
+<p>Ah, <code>as.roman()</code> returns an object of class <code>roman</code></p>
+<pre class="r"><code>class(as.roman(321))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;roman&quot;</code></pre>
+<p>and the tests have an <code>expect_equal()</code> (not <code>expect_equivalent()</code>)</p>
+<pre class="r"><code>test_that(&quot;48 is XLVIII&quot;, {
+  expect_equal(roman(48), &quot;XLVIII&quot;)
+})</code></pre>
+<p>Okay, so it won’t be <em>perfectly</em> clean, but it just need to be re-classed</p>
+<pre class="r"><code>as.character(as.roman(2024))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;MMXXIV&quot;</code></pre>
+<p>Re-run the tests, and…</p>
+<pre><code>── Failure (&#39;test_roman-numerals.R:105:3&#39;): 3999 is MMMCMXCIX ──────────────────
+roman(3999) not equal to &quot;MMMCMXCIX&quot;.
+1/1 mismatches
+x[1]: NA
+y[1]: &quot;MMMCMXCIX&quot;
+
+[ FAIL 1 | WARN 0 | SKIP 0 | PASS 25 ]</code></pre>
+<p>What? twenty-five tests pass, one fails? And produces <code>NA</code>?</p>
+<p>Back to the problem statement, it says</p>
+<blockquote>
+<p>For this exercise, we are only concerned about traditional Roman numerals, in which the largest number is MMMCMXCIX (or 3,999).</p>
+</blockquote>
+<p>So, why does that fail? I checked the docs for <code>as.roman()</code> and it says</p>
+<blockquote>
+<p>Only numbers between 1 and 3899 have a unique representation as roman numbers, and hence others result in as.roman(NA).</p>
+</blockquote>
+<p>Odd.</p>
+<p>I checked out some other languages. The intro video for the problem mentions another
+“cheat” solution which is to use Common Lisp, because that has a formatter. Using <a href="https://www.gnu.org/software/clisp/">GNU
+Common Lisp</a>…</p>
+<pre class="r"><code>(format nil &quot;~@R&quot; 2024)</code></pre>
+<pre class="r bg-success"><code>&quot;MMXXIV&quot;</code></pre>
+<p>Trying out this last value works</p>
+<pre class="r"><code>(format nil &quot;~@R&quot; 3999)</code></pre>
+<pre class="r bg-success"><code>&quot;MMMCMXCIX&quot;</code></pre>
+<p>and a too-large value produces an informative error</p>
+<pre class="r"><code>(format nil &quot;~@R&quot; 4000)</code></pre>
+<pre class="r bg-success"><code> The ~@R format directive requires an integer in the range 1 - 3999, not 4000</code></pre>
+<p>So, the limit does seem to be 3999, not 3899. Checking <a href="https://en.wikipedia.org/wiki/Roman_numerals">Wikipedia</a>,
+that also seems to be the case. I also found a <a href="https://www.oreilly.com/library/view/python-cookbook/0596001673/ch03s24.html">python implementation</a>
+which goes up to 3999.</p>
+<p>So, why won’t R convert those last 100 numbers?</p>
+<p>I dug around the source code (an accessible copy is on <a href="https://github.com/wch/r-source">GitHub</a>
+but the “real” copy is on SVN) and found several references to the 3899 limit, none
+of which could be circumvented.</p>
+<p>I posted a quick summary of the issue I saw on <a href="https://jcarroll.xyz/2024/02/10/friends-romans-countrymen.html">my side-blog</a>
+hoping that it was something I just misunderstood.</p>
+<p>I asked around on Mastodon, and no one was sure why this was the case. The next step
+was to email the R-devel mailing list. I don’t do this lightly, as it has a reputation
+for not being the friendliest place. Kurt Hornik, who originally wrote the
+implementation back in 2006 replied and agreed that it was probably just an oversight.</p>
+<p>He asked if I could file the bug in <a href="https://bugs.r-project.org/">Bugzilla</a> the R bug tracker
+… and asked if I could also add a patch. At this point, I remembered what I was
+doing in the first place - solving an Exercism problem.</p>
+<p><img src="images/dominoes.jpg" /></p>
+<p>The term “Yak Shaving” means performing some task that appears entirely unrelated to
+what you were originally trying to do, usually as a result of several other related tasks. It’s
+summarised well in this clip from the TV show ‘Malcolm in the Middle’</p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/8fnfeuoh4s8?si=73eXUC2-vy9NC1q2" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
+</iframe>
+<!-- https://youtu.be/8fnfeuoh4s8?si=73eXUC2-vy9NC1q2 -->
+<p>where the character goes to change a lightbulb but finds that the shelf is
+coming loose, so he gets a screwdriver from a drawer and notices that the drawer
+isn’t running smoothly, so he gets some lubricant but it’s empty so he gets in
+his car to go to the store to buy more but the car sounds funny, so he tries fixing that…
+When his wife asks him “are you going to replace that lightbulb” he yells - appearing
+from underneath the car covered in grease - “what does it look like I’m doing???”.</p>
+<p>The absurdity being that “before you can complete this task, you need to shave a yak.”</p>
+<p><img src="images/yakshaving.jpg" /></p>
+<p>In this scenario, someone is asking me “are you solving that Exercism problem?” and I’m
+emerging from a console typing <code>make check-devel</code> shouting “what does it look like
+I’m doing?”.</p>
+<p>So, how do I submit a patch to R itself? I recalled that I detailed some
+instructions for that the <a href="https://jcarroll.com.au/2019/10/12/r-bugs-file-info-object-size/">last time I was trying to resolve an R-related bug</a>.
+I pulled the bleeding-edge SVN commit and built R locally, which means</p>
+<pre class="bash"><code>./configure --with-x=no --without-recommended-packages --disable-byte-compiled-packages --disable-java  </code></pre>
+<p>and</p>
+<pre class="bash"><code>make -j4</code></pre>
+<p>to build the source (using 4 cores).</p>
+<p>Then, I searched for the values I might need to change by running</p>
+<pre class="bash"><code>grep -R 3890</code></pre>
+<p>This turns up a bunch of files</p>
+<pre><code>src/nmath/qnorm.c:                         2.04426310338993978564e-15 + 1.4215117583164458887e-7)*
+src/library/utils/all.R:        if(upper &gt; 3899L)
+src/library/utils/all.R:            stop(gettextf(&quot;too many list items (at most up to %d)&quot;, 3899L),
+src/library/utils/man/roman.Rd:  Only numbers between 1 and 3899 have a unique representation as roman
+src/library/utils/man/roman.Rd:## simple consistency checks -- arithmetic when result is in  {1,2,..,3899} :
+src/library/utils/man/format.Rd:    numerals (with the number of the last item maximally 3899).
+src/library/utils/R/format.R:        if(upper &gt; 3899L)
+src/library/utils/R/format.R:            stop(gettextf(&quot;too many list items (at most up to %d)&quot;, 3899L),
+src/library/utils/po/R-de.po:#~ msgid &quot;too many list items (at most up to number 3899)&quot;
+src/library/utils/po/R-de.po:#~ msgstr &quot;zu viele Listenelemente (höchstens 3899!)&quot;
+src/library/utils/po/R-fr.po:#~ msgid &quot;too many list items (at most up to number 3899)&quot;
+src/library/utils/po/R-fr.po:#~ msgstr &quot;trop d&#39;entrées de liste (3899 maximum)&quot;
+src/library/utils/po/R-ja.po:#~ msgid &quot;too many list items (at most up to number 3899)&quot;
+src/library/utils/po/R-ja.po:#~ msgstr &quot; リストの項目が多すぎます（最大でも3899です） &quot;
+src/library/utils/po/R-zh_CN.po:#~ msgid &quot;too many list items (at most up to number 3899)&quot;
+src/library/utils/po/R-zh_CN.po:#~ msgstr &quot;串列项太多(最多只能有3899项(&quot;
+src/library/utils/po/R-ru.po:#~ msgid &quot;too many list items (at most up to number 3899)&quot;
+grep: src/library/utils/po/R-ru.po: binary file matches
+src/library/stats/tests/ppr_test.csv:&quot;153&quot;,0.0669524872438994,1,0.970846742038665
+src/main/g_her_glyph.c:  /******** Hershey Glyphs 3800 to 3899 ********/
+src/main/g_her_glyph.c:  /******** Oriental Hershey Glyphs 3800 to 3899 ********/
+tests/d-p-q-r-tests.Rout: [1] 0.340823726 0.100413165 0.293668976 0.389968983 0.124439520 0.207270198
+tests/reg-examples2.Rout:Zambia          0.16361 -0.07917 -0.33899  0.09406  0.228232  0.7482 0.512
+tests/lm-tests.Rout.save:Zambia          0.16361 -0.07917 -0.33899  0.09406  0.228232  0.7482 0.512
+tests/lm-tests.Rout:Zambia          0.16361 -0.07917 -0.33899  0.09406  0.228232  0.7482 0.512
+tests/d-p-q-r-tests.Rout.save: [1] 0.340823726 0.100413165 0.293668976 0.389968983 0.124439520 0.207270198
+tests/Examples/stats-Ex.Rout.save:[49]  0.29918521  0.05938999 -0.20355761 -0.02439309 -1.14548572 -0.94045141
+tests/Examples/stats-Ex.Rout.save: 0.05510098  0.59958858  1.14407618  1.68856379  2.23305139  2.77753899 
+tests/Examples/stats-Ex.Rout.save:9   0.7335126 -1.3468740  2.8138992
+tests/Examples/stats-Ex.Rout:[49]  0.29918521  0.05938999 -0.20355761 -0.02439309 -1.14548572 -0.94045141
+tests/Examples/stats-Ex.Rout: 0.05510098  0.59958858  1.14407618  1.68856379  2.23305139  2.77753899 
+tests/Examples/stats-Ex.Rout:9   0.7335126 -1.3468740  2.8138992</code></pre>
+<p>Many of these I could ignore - float values which happen to match. But many were familiar
+from when I was digging through the source.</p>
+<p>I took the first of these <code>src/library/utils/all.R</code> and edited the value from 3899 to 3999
+then ran <code>svn status</code> and a lot of files were marked <code>?</code> (untracked) while none were
+<code>M</code> (modified). This confused me, until I relised that as part of the build process, R creates
+these <code>all.R</code> files which aren’t the source-of-truth for the code. Changing, instead,
+<code>src/library/utils/R/format.R</code> the changes were reflected in <code>svn status</code>.</p>
+<p>The <code>format</code> changes were from formatting functions I wasn’t previously familiar with, namely
+<code>formatOL</code> for “format ordered list” which prefixes a list of items</p>
+<pre class="r"><code>formatOL(paste0(&quot;Chapter&quot;, 1:5))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;1. Chapter1&quot; &quot;2. Chapter2&quot; &quot;3. Chapter3&quot; &quot;4. Chapter4&quot; &quot;5. Chapter5&quot;</code></pre>
+<p>and can do the conversion</p>
+<pre class="r"><code>formatOL(paste0(&quot;Chapter&quot;, 1:5), type = &quot;Roman&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;  I. Chapter1&quot; &quot; II. Chapter2&quot; &quot;III. Chapter3&quot; &quot; IV. Chapter4&quot;
+## [5] &quot;  V. Chapter5&quot;</code></pre>
+<p>and which produces an error if you try to pass in too many items (more than the critical value)</p>
+<pre class="r"><code>formatOL(10:4010, type = &quot;Roman&quot;)</code></pre>
+<pre class="r bg-danger"><code>Error in formatOL(10:4010, type = &quot;roman&quot;) : 
+  too many list items (at most up to 3899)</code></pre>
+<p>In addition to the logic of the code itself, the .Rd files needed updating (base R does not
+use Roxygen and automatic generation of man files) and the <code>.po</code> files (language translations)
+with the translated error messages (which I hopefully corrected accurately; my French is okay-ish and
+that looks to be correct, and my Japanese is very beginner-level and I haven’t yet learned those
+words).</p>
+<p>Since I had dug through the source, I knew that “3899” was not the only critical
+value; there were some tests for <code>x &gt;= 3900</code> I needed to also take care of. This
+was a useful point to note - if you’re going to change behaviour at a numeric
+boundary, it’s probably a good idea to stick to either strictly greater than or
+greater-than-or-equal if you want to make searching for that value straightforward.</p>
+<p>Searching again for <code>3900</code> again turns up a lot of false positives, but also</p>
+<pre><code>src/library/utils/R/roman.R:    if(check.range) x[x &lt;= 0L | x &gt;= 3900L] &lt;- NA
+src/library/utils/R/roman.R:    ind &lt;- is.na(x) | (x &lt;= 0L) | (x &gt;= 3900L)</code></pre>
+<p>so I edited those as well.</p>
+<p>Producing the requisite patch is then just</p>
+<pre class="bash"><code>svn diff &gt; as.roman-upper-limit.patch</code></pre>
+<p>creating the file I eventually attached to my Bugzilla report.</p>
+<p>Kurt Hornik approved these changes and merged them on my behalf (only R-core
+members can merge into the source) so my changes should be reflected in the next
+release.</p>
+<p>To prove to myself that this was done and dusted, I wanted to pull the latest
+version again, but I didn’t want to risk that my local changes were what I was seeing.
+Docker is a good option in this case (and may have been for the development itself).</p>
+<p>Beyond my previous instructions, I figured there were more up-to-date instructions out there.
+<a href="https://kbroman.org/blog/2020/12/03/debugging-with-docker-and-r-devel/">This</a>
+is a slightly newer post about the process, but I eventually just copied the
+<a href="https://github.com/rocker-org/drd/blob/master/Dockerfile">Dockerfile from rocker’s drd image</a> and built the
+most up-to-date image locally. This means that I was definitely running an independent installation of R
+(in docker) and not my local copy (still distinct from my installed copy that RStudio sees).</p>
+<p>Using this docker image, I could confirm that my changes had been merged</p>
+<pre class="r"><code> as.roman(3999)</code></pre>
+<pre class="r bg-success"><code>[1] MMMCMXCIX</code></pre>
+<p>as well as the necessary translations; I noticed that a simple <code>Sys.setenv(LANGUAGE="ru")</code>
+worked once, but after that I couldn’t change the language again. The <code>{and}</code> package
+seemed to do the trick</p>
+<pre class="r"><code>formatOL(1:4000, type = &quot;roman&quot;)</code></pre>
+<pre class="r bg-danger"><code>Error in formatOL(1:4000, type = &quot;roman&quot;) : 
+  too many list items (at most up to 3999)</code></pre>
+<pre class="r"><code>and::set_language(&quot;ru&quot;)
+formatOL(1:4000, type = &quot;roman&quot;)</code></pre>
+<pre class="r bg-danger"><code>Ошибка в formatOL(1:4000, type = &quot;roman&quot;) :
+  слишком много элементов в списке (самое большее 3999)</code></pre>
+<pre class="r"><code>and::set_language(&quot;fr&quot;)
+formatOL(1:4000, type = &quot;roman&quot;)</code></pre>
+<pre class="r bg-danger"><code>Erreur dans formatOL(1:4000, type = &quot;roman&quot;) : 
+  trop d&#39;entrées de listes (3999 maximum)</code></pre>
+<pre class="r"><code>and::set_language(&quot;ja&quot;)
+formatOL(1:4000, type = &quot;roman&quot;)</code></pre>
+<pre class="r bg-danger"><code> formatOL(1:4000, type = &quot;roman&quot;) でエラー: 
+   リストの項目が多すぎます (最大でも 3999 です) </code></pre>
+<pre class="r"><code>and::set_language(&quot;de&quot;)
+formatOL(1:4000, type = &quot;roman&quot;)</code></pre>
+<pre class="r bg-danger"><code>Fehler in formatOL(1:4000, type = &quot;roman&quot;) : 
+  zu viele Listenpunkte (höchstens 3999)</code></pre>
+<pre class="r"><code>and::set_language(&quot;zh_CN&quot;)
+formatOL(1:4000, type = &quot;roman&quot;)</code></pre>
+<pre class="r bg-danger"><code>Error in formatOL(1:4000, type = &quot;roman&quot;) : 列表项太多(最多只能有3999项)</code></pre>
+<p>With all looking good on the R side, now I just need to wait for the changes to
+be officially released and then for Exercism to update their version to that so
+that I can submit my “cheat” one-line solution to the Roman Numerals exercise.</p>
+<p>I’ll be waiting!</p>
+<p>I’m hoping that the process described here can be of use to someone else who finds
+a similar issue in the language; the process can be fairly straightforward, but I
+believe success was dependent on a few key points;</p>
+<ul>
+<li><p>don’t <em>assume</em> that the language is broken, it may be something you did wrong or
+misunderstood</p></li>
+<li><p>look through the source to confirm what you’re seeing and do your best to
+understand it</p></li>
+<li><p>ask around; someone may be able to resolve the confusion or point you in the
+right direction</p></li>
+<li><p>“it takes a village” - if you want it to get fixed, you might need to put in
+some work.</p></li>
+</ul>
+<p>This definitely ended up being more of an exercise than I planned, but I’m grateful
+for Exercism prompting me to try out both languages I do and don’t know; for R being
+open-source so I could find this bug; and for the wealth of knowledge out there
+to figure out how to do all this.</p>
+<p>If you have any comments, feel free to use the comment section below, or hit me up on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.2 (2023-10-31)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-02-25
+##  pandoc   3.1.1 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.18    2023-06-19 [1] CRAN (R 4.3.2)
+##  bookdown      0.36    2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.6.0   2023-11-21 [3] CRAN (R 4.3.2)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [3] CRAN (R 4.2.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.33  2023-07-07 [3] CRAN (R 4.3.1)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.23    2023-11-01 [3] CRAN (R 4.3.2)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.6.2   2022-02-24 [3] CRAN (R 4.2.0)
+##  htmltools     0.5.7   2023-11-03 [3] CRAN (R 4.3.2)
+##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.7   2023-06-29 [3] CRAN (R 4.3.1)
+##  knitr         1.45    2023-10-30 [3] CRAN (R 4.3.2)
+##  later         1.3.1   2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.4   2023-11-07 [3] CRAN (R 4.3.2)
+##  magrittr      2.0.3   2022-03-30 [3] CRAN (R 4.2.0)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.3.2)
+##  pkgbuild      1.4.2   2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgload       1.3.3   2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0   2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.2   2023-06-30 [3] CRAN (R 4.3.1)
+##  profvis       0.3.8   2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1   2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.5   2023-04-18 [3] CRAN (R 4.3.0)
+##  purrr         1.0.2   2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1   2021-08-19 [3] CRAN (R 4.2.0)
+##  Rcpp          1.0.11  2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1 2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.2   2023-11-04 [3] CRAN (R 4.3.2)
+##  rmarkdown     2.25    2023-09-18 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.7   2023-07-15 [3] CRAN (R 4.3.1)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1 2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.8.2   2023-11-23 [3] CRAN (R 4.3.2)
+##  stringr       1.5.1   2023-11-14 [3] CRAN (R 4.3.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       2.2.2   2023-07-06 [1] CRAN (R 4.3.2)
+##  vctrs         0.6.4   2023-10-12 [3] CRAN (R 4.3.1)
+##  xfun          0.41    2023-11-01 [3] CRAN (R 4.3.2)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.7   2023-01-23 [3] CRAN (R 4.2.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
