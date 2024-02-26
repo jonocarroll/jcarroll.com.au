@@ -248,7 +248,7 @@ to build the source (using 4 cores).
 Then, I searched for the values I might need to change by running
 
 ```bash
-grep -R 3890
+grep -R 3899 
 ```
 
 This turns up a bunch of files
