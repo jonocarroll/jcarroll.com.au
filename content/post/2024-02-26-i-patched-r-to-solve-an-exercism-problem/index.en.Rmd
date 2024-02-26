@@ -332,7 +332,7 @@ was a useful point to note - if you're going to change behaviour at a numeric
 boundary, it's probably a good idea to stick to either strictly greater than or
 greater-than-or-equal if you want to make searching for that value straightforward.
 
-Searching again for `3900` again turns up a lot of false positives, but also
+Searching for `3900` again turns up a lot of false positives, but also
 
 ```
 src/library/utils/R/roman.R:    if(check.range) x[x <= 0L | x >= 3900L] <- NA

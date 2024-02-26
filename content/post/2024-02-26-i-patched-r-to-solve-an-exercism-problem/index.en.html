@@ -228,7 +228,7 @@ value; there were some tests for <code>x &gt;= 3900</code> I needed to also take
 was a useful point to note - if you’re going to change behaviour at a numeric
 boundary, it’s probably a good idea to stick to either strictly greater than or
 greater-than-or-equal if you want to make searching for that value straightforward.</p>
-<p>Searching again for <code>3900</code> again turns up a lot of false positives, but also</p>
+<p>Searching for <code>3900</code> again turns up a lot of false positives, but also</p>
 <pre><code>src/library/utils/R/roman.R:    if(check.range) x[x &lt;= 0L | x &gt;= 3900L] &lt;- NA
 src/library/utils/R/roman.R:    ind &lt;- is.na(x) | (x &lt;= 0L) | (x &gt;= 3900L)</code></pre>
 <p>so I edited those as well.</p>
