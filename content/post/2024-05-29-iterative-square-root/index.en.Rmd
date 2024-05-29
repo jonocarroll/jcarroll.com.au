@@ -1,0 +1,246 @@
+---
+title: Iterative Square Root
+author: Jonathan Carroll
+date: '2024-05-29'
+slug: iterative-square-root
+categories:
+  - rstats
+  - APL
+  - go
+tags:
+  - rstats
+  - APL
+  - go
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I saw a toot celebrating a short, clean implementation of a square root 
+finding algorithm and wanted to dig a bit deeper into how it works, with a 
+diversion into some APL.
+
+<!--more-->
+
+I saw a toot celebrating a short, clean implementation of a square root 
+finding algorithm and wanted to dig a bit deeper into how it works, with a 
+diversion into some APL.
+
+[This](https://hachyderm.io/@jimgar/112521236754983554) was the toot from Jim 
+Gardner
+
+> Doubly pleased with myself. 
+> 
+> Been doing the Tour of Go. Got to the section where you make a square root function, which should return once the calculated value stops changing. Struggled for ages. Trimmed and trimmed. Until finally... this!
+>
+> The calculation for z was given, and I don't understand it at all. But I don't care. It was a total mess when I started and has turned out quite neat. I'm very satisfied. 
+>
+> But why "doubly pleased"? Because I've been solely using Neovim so far for Go!! 
+
+```{r, eval = FALSE}
+package main 
+
+import ( 
+	"fmt" 
+) 
+
+func Sqrt(x float64) float64 {
+	z := 1.0 
+	for { 
+		y := z 
+		z -= (z*z - x) / (2 * z) 
+		
+		if z == y { 
+			return z 
+		} 
+	}
+} 
+
+func main() { 
+	fmt.Println(Sqrt(16)) 
+} 
+```
+
+It's a nice, not-too-complicated algorithm to play with, and I agree it's hard to 
+see _why_ it works for this application, so I thought it would be neat to walk 
+through that.
+
+What we're trying to solve here is the function $y = x^2$ which we could write as 
+$f(x) = x^2 - y$ for which we want the value $x$ where $f(x) = 0$.
+
+[Newton's Method](https://en.wikipedia.org/wiki/Newton%27s_method) is an iterative 
+method for solving equations of this type (not all equations, mind you - I have an 
+entire chapter of my PhD thesis discussing exactly _why_ it can't be used to 
+solve the equations I was solving that my supervisor insisted it could). It works 
+by using the slope (derivative) at a point to guide towards a solution. The formula 
+for the updated value $x_{n+1}$ given some guess $x_n$ is 
+
+$$
+x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
+$$
+where $f'(x)$ is the derivative of the function $f$ at the point $x$. For $f(x) = x^2 - y$
+the derivative is $f'(x) = 2x$ so we can substitute this and $f(x)$ into the above formula
+
+$$
+x_{n+1}​=x_n​−\frac{x_n^2-y}{2x_n}
+$$
+This is what the Go code calculates; given an initial guess of $x_n = 1$ it calculates the next value as
+
+```
+x = x - (x*x - y) / (2 * x) 
+```
+
+where, here, `y` is the value we're finding the square root of.
+
+In R this could be written as
+
+```r
+SQRT <- function(x) {
+  z <- 1
+  while (TRUE) {
+    y <- z
+    z <- z - (z*z - x)/(2*z)
+    if (abs(y -z) < 0.0001) return(z)
+  }
+}
+```
+
+(since `base::sqrt` is already defined) where I've used a tolerance rather than
+relying on exact numerical equality. The `while(TRUE)` construct is equivalent
+to Go's `for {}` syntax; an infinite loop.
+
+R actually has another way to write that which is even closer; `repeat {}`
+
+```r
+SQRT <- function(x) {
+  z <- 1
+  repeat {
+    y <- z
+    z <- z - (z*z - x)/(2*z)
+    if (abs(y -z) < 0.0001) return(z)
+  }
+}
+```
+
+One might notice that this approach requires essentially squaring a value, which 
+is hardly expensive, but we can simplify and cancel out $x_n$, so
+
+$$
+x_{n+1}​=\frac{x_n-\frac{y}{x_n}}{2}
+$$
+in which case we have
+
+```r
+SQRT <- function(x) {
+  z <- 1
+  repeat {
+    y <- z
+    z <- (z + x/z)/2
+    if (abs(y -z) < 0.0001) return(z)
+  }
+}
+```
+
+One of the reasons I wanted to dig into this was the fact that it's a convergence... 
+
+In APL the power operator (`⍣` [aplwi](https://aplwiki.com/wiki/Power_(operator)))
+applies a function some specified number of times, so 
+
+```apl
+    f ⍣n x
+```
+
+applies `f` to `x` `n` times, i.e. `(f⍣3)x` produces `f(f(f(x)))`.
+
+It can also be used as `⍣=` where it will continue to apply the function until
+the output no longer changes (is equal). A classic example is the 
+[golden ratio](https://en.wikipedia.org/wiki/Golden_ratio); take the reciprocal
+then add 1 until it converges, i.e. 
+
+$$
+x_{n+1} = 1+\frac{1}{x_n}
+$$ 
+
+which you can try for yourself 
+[here](https://tryapl.org/?clear&q=1%2B%E2%88%98%C3%B7%E2%8D%A3%3D1&run)
+
+```apl
+    1+∘÷⍣=1
+1.618033989
+```
+
+In this, `+∘÷` is the ([tacit](https://aplwiki.com/wiki/Tacit)) function created by 
+composing (`∘`) 'addition of 1' (`1+`, a partial application of a function) and 
+'reciprocal' (`÷`), which is iterated until it no longer changes (within 
+machine precision).
+
+Iterating until convergence is exactly what we want, since we're looking for the 
+value satisfying 
+
+$$
+x_n = x_{n+1}​=\frac{x_n-\frac{y}{x_n}}{2}
+$$
+APL uses `⍵` as the right argument placeholder and `⍺` as the left, so the 
+function we want to apply repeatedly to the right argument is
+
+```apl
+    {⍵-(((⍵×⍵)-⍺)÷(2×⍵))}
+```
+
+If we provide `1` as the right argument (the start value) and `16` as the left 
+argument, we get
+
+```apl
+    16{⍵-(((⍵×⍵)-⍺)÷(2×⍵))}⍣=1
+4
+```
+
+You can try this out yourself at [tryapl.org](https://tryapl.org/?clear&q=16%7B%E2%8D%B5-(((%E2%8D%B5%C3%97%E2%8D%B5)-%E2%8D%BA)%C3%B7(2%C3%97%E2%8D%B5))%7D%E2%8D%A3%3D1&run) 
+(link should load that expression).
+
+We can turn that into a function, once again using the argument placeholder
+
+```apl
+    sqrt←{⍵{⍵-(((⍵×⍵)-⍺)÷(2×⍵))}⍣=1}
+    sqrt 25
+5
+    sqrt 81
+9
+```
+
+Taking the simplification above, we can write this a bit shorter as
+
+```apl
+      sqrt←{⍵{(⍵+(⍺÷⍵))÷2}⍣=1}
+      sqrt 144
+12
+```
+
+As clean as the Go code looks, I think there's a certain beauty to being able 
+to write this in just 20 characters. It's not for everyone, I get that.
+
+I love these opportunities to learn a bit more about languages.
+
+If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+[Mastodon](https://fosstodon.org/@jonocarroll).
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
