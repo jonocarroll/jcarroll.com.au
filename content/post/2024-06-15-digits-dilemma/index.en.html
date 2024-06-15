@@ -1,0 +1,305 @@
+---
+title: Digits Dilemma
+author: Jonathan Carroll
+date: '2024-06-15'
+slug: digits-dilemma
+categories:
+  - rstats
+  - julia
+  - haskell
+tags:
+  - rstats
+  - julia
+  - haskell
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>Another day, another short riddle to be solved with several programming
+languages! This one is nice because solving it doesn’t need a lot of code, but
+it uses some interesting aspects of evaluation.</p>
+<!--more-->
+<p>Another day, another short riddle to be solved with several programming
+languages! This one is nice because solving it doesn’t need a lot of code, but
+it uses some interesting aspects of evaluation.</p>
+<p>I saw <a href="https://jezenthomas.com/2022/05/solving-a-maths-riddle-with-bad-haskell/">this post</a>
+which isn’t new (it’s from 2022) that poses a nice problem to solve:</p>
+<blockquote>
+<p>With the numbers 123456789, make them add up to 100.
+They must stay in the same order but you can use addition, subtraction,
+multiplication, division, brackets etc. All numbers must be used exactly once.</p>
+</blockquote>
+<p>and demonstrates a solution in Haskell</p>
+<pre class="haskell"><code>import Control.Monad (forM)
+import Language.Haskell.Interpreter
+
+expressions :: [String]
+expressions =
+  let ops = [ &#39;+&#39;, &#39;-&#39;, &#39;/&#39;, &#39;*&#39; ]
+   in [ [ &#39;1&#39;, a, &#39;2&#39;, b, &#39;3&#39;, c, &#39;4&#39;, d, &#39;5&#39;, e, &#39;6&#39;, f, &#39;7&#39;, g, &#39;8&#39;, h, &#39;9&#39; ]
+        | a &lt;- ops, b &lt;- ops
+        , c &lt;- ops, d &lt;- ops
+        , e &lt;- ops, f &lt;- ops
+        , g &lt;- ops, h &lt;- ops
+        ]
+
+result = runInterpreter $ do
+  setImports [&quot;Prelude&quot;]
+  exprs &lt;- forM expressions evaluate
+  pure $ filter (\(_, a) -&gt; a == &quot;100&quot;) $ fromRight [] exprs
+  where</code></pre>
+<p>I’m trying to learn Haskell this year, so it was a great opportunity try to
+follow along. I’m still working my way towards being able to run short snippets
+- the <code>ghci</code> tool for interactive use has a bit of a learning curve and doesn’t
+immediately let me use the imports (or I’m doing something wrong) so while I
+think I can follow the steps as presented, I can’t yet dig into them as
+interactively as I’d like.</p>
+<p>The general idea, though, is to use a comprehension to expand all combinations of
+the allowed operators (<code>+</code>, <code>-</code>, <code>/</code>, and <code>*</code>) between the values 1 to 9. I’m
+somewhat familiar with comprehensions and played with them in my post<br />
+<a href="https://jcarroll.com.au/2023/08/13/pythagorean-triples-with-comprehensions/">Pythagorean Triples with Comprehensions</a>
+in several languages, including Haskell.</p>
+<p>I wanted to see how I might go about this problem in R, and I knew I’d need to make
+some adjustments because R does not have comprehensions.</p>
+<p>One way to get all the combinations of operators between the values is to use
+<code>expand.grid()</code> which generates all combinations of its inputs</p>
+<pre class="r"><code>expand.grid(1:3, letters[1:3])</code></pre>
+<pre class="bg-success"><code>##   Var1 Var2
+## 1    1    a
+## 2    2    a
+## 3    3    a
+## 4    1    b
+## 5    2    b
+## 6    3    b
+## 7    1    c
+## 8    2    c
+## 9    3    c</code></pre>
+<p>Defining the operators as strings, I can generate a <code>data.frame</code> of the values and
+all combinations of operators between them</p>
+<pre class="r"><code>ops &lt;- c(&quot;*&quot;, &quot;+&quot;, &quot;-&quot;, &quot;/&quot;)
+combos &lt;- expand.grid(1, ops, 2, ops, 3, ops, 4, ops, 5, ops, 6, ops, 7, ops, 8, ops, 9)
+head(combos)</code></pre>
+<pre class="bg-success"><code>##   Var1 Var2 Var3 Var4 Var5 Var6 Var7 Var8 Var9 Var10 Var11 Var12 Var13 Var14
+## 1    1    *    2    *    3    *    4    *    5     *     6     *     7     *
+## 2    1    +    2    *    3    *    4    *    5     *     6     *     7     *
+## 3    1    -    2    *    3    *    4    *    5     *     6     *     7     *
+## 4    1    /    2    *    3    *    4    *    5     *     6     *     7     *
+## 5    1    *    2    +    3    *    4    *    5     *     6     *     7     *
+## 6    1    +    2    +    3    *    4    *    5     *     6     *     7     *
+##   Var15 Var16 Var17
+## 1     8     *     9
+## 2     8     *     9
+## 3     8     *     9
+## 4     8     *     9
+## 5     8     *     9
+## 6     8     *     9</code></pre>
+<p>This generates a lot of combinations - with 4 possible operators in 8 possible
+positions there are <span class="math inline">\(4^8\)</span> = 65,536 combinations.</p>
+<p>Pasting these numbers and operators together into expressions</p>
+<pre class="r"><code>exprs &lt;- apply(combos, 1, \(x) paste0(x, collapse = &quot;&quot;))
+head(exprs)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;1*2*3*4*5*6*7*8*9&quot; &quot;1+2*3*4*5*6*7*8*9&quot; &quot;1-2*3*4*5*6*7*8*9&quot;
+## [4] &quot;1/2*3*4*5*6*7*8*9&quot; &quot;1*2+3*4*5*6*7*8*9&quot; &quot;1+2+3*4*5*6*7*8*9&quot;</code></pre>
+<p>I get something I can evaluate as if I typed <code>1*2*3</code> into a console. I can get
+the results of evaluating those with</p>
+<pre class="r"><code>results &lt;- sapply(exprs, \(x) eval(parse(text = x)))
+head(results)</code></pre>
+<pre class="bg-success"><code>## 1*2*3*4*5*6*7*8*9 1+2*3*4*5*6*7*8*9 1-2*3*4*5*6*7*8*9 1/2*3*4*5*6*7*8*9 
+##            362880            362881           -362879             90720 
+## 1*2+3*4*5*6*7*8*9 1+2+3*4*5*6*7*8*9 
+##            181442            181443</code></pre>
+<p>Now, I just need to see which of those produces a value of 100. Because <code>sapply</code>
+produced a vector with the expression itself as the name, I can extract the names
+of the results which are equal to 100</p>
+<pre class="r"><code>answers &lt;- names(which(results == 100))
+answers</code></pre>
+<pre class="bg-success"><code>##  [1] &quot;1*2*3-4*5+6*7+8*9&quot; &quot;1+2+3-4*5+6*7+8*9&quot; &quot;1+2-3*4-5+6*7+8*9&quot;
+##  [4] &quot;1-2*3-4-5+6*7+8*9&quot; &quot;1+2-3*4+5*6+7+8*9&quot; &quot;1-2*3-4+5*6+7+8*9&quot;
+##  [7] &quot;1-2*3+4*5+6+7+8*9&quot; &quot;1*2*3+4+5+6+7+8*9&quot; &quot;1+2+3+4+5+6+7+8*9&quot;
+## [10] &quot;1+2*3+4*5-6+7+8*9&quot; &quot;1+2*3*4*5/6+7+8*9&quot; &quot;1*2*3*4+5+6-7+8*9&quot;
+## [13] &quot;1*2*3*4+5+6+7*8+9&quot; &quot;1-2+3*4*5-6+7*8-9&quot; &quot;1-2+3*4*5+6*7+8-9&quot;</code></pre>
+<p>Any of those can easily be verified manually</p>
+<pre class="r"><code>1*2*3*4+5+6+7*8+9</code></pre>
+<pre class="bg-success"><code>## [1] 100</code></pre>
+<p>One thing I noticed here was that I have one more result than the Haskell post
+produces</p>
+<pre class="r"><code>length(answers)</code></pre>
+<pre class="bg-success"><code>## [1] 15</code></pre>
+<p>One of the answers stands out in that it contains a division, and sure enough this
+is the one that doesn’t appear in the Haskell post. I’m not quite sure why - I
+think the operator precedence is the same between R and Haskell, at least in terms
+of these expressions</p>
+<pre class="r"><code>3 / 2 + 1</code></pre>
+<pre class="bg-success"><code>## [1] 2.5</code></pre>
+<pre class="haskell"><code>ghci&gt; 3 / 2 + 1
+2.5</code></pre>
+<p>But since I haven’t yet been able to actually <em>run</em> that Haskell code myself, I can’t
+verify those solutions.</p>
+<p>My R solution to this puzzle is then</p>
+<pre class="r"><code>ops &lt;- c(&quot;*&quot;, &quot;+&quot;, &quot;-&quot;, &quot;/&quot;)
+combos &lt;- expand.grid(1, ops, 2, ops, 3, ops, 4, ops, 5, ops, 6, ops, 7, ops, 8, ops, 9)
+exprs &lt;- apply(combos, 1, \(x) paste0(x, collapse = &quot;&quot;))
+results &lt;- sapply(exprs, \(x) eval(parse(text = x)))
+names(which(results == 100))</code></pre>
+<p>I did want to try a language which <em>does</em> have comprehensions - let’s try Julia!</p>
+<p>Setting up the comprehension makes for a bit of a long line, but comes out okay</p>
+<pre class="julia"><code>ops = [&#39;+&#39;, &#39;-&#39;, &#39;*&#39;, &#39;/&#39;]</code></pre>
+<pre class="bg-success"><code>## 4-element Vector{Char}:
+##  &#39;+&#39;: ASCII/Unicode U+002B (category Sm: Symbol, math)
+##  &#39;-&#39;: ASCII/Unicode U+002D (category Pd: Punctuation, dash)
+##  &#39;*&#39;: ASCII/Unicode U+002A (category Po: Punctuation, other)
+##  &#39;/&#39;: ASCII/Unicode U+002F (category Po: Punctuation, other)</code></pre>
+<pre class="julia"><code>exprs = [&#39;1&#39; * a * &#39;2&#39; * b * &#39;3&#39; * c * &#39;4&#39; * d * &#39;5&#39; * e * &#39;6&#39; * f * &#39;7&#39; * g * &#39;8&#39; * h * &#39;9&#39; 
+         for a in ops, b in ops, c in ops, 
+             d in ops, e in ops, f in ops, 
+             g in ops, h in ops];
+first(exprs, 10)</code></pre>
+<pre class="bg-success"><code>## 10-element Vector{String}:
+##  &quot;1+2+3+4+5+6+7+8+9&quot;
+##  &quot;1-2+3+4+5+6+7+8+9&quot;
+##  &quot;1*2+3+4+5+6+7+8+9&quot;
+##  &quot;1/2+3+4+5+6+7+8+9&quot;
+##  &quot;1+2-3+4+5+6+7+8+9&quot;
+##  &quot;1-2-3+4+5+6+7+8+9&quot;
+##  &quot;1*2-3+4+5+6+7+8+9&quot;
+##  &quot;1/2-3+4+5+6+7+8+9&quot;
+##  &quot;1+2*3+4+5+6+7+8+9&quot;
+##  &quot;1-2*3+4+5+6+7+8+9&quot;</code></pre>
+<p>That produces an array with many dimensions</p>
+<pre class="julia"><code>size(exprs)</code></pre>
+<pre class="bg-success"><code>## (4, 4, 4, 4, 4, 4, 4, 4)</code></pre>
+<p>so it needs to be flattened into a vector with <code>vec()</code>. From there, it’s similar
+to the R approach and I can use a <code>eval(Meta.parse())</code> pattern, keeping in mind
+that one can ‘broadcast’ scalar operations to vector operations with the dot
+(<code>.</code>) operator</p>
+<pre class="julia"><code>results = eval.(Meta.parse.(vec(exprs)));
+first(results, 10)</code></pre>
+<pre class="bg-success"><code>## 10-element Vector{Real}:
+##  45
+##  41
+##  44
+##  42.5
+##  39
+##  35
+##  38
+##  36.5
+##  46
+##  34</code></pre>
+<p>Finding the values equal to 100 is similar to the R approach</p>
+<pre class="julia"><code>exprs[findall(results .== 100)]</code></pre>
+<pre class="bg-success"><code>## 15-element Vector{String}:
+##  &quot;1*2*3*4+5+6+7*8+9&quot;
+##  &quot;1-2+3*4*5+6*7+8-9&quot;
+##  &quot;1-2+3*4*5-6+7*8-9&quot;
+##  &quot;1+2+3+4+5+6+7+8*9&quot;
+##  &quot;1*2*3+4+5+6+7+8*9&quot;
+##  &quot;1-2*3+4*5+6+7+8*9&quot;
+##  &quot;1+2*3+4*5-6+7+8*9&quot;
+##  &quot;1-2*3-4+5*6+7+8*9&quot;
+##  &quot;1+2-3*4+5*6+7+8*9&quot;
+##  &quot;1+2*3*4*5/6+7+8*9&quot;
+##  &quot;1*2*3*4+5+6-7+8*9&quot;
+##  &quot;1-2*3-4-5+6*7+8*9&quot;
+##  &quot;1+2-3*4-5+6*7+8*9&quot;
+##  &quot;1+2+3-4*5+6*7+8*9&quot;
+##  &quot;1*2*3-4*5+6*7+8*9&quot;</code></pre>
+<p>and again we see the 15 answers including the one with a division, confirming the
+R result.</p>
+<p>This was a fun exploration - I don’t think I would want to try to solve it <em>without</em>
+code, but the code solutions were a great opportunity to use a few different
+languages.</p>
+<p>I suspect there are a few different ways of solving this apart from this brute-force
+expanding of every combination, perhaps with a solver or something. If you have one, I’d
+love to see it. I thought <code>@coolbutuseless</code> had done something like this but the closest
+I could find was <a href="https://coolbutuseless.github.io/2021/12/09/lex-parse-and-evaluate-a-simple-s-expression-with-flexo/">this post</a>
+which is slightly different.</p>
+<p>If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## [1m[36m─ Session info ───────────────────────────────────────────────────────────────[39m[22m
+##  [3m[90msetting [39m[23m [3m[90mvalue[39m[23m
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-06-15
+##  pandoc   3.1.11 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## [1m[36m─ Packages ───────────────────────────────────────────────────────────────────[39m[22m
+##  [3m[90mpackage    [39m[23m [3m[90m*[39m[23m [3m[90mversion[39m[23m [3m[90mdate (UTC)[39m[23m [3m[90mlib[39m[23m [3m[90msource[39m[23m
+##  blogdown      1.18    [90m2023-06-19[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  bookdown      0.36    [90m2023-10-16[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  bslib         0.6.1   [90m2023-11-28[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  cachem        1.0.8   [90m2023-05-01[39m [90m[3][39m [90mCRAN (R 4.3.0)[39m
+##  callr         3.7.3   [90m2022-11-02[39m [90m[3][39m [90mCRAN (R 4.2.2)[39m
+##  cli           3.6.2   [90m2023-12-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  crayon        1.5.2   [90m2022-09-29[39m [90m[3][39m [90mCRAN (R 4.2.1)[39m
+##  devtools      2.4.5   [90m2022-10-11[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  digest        0.6.34  [90m2024-01-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  ellipsis      0.3.2   [90m2021-04-29[39m [90m[3][39m [90mCRAN (R 4.1.1)[39m
+##  evaluate      0.23    [90m2023-11-01[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  fastmap       1.1.1   [90m2023-02-24[39m [90m[3][39m [90mCRAN (R 4.2.2)[39m
+##  fs            1.6.3   [90m2023-07-20[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  glue          1.7.0   [90m2024-01-09[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  htmltools     0.5.7   [90m2023-11-03[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  htmlwidgets   1.6.2   [90m2023-03-17[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  httpuv        1.6.12  [90m2023-10-23[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  icecream      0.2.1   [90m2023-09-27[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  jquerylib     0.1.4   [90m2021-04-26[39m [90m[3][39m [90mCRAN (R 4.1.2)[39m
+##  jsonlite      1.8.8   [90m2023-12-04[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  JuliaCall     0.17.5  [90m2022-09-08[39m [90m[1][39m [90mCRAN (R 4.3.3)[39m
+##  knitr         1.45    [90m2023-10-30[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  later         1.3.1   [90m2023-05-02[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  lifecycle     1.0.4   [90m2023-11-07[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  magrittr      2.0.3   [90m2022-03-30[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  memoise       2.0.1   [90m2021-11-26[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  mime          0.12    [90m2021-09-28[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  miniUI        0.1.1.1 [90m2018-05-18[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  pkgbuild      1.4.2   [90m2023-06-26[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  pkgload       1.3.3   [90m2023-09-22[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  prettyunits   1.2.0   [90m2023-09-24[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  processx      3.8.3   [90m2023-12-10[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  profvis       0.3.8   [90m2023-05-02[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  promises      1.2.1   [90m2023-08-10[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  ps            1.7.6   [90m2024-01-18[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  purrr         1.0.2   [90m2023-08-10[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  R6            2.5.1   [90m2021-08-19[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  Rcpp          1.0.11  [90m2023-07-06[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  remotes       2.4.2.1 [90m2023-07-18[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  rlang         1.1.3   [90m2024-01-10[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  rmarkdown     2.25    [90m2023-09-18[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  rstudioapi    0.15.0  [90m2023-07-07[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  sass          0.4.8   [90m2023-12-06[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  sessioninfo   1.2.2   [90m2021-12-06[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  shiny         1.7.5.1 [90m2023-10-14[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  stringi       1.8.3   [90m2023-12-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  stringr       1.5.1   [90m2023-11-14[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  urlchecker    1.0.1   [90m2021-11-30[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  usethis       2.2.2   [90m2023-07-06[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  vctrs         0.6.5   [90m2023-12-01[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  xfun          0.41    [90m2023-11-01[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  xtable        1.8-4   [90m2019-04-21[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  yaml          2.3.8   [90m2023-12-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+## 
+## [90m [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3[39m
+## [90m [2] /usr/local/lib/R/site-library[39m
+## [90m [3] /usr/lib/R/site-library[39m
+## [90m [4] /usr/lib/R/library[39m
+## 
+## [1m[36m──────────────────────────────────────────────────────────────────────────────[39m[22m</code></pre>
+</details>
+<p><br /></p>
