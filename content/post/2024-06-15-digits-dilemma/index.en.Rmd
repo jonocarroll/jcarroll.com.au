@@ -1,0 +1,230 @@
+---
+title: Digits Dilemma
+author: Jonathan Carroll
+date: '2024-06-15'
+slug: digits-dilemma
+categories:
+  - rstats
+  - julia
+  - haskell
+tags:
+  - rstats
+  - julia
+  - haskell
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+Another day, another short riddle to be solved with several programming
+languages! This one is nice because solving it doesn't need a lot of code, but 
+it uses some interesting aspects of evaluation.
+
+<!--more-->
+
+Another day, another short riddle to be solved with several programming
+languages! This one is nice because solving it doesn't need a lot of code, but 
+it uses some interesting aspects of evaluation.
+
+I saw [this post](https://jezenthomas.com/2022/05/solving-a-maths-riddle-with-bad-haskell/) 
+which isn't new (it's from 2022) that poses a nice problem to solve:
+
+> With the numbers 123456789, make them add up to 100. 
+They must stay in the same order but you can use addition, subtraction, 
+multiplication, division, brackets etc. All numbers must be used exactly once.
+
+and demonstrates a solution in Haskell
+
+```haskell
+import Control.Monad (forM)
+import Language.Haskell.Interpreter
+
+expressions :: [String]
+expressions =
+  let ops = [ '+', '-', '/', '*' ]
+   in [ [ '1', a, '2', b, '3', c, '4', d, '5', e, '6', f, '7', g, '8', h, '9' ]
+        | a <- ops, b <- ops
+        , c <- ops, d <- ops
+        , e <- ops, f <- ops
+        , g <- ops, h <- ops
+        ]
+
+result = runInterpreter $ do
+  setImports ["Prelude"]
+  exprs <- forM expressions evaluate
+  pure $ filter (\(_, a) -> a == "100") $ fromRight [] exprs
+  where
+```
+
+I'm trying to learn Haskell this year, so it was a great opportunity try to
+follow along. I'm still working my way towards being able to run short snippets
+- the `ghci` tool for interactive use has a bit of a learning curve and doesn't
+immediately let me use the imports (or I'm doing something wrong) so while I
+think I can follow the steps as presented, I can't yet dig into them as
+interactively as I'd like.
+
+The general idea, though, is to use a comprehension to expand all combinations of 
+the allowed operators (`+`, `-`, `/`, and `*`) between the values 1 to 9. I'm 
+somewhat familiar with comprehensions and played with them in my post  
+[Pythagorean Triples with Comprehensions](https://jcarroll.com.au/2023/08/13/pythagorean-triples-with-comprehensions/)
+in several languages, including Haskell.
+
+I wanted to see how I might go about this problem in R, and I knew I'd need to make 
+some adjustments because R does not have comprehensions. 
+
+One way to get all the combinations of operators between the values is to use
+`expand.grid()` which generates all combinations of its inputs
+
+```{r}
+expand.grid(1:3, letters[1:3])
+```
+
+Defining the operators as strings, I can generate a `data.frame` of the values and 
+all combinations of operators between them 
+
+```{r}
+ops <- c("*", "+", "-", "/")
+combos <- expand.grid(1, ops, 2, ops, 3, ops, 4, ops, 5, ops, 6, ops, 7, ops, 8, ops, 9)
+head(combos)
+```
+
+This generates a lot of combinations - with 4 possible operators in 8 possible 
+positions there are $4^8$ = 65,536 combinations. 
+
+Pasting these numbers and operators together into expressions
+
+```{r}
+exprs <- apply(combos, 1, \(x) paste0(x, collapse = ""))
+head(exprs)
+```
+
+I get something I can evaluate as if I typed `1*2*3` into a console. I can get 
+the results of evaluating those with
+
+```{r}
+results <- sapply(exprs, \(x) eval(parse(text = x)))
+head(results)
+```
+
+Now, I just need to see which of those produces a value of 100. Because `sapply` 
+produced a vector with the expression itself as the name, I can extract the names
+of the results which are equal to 100
+
+```{r}
+answers <- names(which(results == 100))
+answers
+```
+
+Any of those can easily be verified manually
+
+```{r}
+1*2*3*4+5+6+7*8+9
+```
+
+One thing I noticed here was that I have one more result than the Haskell post 
+produces
+
+```{r}
+length(answers)
+```
+
+One of the answers stands out in that it contains a division, and sure enough this 
+is the one that doesn't appear in the Haskell post. I'm not quite sure why - I 
+think the operator precedence is the same between R and Haskell, at least in terms 
+of these expressions
+
+```{r}
+3 / 2 + 1
+```
+
+```haskell
+ghci> 3 / 2 + 1
+2.5
+```
+
+But since I haven't yet been able to actually _run_ that Haskell code myself, I can't 
+verify those solutions.
+
+My R solution to this puzzle is then
+
+```r
+ops <- c("*", "+", "-", "/")
+combos <- expand.grid(1, ops, 2, ops, 3, ops, 4, ops, 5, ops, 6, ops, 7, ops, 8, ops, 9)
+exprs <- apply(combos, 1, \(x) paste0(x, collapse = ""))
+results <- sapply(exprs, \(x) eval(parse(text = x)))
+names(which(results == 100))
+```
+
+I did want to try a language which _does_ have comprehensions - let's try Julia!
+
+Setting up the comprehension makes for a bit of a long line, but comes out okay
+
+```{julia}
+ops = ['+', '-', '*', '/']
+exprs = ['1' * a * '2' * b * '3' * c * '4' * d * '5' * e * '6' * f * '7' * g * '8' * h * '9' 
+         for a in ops, b in ops, c in ops, 
+             d in ops, e in ops, f in ops, 
+             g in ops, h in ops];
+first(exprs, 10)
+```
+
+That produces an array with many dimensions
+
+```{julia}
+size(exprs)
+```
+
+so it needs to be flattened into a vector with `vec()`. From there, it's similar
+to the R approach and I can use a `eval(Meta.parse())` pattern, keeping in mind
+that one can 'broadcast' scalar operations to vector operations with the dot
+(`.`) operator
+
+```{julia}
+results = eval.(Meta.parse.(vec(exprs)));
+first(results, 10)
+```
+
+Finding the values equal to 100 is similar to the R approach
+
+```{julia}
+exprs[findall(results .== 100)]
+```
+
+and again we see the 15 answers including the one with a division, confirming the 
+R result. 
+
+This was a fun exploration - I don't think I would want to try to solve it _without_
+code, but the code solutions were a great opportunity to use a few different 
+languages.
+
+I suspect there are a few different ways of solving this apart from this brute-force 
+expanding of every combination, perhaps with a solver or something. If you have one, I'd 
+love to see it. I thought `@coolbutuseless` had done something like this but the closest
+I could find was [this post](https://coolbutuseless.github.io/2021/12/09/lex-parse-and-evaluate-a-simple-s-expression-with-flexo/)
+which is slightly different.
+
+If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+[Mastodon](https://fosstodon.org/@jonocarroll).
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
