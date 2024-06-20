@@ -1,0 +1,325 @@
+---
+title: Constructing HTML with Functional Functions
+author: Jonathan Carroll
+date: '2024-06-20'
+categories:
+  - elm
+  - haskell
+  - rstats
+tags:
+  - elm
+  - haskell
+  - rstats
+slug: constructing-html-with-functions
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>I heard that learning Elm is a good way to approach learning Haskell, so I gave
+it a go and was surprised early on about an approach to writing abstracted HTML.
+In this post I compare the way that R and Elm generate HTML and the differences
+between their approaches.</p>
+<!--more-->
+<p>I heard that learning Elm is a good way to approach learning Haskell, so I gave
+it a go and was surprised early on about an approach to writing abstracted HTML.
+In this post I compare the way that R and Elm generate HTML and the differences
+between their approaches.</p>
+<p>I was listening to the Linux Dev Time podcast based on a recommendation and this episode
+(<a href="https://www.linuxdevtime.com/linux-dev-time-episode-100/">episode 100</a>) was about
+“how many different programming languages should you learn?”</p>
+<p>One suggestion in amongst the interesting discussions was that “if you want to
+learn Haskell, start by learning Elm, because Elm uses Haskell syntax but it
+removes most of the most difficult concepts in Haskell.”</p>
+<p>I’ve been trying to learn Haskell this year, building on some intermittent
+exposure to it in the last couple of years and partly because I joined a local
+functional programming meetup group which is fortunate enough to have some
+Haskell developers. I’ve read the first few chapters of
+<a href="https://www.learnyouahaskell.com/">‘Learn You a Haskel for Great Good!’</a> and Haskell is a <a href="https://exercism.org/tracks/haskell">supported track on Exercism</a>. As you can see
+from my
+<a href="https://github.com/jonocarroll/exercism-solutions">summary of complete exercises</a>
+Haskell is the language I’ve solved the most exercises in, followed very closely by R.</p>
+<p>Haskell definitely feels like an academic language - even reading other people’s
+solutions to puzzles and code problems I find myself struggling to understand
+both the somewhat unique syntax and the approach at the same time. The fact that
+there is no if-else construct in Haskell means a lot of pattern matching, and
+the fact that there are no loops means a lot of recursion. All arguments to
+functions are whitespace separated, so the expression <code>add 1 2</code> is a call
+of the function <code>add</code> with arguments <code>1</code> and <code>2</code> meaning that parentheses are
+frequently required, or other specific syntax quirks.</p>
+<p>Rust (another language I’ve spent quite a bit of time learning) lists Haskell as
+<a href="https://doc.rust-lang.org/reference/influences.html">one of its influences</a> and
+that becomes quite apparent once you see the keyword <code>deriving</code> (for typeclasses)
+in both languages, e.g. <a href="https://book.realworldhaskell.org/read/using-typeclasses.html" class="uri">https://book.realworldhaskell.org/read/using-typeclasses.html</a></p>
+<p>But Rust doesn’t use Haskell syntax, and isn’t nearly as ‘pure’ (lacking side-effects).</p>
+<p>The advice to start with Elm sounded like it came from a good place, and seemed
+reasonable.</p>
+<p><a href="https://exercism.org/tracks/elm">Elm is also one of the languages offered on Exercism</a>
+but again referring to my summary, I haven’t done much at all with it - the introduction
+‘hello, world’ exercise and one other. That at least means I installed it locally
+and got the toolchain working, but I certainly wasn’t familiar at all.
+<a href="https://github.com/jonocarroll/exercism-solutions/blob/main/elm/allergies/src/Allergies.elm">My solution</a>
+to the problem that I did solve involved a big if-else block.</p>
+<p>I like learning languages (can you tell?) so I figured I’d give it a fair go and
+started reading <a href="https://www.manning.com/books/elm-in-action">Elm in Action</a> by
+Richard Feldman. As well as an Elm core member, Richard is the author of the
+<a href="https://www.roc-lang.org/">Roc language</a> which is built in Rust and aims to be
+better than both Elm and Rust in the sense of being a “fast, friendly, functional language”
+with specific emphasis on each of the words in that phrase. I do plan to learn
+more Roc as well, but for now I’m focussed on gaining a better understanding of
+Haskell via Elm, so back to Elm…</p>
+<p>Elm isn’t a new language - it first appeared in 2012 - but it’s also considered
+somewhat “stable” in that there haven’t been any big changes to it for a few
+years. Some people seem to rush to the conclusion that a language not in a
+constant state of change is “dead” or “stale”, but the author (of the language/compiler)
+<a href="https://github.com/elm/compiler/blob/master/roadmap.md">makes it clear</a> that</p>
+<blockquote>
+<p>If you like what you see now, that’s pretty much what Elm is going to be for a while.</p>
+</blockquote>
+<p>I have no problem with that.</p>
+<p>Elm comes with a REPL, something I find extremely helpful for playing with a new
+language. One of the big surprises was how good the error messages are. Trying to
+do something like adding a number and string produces an explanation of what
+is wrong</p>
+<pre><code>&gt; 1 + &quot;a&quot;
+-- TYPE MISMATCH ---------------------------------------------------------- REPL
+
+I cannot do addition with String values like this one:
+
+3|   1 + &quot;a&quot;
+         ^^^
+The (+) operator only works with Int and Float values.
+
+Hint: Switch to the (++) operator to append strings!</code></pre>
+<p>not a screen full of stack traces (I’m looking at you, JVM languages).</p>
+<p>I think of Rust’s error messages as the most helpful; pointing out not only
+<em>what</em> went wrong, but a link to documentation explaining that pattern, and often
+a code suggestion for how to fix it. The tooling can even ‘auto fix’ some of those
+errors when it’s clear what the code <em>should</em> have been. Roc aims to have even
+better error messages than both of these - a high bar, but fantastic to aim for.</p>
+<p>I have tended towards dynamic languages (R being one of them) where classes of
+variables might be coerced, promoted, or combined sensibly. Not every language
+supports that, and for good reason - I’ve definitely seen the value in strongly
+typed languages preventing the need for defensive coding such as a huge block
+of assertions at the top of every function to make sure what’s passed in actually
+makes sense. Some languages are less fussy…</p>
+<div class="float">
+<img src="images/typesafety.jpg" alt="Javascript lets you combine just about anything" />
+<div class="figcaption">Javascript lets you combine just about anything</div>
+</div>
+<p>I started following along Elm in Action - properly following along; not just reading
+and pretending to take things in like I’ve done all too many times with technical
+books. I had the REPL open and played around with what I could do as I was
+reading about each example.</p>
+<p>One of the things this book gets right is to get to building something early on. A
+common complaint about Haskell books is that, since IO is a bit complicated in a
+language where functions are ‘pure’ and have no side-effects such as input and output,
+actually building even a ‘hello, world’ program tends to show up pretty late. Within
+Chapter 2 of Elm in Action we’re building a website. Kudos on that one.</p>
+<p>One of the first examples was to output some HTML for a static site.
+This is, of course, an overly simple starting point and one could absolutely say
+that Elm isn’t required for this part, but it fits in nicely with what comes next -
+making the site interactive.</p>
+<p>I’m old enough that in high school we had a class where we wrote a website. I don’t
+mean “built” one with some framework or package, I mean opening a text file and writing
+out the HTML to be rendered in a browser (Netscape). This wasn’t state-of-the-art design, but
+it gave me a reasonable introduction to the essentials of HTML markup.</p>
+<p>The example code in Elm for the static site is</p>
+<pre><code>div [ class &quot;content&quot; ]
+    [ h1 [] [ text &quot;Photo Groove&quot; ]                           
+    , div [ id &quot;thumbnails&quot; ]                                 
+        [ img [ src &quot;http://elm-in-action.com/1.jpeg&quot; ] []
+        , img [ src &quot;http://elm-in-action.com/2.jpeg&quot; ] []
+        , img [ src &quot;http://elm-in-action.com/3.jpeg&quot; ] []
+        ]
+    ]</code></pre>
+<p>which might need some unpacking. This is a call of the function <code>div</code> which takes two
+arguments; a list containing a call to <code>class</code> with an argument <code>"content"</code>, and
+a list containing a call to <code>h1</code> and its 2 arguments (an empty list and a call to
+<code>text</code> with a string argument), and another call to <code>div</code> and its arguments.</p>
+<p>What blew my mind here was not that <code>div</code> and <code>h1</code> were functions - I’m familiar
+with doing that in R via {htmltools}. Joe Cheng makes the claim in his
+<a href="https://youtu.be/HpqLXB_TnpI&amp;t=1720">rstudio::conf(2022) talk</a> that “R is a
+bizarrely good host language for Shiny” (R’s interactive web framework) <em>because</em>
+of the nature of positional and named arguments. It translates quite well to
+HTML.</p>
+<p>But the Elm code doesn’t use named arguments (it doesn’t have those, though you
+<em>could</em> use a record as an argument and get that effect if you needed to); every
+function in the Html module that creates elements takes two arguments, either of
+which may be empty (<code>[]</code>); a list of attributes, and a list of child nodes.</p>
+<p>So, <code>class</code> is <em>also</em> a function here, taking a string argument.</p>
+<p>I suspect I’ve spent <em>too</em> long working with strings instead of types. The thing
+that represents a class should definitely be an object of type ‘class’, and the
+thing that represents some text should be of a different type - ‘text’. All of this
+strong typing gets around the all-too-common problem of passing in a value to an
+R function as a string and having it used in unexpected ways…</p>
+<p>Spot the difference:</p>
+<pre class="r"><code>nchar(&quot;😀😀😀&quot;, &quot;char&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<pre class="r"><code>nchar(&quot;😀😀😀&quot;, &quot;byte&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] 12</code></pre>
+<pre class="r"><code>nchar(c(&quot;😀😀😀&quot;, &quot;char&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] 3 4</code></pre>
+<pre class="r"><code>nchar(c(&quot;😀😀😀&quot;, &quot;byte&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] 3 4</code></pre>
+<p>Enums get you a bit closer to not using strings to represent unique things, without
+going all-in on types, but R doesn’t really have enums that are useful in that way.
+<a href="https://jcarroll.xyz/2024/06/06/enums-in-r.html">I do wish it did</a>.</p>
+<p>One might have expected an error here - it might have saved a headache or two</p>
+<pre class="r"><code>nchar(100)</code></pre>
+<pre class="bg-success"><code>## [1] 3</code></pre>
+<pre class="r"><code>nchar(1000)</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
+<pre class="r"><code>nchar(10000)</code></pre>
+<pre class="bg-success"><code>## [1] 5</code></pre>
+<pre class="r"><code>nchar(100000)</code></pre>
+<pre class="bg-success"><code>## [1] 5</code></pre>
+<pre class="r"><code>nchar(1000000)</code></pre>
+<pre class="bg-success"><code>## [1] 5</code></pre>
+<p>(to see why this happens, try entering the numbers into a console)</p>
+<p>So, how would I write the HTML generating code in R?</p>
+<pre class="r"><code>library(htmltools)
+
+body &lt;- div(class = &quot;content&quot;, 
+            h1(&quot;Photo Groove&quot;),
+            div(id = &quot;thumbnails&quot;,
+                img(src = &quot;http://elm-in-action.com/1.jpeg&quot;),
+                img(src = &quot;http://elm-in-action.com/2.jpeg&quot;),
+                img(src = &quot;http://elm-in-action.com/3.jpeg&quot;)
+            )
+)
+
+body</code></pre>
+<pre class="r bg-success"><code>&lt;div class=&quot;content&quot;&gt;
+  &lt;h1&gt;Photo Groove&lt;/h1&gt;
+  &lt;div id=&quot;thumbnails&quot;&gt;
+    &lt;img src=&quot;http://elm-in-action.com/1.jpeg&quot;/&gt;
+    &lt;img src=&quot;http://elm-in-action.com/2.jpeg&quot;/&gt;
+    &lt;img src=&quot;http://elm-in-action.com/3.jpeg&quot;/&gt;
+  &lt;/div&gt;
+&lt;/div&gt;</code></pre>
+<p>If I ran <code>browsable(body)</code> in RStudio I’d get a rendered view of that HTML, i.e.</p>
+<div class="float">
+<img src="images/rendered.png" alt="The rendered HTML" />
+<div class="figcaption">The rendered HTML</div>
+</div>
+<p>The construction of HTML attributes and child nodes gels nicely with R syntax.</p>
+<p>Compiling the Elm code and inspecting the output I get exactly that HTML in the
+source, along with the reason it’s more complicated than that; the source contains
+the entire Elm runtime, needed for building interactive elements. Elm compiles
+down to Javascript, but since it’s strongly typed it prevents a lot of issues from
+ending up in the final product, in the same way that Typescript aims to.</p>
+<p>If I wanted to interact with the images (Elm in Action walks through using these
+images as thumbnails and opening a larger version alongisde, depending on which
+one is clicked on) I’d need to write some Javascript into the body and/or use an
+entire runtime like Shiny to handle the effects.</p>
+<p>I was a little shocked when I saw the paragraph</p>
+<blockquote>
+<p>Back in the Wild West days of the web, it was common to store application state primarily in the DOM itself. Is that menu expanded or collapsed? Check whether one of its DOM nodes has class=“expanded” or class=“collapsed”. Need to know what value a user has selected in a drop-down menu? Query it out of the DOM at the last possible instant.</p>
+</blockquote>
+<p><img src="https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExaG8xM2puNnhjcjYxajlsbm9uajBwdWxqbWtpcHl1cm4wdWFzczJrYiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/H5C8CevNMbpBqNqFjl/giphy.webp"></p>
+<p>But… that’s how I thought it was supposed to be done. I’m not a front-end dev,
+that’s for sure. I suppose I’m also old.</p>
+<p><a href="https://guide.elm-lang.org/architecture/">‘The Elm Architecture’</a> involves
+passing messages around in a somewhat object-oriented way (at least reminiscent
+of smalltalk) but those messages are created and received by pure functional
+code - the runtime itself is not pure (and can communicate with the outside world
+via the browser) but that’s considered ‘tested’ and any code the user writes in
+Elm still follows the pure functional paradigm.</p>
+<p>On top of all of that, it makes for (surprisingly?) <a href="https://elm-lang.org/news/blazing-fast-html">super fast performance</a>.</p>
+<p>This also means that functions can be tested, since the functions will be free
+of side-effects. This is so well received that it’s endorsed by
+<a href="https://ratatui.rs/concepts/application-patterns/the-elm-architecture/">RATatui</a>
+for building Rust terminal user interfaces.</p>
+<p>I’m still early in the process of learning Elm, but I can definitely see that it’s
+a more beginner-friendly way to ease into Haskell, and who knows, maybe I’ll build
+a front-end to something. I’m curious if there’s any surface area for interop
+with some of the other languages I know.</p>
+<p>I wasn’t expecting to be surprised by function layout quite so quickly, but I
+think that’s part of the benefit of learning several languages (once you’re very
+familiar with one to start with) - little differences with deep reasonings for them.</p>
+<p>If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## [1m[36m─ Session info ───────────────────────────────────────────────────────────────[39m[22m
+##  [3m[90msetting [39m[23m [3m[90mvalue[39m[23m
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-06-20
+##  pandoc   3.1.11 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## [1m[36m─ Packages ───────────────────────────────────────────────────────────────────[39m[22m
+##  [3m[90mpackage    [39m[23m [3m[90m*[39m[23m [3m[90mversion[39m[23m [3m[90mdate (UTC)[39m[23m [3m[90mlib[39m[23m [3m[90msource[39m[23m
+##  blogdown      1.18    [90m2023-06-19[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  bookdown      0.36    [90m2023-10-16[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  bslib         0.6.1   [90m2023-11-28[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  cachem        1.0.8   [90m2023-05-01[39m [90m[3][39m [90mCRAN (R 4.3.0)[39m
+##  callr         3.7.3   [90m2022-11-02[39m [90m[3][39m [90mCRAN (R 4.2.2)[39m
+##  cli           3.6.2   [90m2023-12-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  crayon        1.5.2   [90m2022-09-29[39m [90m[3][39m [90mCRAN (R 4.2.1)[39m
+##  devtools      2.4.5   [90m2022-10-11[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  digest        0.6.34  [90m2024-01-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  ellipsis      0.3.2   [90m2021-04-29[39m [90m[3][39m [90mCRAN (R 4.1.1)[39m
+##  evaluate      0.23    [90m2023-11-01[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  fastmap       1.1.1   [90m2023-02-24[39m [90m[3][39m [90mCRAN (R 4.2.2)[39m
+##  fs            1.6.3   [90m2023-07-20[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  glue          1.7.0   [90m2024-01-09[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  htmltools     0.5.7   [90m2023-11-03[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  htmlwidgets   1.6.2   [90m2023-03-17[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  httpuv        1.6.12  [90m2023-10-23[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  icecream      0.2.1   [90m2023-09-27[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  jquerylib     0.1.4   [90m2021-04-26[39m [90m[3][39m [90mCRAN (R 4.1.2)[39m
+##  jsonlite      1.8.8   [90m2023-12-04[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  knitr         1.45    [90m2023-10-30[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  later         1.3.1   [90m2023-05-02[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  lifecycle     1.0.4   [90m2023-11-07[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  magrittr      2.0.3   [90m2022-03-30[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  memoise       2.0.1   [90m2021-11-26[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  mime          0.12    [90m2021-09-28[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  miniUI        0.1.1.1 [90m2018-05-18[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  pkgbuild      1.4.2   [90m2023-06-26[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  pkgload       1.3.3   [90m2023-09-22[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  prettyunits   1.2.0   [90m2023-09-24[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  processx      3.8.3   [90m2023-12-10[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  profvis       0.3.8   [90m2023-05-02[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  promises      1.2.1   [90m2023-08-10[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  ps            1.7.6   [90m2024-01-18[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  purrr         1.0.2   [90m2023-08-10[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  R6            2.5.1   [90m2021-08-19[39m [90m[3][39m [90mCRAN (R 4.2.0)[39m
+##  Rcpp          1.0.11  [90m2023-07-06[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  remotes       2.4.2.1 [90m2023-07-18[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  rlang         1.1.3   [90m2024-01-10[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  rmarkdown     2.25    [90m2023-09-18[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  rstudioapi    0.15.0  [90m2023-07-07[39m [90m[3][39m [90mCRAN (R 4.3.1)[39m
+##  sass          0.4.8   [90m2023-12-06[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  sessioninfo   1.2.2   [90m2021-12-06[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  shiny         1.7.5.1 [90m2023-10-14[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  stringi       1.8.3   [90m2023-12-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  stringr       1.5.1   [90m2023-11-14[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  urlchecker    1.0.1   [90m2021-11-30[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  usethis       2.2.2   [90m2023-07-06[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  vctrs         0.6.5   [90m2023-12-01[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  xfun          0.41    [90m2023-11-01[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+##  xtable        1.8-4   [90m2019-04-21[39m [90m[1][39m [90mCRAN (R 4.3.2)[39m
+##  yaml          2.3.8   [90m2023-12-11[39m [90m[3][39m [90mCRAN (R 4.3.2)[39m
+## 
+## [90m [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3[39m
+## [90m [2] /usr/local/lib/R/site-library[39m
+## [90m [3] /usr/lib/R/site-library[39m
+## [90m [4] /usr/lib/R/library[39m
+## 
+## [1m[36m──────────────────────────────────────────────────────────────────────────────[39m[22m</code></pre>
+</details>
+<p><br /></p>
