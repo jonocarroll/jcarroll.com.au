@@ -50,7 +50,7 @@ of the function <code>add</code> with arguments <code>1</code> and <code>2</code
 frequently required, or other specific syntax quirks.</p>
 <p>Rust (another language I’ve spent quite a bit of time learning) lists Haskell as
 <a href="https://doc.rust-lang.org/reference/influences.html">one of its influences</a> and
-the becomes quite apparent once you see the keyword <code>deriving</code> (for typeclasses)
+that becomes quite apparent once you see the keyword <code>deriving</code> (for typeclasses)
 in both languages, e.g. <a href="https://book.realworldhaskell.org/read/using-typeclasses.html" class="uri">https://book.realworldhaskell.org/read/using-typeclasses.html</a></p>
 <p>But Rust doesn’t use Haskell syntax, and isn’t nearly as ‘pure’ (lacking side-effects).</p>
 <p>The advice to start with Elm sounded like it came from a good place, and seemed
@@ -117,7 +117,7 @@ common complaint about Haskell books is that, since IO is a bit complicated in a
 language where functions are ‘pure’ and have no side-effects such as input and output,
 actually building even a ‘hello, world’ program tends to show up pretty late. Within
 Chapter 2 of Elm in Action we’re building a website. Kudos on that one.</p>
-<p>One of the first, overly simple examples was to output some HTML for a static site.
+<p>One of the first examples was to output some HTML for a static site.
 This is, of course, an overly simple starting point and one could absolutely say
 that Elm isn’t required for this part, but it fits in nicely with what comes next -
 making the site interactive.</p>
@@ -163,6 +163,9 @@ R function as a string and having it used in unexpected ways…</p>
 <pre class="bg-success"><code>## [1] 3 4</code></pre>
 <pre class="r"><code>nchar(c(&quot;😀😀😀&quot;, &quot;byte&quot;))</code></pre>
 <pre class="bg-success"><code>## [1] 3 4</code></pre>
+<p>Enums get you a bit closer to not using strings to represent unique things, without
+going all-in on types, but R doesn’t really have enums that are useful in that way.
+<a href="https://jcarroll.xyz/2024/06/06/enums-in-r.html">I do wish it did</a>.</p>
 <p>One might have expected an error here - it might have saved a headache or two</p>
 <pre class="r"><code>nchar(100)</code></pre>
 <pre class="bg-success"><code>## [1] 3</code></pre>
