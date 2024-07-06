@@ -216,7 +216,7 @@ which is slightly different.
 
 If you have comments, suggestions, or improvements, as always, feel free to use
 the comment section below, or hit me up on
-[Mastodon](https://fosstodon.org/@jonocarroll).
+[Mastodon](https://fosstodon.org/@jonocarroll). 
 
 <br />
 <details>
