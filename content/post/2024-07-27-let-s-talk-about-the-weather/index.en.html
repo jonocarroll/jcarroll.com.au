@@ -1,0 +1,455 @@
+---
+title: Let's Talk About the Weather
+author: Jonathan Carroll
+date: '2024-07-27'
+slug: let-s-talk-about-the-weather
+categories:
+  - rstats
+tags:
+  - rstats
+type: ''
+subtitle: "First, we'll need data!"
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>A while ago I made some plots I really liked, but I never made a blog post
+about them. Then the data source stopped working and I couldn’t make them
+again. Now there’s a new data source, so it’s time for a post about some
+weather data!</p>
+<!--more-->
+<p>A while ago I made some plots I really liked, but I never made a blog post
+about them. Then the data source stopped working and I couldn’t make them
+again. Now there’s a new data source, so it’s time for a post about some
+weather data!</p>
+<p>Way back in the mid 2010s I was interested in getting my hands on some weather
+data to answer a question I had. In Australia we have the Bureau of Meteorology
+(<a href="https://www.abc.net.au/news/2022-10-19/bureau-meteorology-rebrand-cost-200-thousand/101552620">“don’t call it ‘the bom’”</a>)
+which has been keeping track of weather data for a very long time (on the scale
+of colonial Australia). They don’t have an official API to get to that data,
+they have a website that doesn’t use HTTPS - if you <em>have</em> a link to a page on
+their site and try to visit in in any modern browser which assumes you want to
+use HTTPS, you’ll see this page</p>
+<div class="float">
+<img src="images/bom.png" alt="The state of internet technology at the BoM" />
+<div class="figcaption">The state of internet technology at the BoM</div>
+</div>
+<p>then be redirected to the landing page, regardless of where your link was trying
+to send you. They <em>are</em> working on improving this, and there’s a new
+<a href="https://beta.bom.gov.au/">https://beta.bom.gov.au/</a> which notes it’s a test
+website.</p>
+<p>That rant aside, if you wanted some temperature data, you clicked your way
+through the interface on the website to specify a station and some settings, and
+eventually were presented with a tabular output of the data and the ability to
+export it as a .zip file containing an actual .csv plus a note file.</p>
+<p>At the time, I was aware of a BoM-related R package <code>{bomrang}</code> by Adam Sparks,
+which began life at the rOpenSci AUUnconf in Brisbane, 2016 where I had the
+pleasure of meeting him. It didn’t have access to the weather data the way I
+wanted, but it had a lot of other cool functionality such as finding the closest
+station and fetching forecasts, radar imagery, and bulletins. I wasn’t able to
+use a package to get the data I wanted, so I had to figure something out myself.</p>
+<p>I realised that the generated URL to that .zip file was parameterized, involving
+the station id, and some codes presumably representing what type of data was
+being fetched (temperature, rainfall, …). The codes themselves weren’t
+documented on the site, they were most likely only for internal use, but if I
+knew which one I wanted, I probably had enough information to get the full URL.
+With a bit of tinkering, I figured out the meaning of one of the codes (rain =
+136, min_temp = 123, max_temp = 122, solar = 193) and could specify which one I
+wanted. There was still one more code in the URL, and I found a way to decode
+that via an additional URL query, at which point I could build the entire URL.</p>
+<p>After that, I could programatically unpack the .zip with <code>utils::unzip()</code> and
+read in the .csv data. Thus, <code>bomrang::get_historical_weather()</code> was forged and
+introduced <a href="https://github.com/ropensci-archive/bomrang/pull/68">via a pull request</a>.</p>
+<p>Fast forward to 2021 and this function started failing - the data was available
+just fine via a browser, but was returning an error in R/RStudio. It turned out
+that changing the user-agent allowed for a brief period of access, but eventually
+the official statement was released</p>
+<blockquote>
+<p>The Bureau is monitoring screen scraping activity on the site and will
+commence interrupting, and eventually blocking, this activity on www.bom.gov.au
+from Wednesday, 3 March 2021</p>
+</blockquote>
+<p>and there was no way to get to the data nicely. This was extremely frustrating,
+especially since we (taxpayers) technically pay for this data.</p>
+<p>All was not lost, however - Adam continued to develop package infrastructure and
+found a new resource in the form of <a href="https://www.longpaddock.qld.gov.au/silo/">SILO</a>.
+Adam built a new package {weatherOz} and submitted a paper to <a href="https://joss.theoj.org/papers/10.21105/joss.06717">JOSS</a>
+including all the original authors as contributors to both - I can’t claim to have
+contributed to the new package, so I’m somewhat hopeful that a detailed blog post
+can help repay some of that kindness.</p>
+<p><code>{weatherOz}</code> has now been accepted onto <a href="https://cran.r-project.org/package=weatherOz">CRAN</a>
+(<a href="https://rstats.me/@adamhsparks/112855926571892452">announcement</a>) and so can be installed with</p>
+<pre class="r"><code>install.packages(&quot;weatherOz)</code></pre>
+<p>Adam also has a nice blog post exploring some temperature data
+<a href="https://adamhsparks.netlify.app/2024/06/02/plotting-perth-month-of-may-high-temperatures-with-weatheroz/">here</a>.</p>
+<p>Now it’s my turn!</p>
+<pre class="r"><code>library(weatherOz)</code></pre>
+<p>There are many weather stations within capital cities, so I need to narrow down
+to just one. I can get the station information from SILO with</p>
+<pre class="r"><code>adl_stations &lt;- get_stations_metadata(station_name = &quot;Adelaide&quot;, which_api = &quot;silo&quot;)</code></pre>
+<pre class="r"><code>adl_stations</code></pre>
+<pre class="bg-success"><code>##    station_code                       station_name      start        end
+## 1        014092         Adelaide River Post Office 1956-01-01 2024-07-27
+## 2        023034                   Adelaide Airport 1955-01-01 2024-07-27
+## 3        023005               Adelaide Glen Osmond 1883-01-01 2024-07-27
+## 4        023096     Adelaide Hope Valley Reservoir 1979-01-01 2024-07-27
+## 5        023732             Adelaide Morphett Vale 1886-01-01 2024-07-27
+## 6        023098  Adelaide Morphettville Racecourse 1947-01-01 2024-07-27
+## 7        023026                   Adelaide Pooraka 1876-01-01 2024-07-27
+## 8        023023    Adelaide Salisbury Bowling Club 1870-01-01 2024-07-27
+## 9        023024                    Adelaide Seaton 1912-01-01 2024-07-27
+## 10       023000 Adelaide West Terrace Ngayirdapira 1839-01-01 2024-07-27
+## 11       023011                     North Adelaide 1883-01-01 2024-07-27
+##    latitude longitude state elev_m                      source status   wmo
+## 1  -13.2373  131.1042    NT   52.5 Bureau of Meteorology (BOM)   open    NA
+## 2  -34.9524  138.5196    SA    2.0 Bureau of Meteorology (BOM)   open 94672
+## 3  -34.9464  138.6519    SA  128.0 Bureau of Meteorology (BOM)   open    NA
+## 4  -34.8564  138.6844    SA  105.0 Bureau of Meteorology (BOM)   open    NA
+## 5  -35.1351  138.5274    SA   92.0 Bureau of Meteorology (BOM)   open    NA
+## 6  -34.9742  138.5425    SA   11.0 Bureau of Meteorology (BOM)   open    NA
+## 7  -34.8324  138.6125    SA   21.0 Bureau of Meteorology (BOM)   open    NA
+## 8  -34.7674  138.6434    SA   32.0 Bureau of Meteorology (BOM)   open    NA
+## 9  -34.8965  138.5103    SA   10.0 Bureau of Meteorology (BOM)   open    NA
+## 10 -34.9257  138.5832    SA   29.3 Bureau of Meteorology (BOM)   open 94648
+## 11 -34.9163  138.5950    SA   26.0 Bureau of Meteorology (BOM)   open    NA</code></pre>
+<p>and I can select one of those - the station with code 023000 has a lot of data</p>
+<pre class="r"><code>ngayirdapira &lt;- adl_stations[adl_stations$station_code == &quot;023000&quot;, ]</code></pre>
+<pre class="r"><code>dplyr::glimpse(ngayirdapira)</code></pre>
+<pre class="bg-success"><code>## Rows: 1
+## Columns: 11
+## $ station_code &lt;fct&gt; 023000
+## $ station_name &lt;chr&gt; &quot;Adelaide West Terrace Ngayirdapira&quot;
+## $ start        &lt;date&gt; 1839-01-01
+## $ end          &lt;date&gt; 2024-07-27
+## $ latitude     &lt;dbl&gt; -34.9257
+## $ longitude    &lt;dbl&gt; 138.5832
+## $ state        &lt;chr&gt; &quot;SA&quot;
+## $ elev_m       &lt;dbl&gt; 29.3
+## $ source       &lt;chr&gt; &quot;Bureau of Meteorology (BOM)&quot;
+## $ status       &lt;chr&gt; &quot;open&quot;
+## $ wmo          &lt;dbl&gt; 94648</code></pre>
+<p>The listed start date of the data is 1839-01-01 but trying to use
+that produces an error. I’ll start from the listed year of SILO data (1889).</p>
+<p>Getting the actual data from SILO doesn’t technically need an API key, it just
+wants to know who is fetching the data, so asks that you use an email address as
+the key. I have that set as an environment variable. I’m also saving the data to
+disk since I don’t want to fetch it every time I edit this post as I’m writing
+it.</p>
+<pre class="r"><code>silo_data &lt;- get_patched_point(
+  station_code = ngayirdapira$station_code,
+  start_date = &quot;1889-01-01&quot;,
+  end_date = ngayirdapira$end,
+  values = &quot;all&quot;,
+  api_key = Sys.getenv(&quot;SILO_API_KEY&quot;)
+)
+saveRDS(silo_data, file = &quot;adl_silo_data.rds&quot;)</code></pre>
+<p>There’s a lot of data here - along with the (air) temperature min and max, there
+are other measurements that I’m not interested in at the moment.</p>
+<pre class="r"><code>dplyr::glimpse(silo_data)</code></pre>
+<pre class="bg-success"><code>## Rows: 49,515
+## Columns: 46
+## $ station_code               &lt;fct&gt; 023000, 023000, 023000, 023000, 023000, 023…
+## $ station_name               &lt;chr&gt; &quot;Adelaide West Terrace Ngayirdapira&quot;, &quot;Adel…
+## $ year                       &lt;dbl&gt; 1889, 1889, 1889, 1889, 1889, 1889, 1889, 1…
+## $ month                      &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+## $ day                        &lt;int&gt; 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, …
+## $ date                       &lt;date&gt; 1889-01-01, 1889-01-02, 1889-01-03, 1889-0…
+## $ air_tmax                   &lt;dbl&gt; 34.2, 21.7, 21.6, 21.4, 20.2, 22.4, 24.8, 3…
+## $ air_tmax_source            &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+## $ air_tmin                   &lt;dbl&gt; 22.0, 20.4, 13.3, 15.0, 12.8, 14.6, 12.6, 1…
+## $ air_tmin_source            &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+## $ elev_m                     &lt;chr&gt; &quot;29.3 m&quot;, &quot;29.3 m&quot;, &quot;29.3 m&quot;, &quot;29.3 m&quot;, &quot;29…
+## $ et_morton_actual           &lt;dbl&gt; 1.9, 3.9, 4.8, 4.3, 4.1, 4.3, 4.0, 2.5, 1.3…
+## $ et_morton_actual_source    &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ et_morton_potential        &lt;dbl&gt; 11.0, 7.1, 6.4, 7.1, 6.5, 7.3, 7.7, 10.4, 1…
+## $ et_morton_potential_source &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ et_morton_wet              &lt;dbl&gt; 6.5, 5.5, 5.6, 5.7, 5.3, 5.8, 5.8, 6.5, 7.4…
+## $ et_morton_wet_source       &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ et_short_crop              &lt;dbl&gt; 6.9, 4.8, 4.5, 4.8, 4.5, 5.0, 5.3, 6.7, 7.9…
+## $ et_short_crop_source       &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ et_tall_crop               &lt;dbl&gt; 9.0, 5.8, 5.4, 5.9, 5.4, 6.0, 6.6, 8.8, 10.…
+## $ et_tall_crop_source        &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ evap_comb                  &lt;dbl&gt; 8.8, 5.9, 6.2, 6.4, 6.1, 6.5, 7.0, 8.7, 10.…
+## $ evap_comb_source           &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ evap_morton_lake           &lt;dbl&gt; 6.6, 5.6, 5.8, 5.9, 5.5, 6.0, 6.0, 6.6, 7.5…
+## $ evap_morton_lake_source    &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ evap_pan                   &lt;dbl&gt; 7.9, 8.0, 8.0, 8.1, 8.1, 8.1, 8.2, 8.2, 8.2…
+## $ evap_pan_source            &lt;int&gt; 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75,…
+## $ evap_syn                   &lt;dbl&gt; 8.8, 5.9, 6.2, 6.4, 6.1, 6.5, 7.0, 8.7, 10.…
+## $ evap_syn_source            &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ extracted                  &lt;date&gt; 2024-07-27, 2024-07-27, 2024-07-27, 2024-0…
+## $ latitude                   &lt;dbl&gt; -34.9257, -34.9257, -34.9257, -34.9257, -34…
+## $ longitude                  &lt;dbl&gt; 138.5832, 138.5832, 138.5832, 138.5832, 138…
+## $ mslp                       &lt;dbl&gt; 1013.8, 1013.9, 1014.1, 1014.5, 1014.5, 101…
+## $ mslp_source                &lt;int&gt; 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75,…
+## $ radiation                  &lt;dbl&gt; 24.1, 23.3, 25.8, 26.1, 25.3, 26.4, 26.5, 2…
+## $ radiation_source           &lt;int&gt; 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,…
+## $ rainfall                   &lt;dbl&gt; 0.0, 58.4, 10.4, 0.3, 0.0, 0.3, 0.0, 0.0, 0…
+## $ rainfall_source            &lt;int&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0…
+## $ rh_tmax                    &lt;dbl&gt; 28.1, 59.7, 52.7, 49.9, 49.4, 47.3, 38.3, 2…
+## $ rh_tmax_source             &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ rh_tmin                    &lt;dbl&gt; 57.1, 64.7, 89.1, 74.5, 79.2, 77.1, 82.3, 6…
+## $ rh_tmin_source             &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ vp                         &lt;dbl&gt; 15.1, 15.5, 13.6, 12.7, 11.7, 12.8, 12.0, 1…
+## $ vp_deficit                 &lt;dbl&gt; 30.2, 9.9, 9.1, 10.4, 9.4, 11.2, 14.0, 26.5…
+## $ vp_deficit_source          &lt;int&gt; 26, 26, 26, 26, 26, 26, 26, 26, 26, 26, 26,…
+## $ vp_source                  &lt;int&gt; 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35,…</code></pre>
+<p>That’s 49,515 daily weather observations
+covering the last 135 or so years!</p>
+<p>I’ll add some convenience columns; the day of the year, the decade, and the
+abbreviation for the month.</p>
+<pre class="r"><code>silo_data$doy &lt;- lubridate::yday(silo_data$date)
+silo_data$decade &lt;- cut(silo_data$year, 
+                        breaks = seq(1880, 2030, by = 10), 
+                        right = FALSE, 
+                        labels = seq(1880, 2020, by = 10))
+silo_data$monthabb = factor(month.abb[silo_data$month], levels = month.abb)</code></pre>
+<p>My original motivation for getting any of this data was Christmas 2016 - I live in
+the southern hemisphere so I get to enjoy Christmas in summer (despite being
+inundated with snowy imagery and having to explain to my kids why none of it is
+relevant here).</p>
+<p>We still partake in some of the northern hemisphere traditions like a roast lunch
+and warm puddings for dessert, but we complement that with some cold, fresh prawns
+and some cold beers.</p>
+<p>2016 was a particularly hot Christmas day, and I wanted to know how it compared
+historically. It’s not uncommon, I suppose, for someone in the USA to note that
+it was 40 degrees on Christmas (40°F = 4°C) but here it was also
+expected to hit 40… Celsius. 40°C = 104°F.</p>
+<p>We can find all the entries in the silo data where it was 40°C or more on
+Christmas day</p>
+<pre class="r"><code>silo_data |&gt; 
+  dplyr::filter(air_tmax &gt;= 40, month == 12, day == 25) |&gt; 
+  dplyr::select(date, air_tmin, air_tmax)</code></pre>
+<pre class="bg-success"><code>##         date air_tmin air_tmax
+## 1 1941-12-25     29.7     41.4
+## 2 1945-12-25     29.8     40.1
+## 3 2016-12-25     15.9     40.3</code></pre>
+<p>So, those were the hottest, but were they exceptional for that time of year?</p>
+<p>I originally produced these plots using the (now superseded) <code>{bomrang}</code> package,
+and now that I had a useful replacement, I wanted to recreate and update them with
+some new data.</p>
+<p>These plots aren’t terribly fancy; they show the min or max temperature for each
+day of the year, coloured by the decade. They demonstrate the range of temperature
+variation throughout the year, but aren’t super useful for extracting information
+necessarily - squint to see the general pattern.</p>
+<pre class="r"><code>library(ggplot2)
+
+ggplot(silo_data) +
+  geom_point(aes(x = doy, y = air_tmax, col = decade), alpha = 0.2)  +
+  theme_bw() +
+  labs(
+    title = &quot;Daily Maximum Temperatures&quot;,
+    subtitle = &quot;Adelaide, South Australia, 1889-2024&quot;,
+    caption = &quot;source: https://www.longpaddock.qld.gov.au/silo/&quot;,
+    y = &quot;Daily Maximum Temperature [°C]&quot;,
+    x = &quot;Day of Year&quot;
+  ) +
+  scale_y_continuous(
+    limits = c(-5, 50),
+    sec.axis = sec_axis( ~ . * 9 / 5 + 32, name = &quot;Daily Maximum Temperature [°F]&quot;)
+  ) +
+  viridis::scale_color_viridis(discrete = TRUE)</code></pre>
+<div class="float">
+<img src="images/pmax.png" alt="Daily maximum temperatures in Adelaide" />
+<div class="figcaption">Daily maximum temperatures in Adelaide</div>
+</div>
+<p>The same for the minimum temperatures:</p>
+<pre class="r"><code>pmin &lt;- ggplot(silo_data) +
+  geom_point(aes(x = doy, y = air_tmin, col = decade), alpha = 0.2)  +
+  theme_bw() +
+  labs(
+    title = &quot;Daily Minimum Temperatures&quot;,
+    subtitle = &quot;Adelaide, South Australia, 1889-2024&quot;,
+    caption = &quot;source: https://www.longpaddock.qld.gov.au/silo/&quot;,
+    y = &quot;Daily Minimum Temperature [°C]&quot;,
+    x = &quot;Day of Year&quot;
+  ) +
+  scale_y_continuous(
+    limits = c(-5, 50),
+    sec.axis = sec_axis( ~ . * 9 / 5 + 32, name = &quot;Daily Minimum Temperature [°F]&quot;)
+  ) +
+  viridis::scale_color_viridis(discrete = TRUE)
+pmin</code></pre>
+<div class="float">
+<img src="images/pmin.png" alt="Daily minimum temperatures in Adelaide" />
+<div class="figcaption">Daily minimum temperatures in Adelaide</div>
+</div>
+<p>This winter (middle of the year here) feels like it’s been particularly cold - but
+is it colder than usual? I saw someone demonstrate a feature of <code>{ggplot2}</code> that
+I haven’t previously made good use of; the <code>data</code> argument to a <code>geom</code> can take a
+formula for a function as long as the result of that is another <code>data.frame</code>, so
+a <code>filter</code> or <code>head</code> or <code>slice</code> operation works great here.</p>
+<p>I’ll add in the points for June onward this year in <span style="color: #FF0000;">red</span>:</p>
+<pre class="r"><code>pmin +
+  geom_point(
+    data = ~ dplyr::filter(.x, year == 2024, month &gt; 5),
+    aes(x = doy, y = air_tmin),
+    col = &quot;red&quot;
+  )</code></pre>
+<div class="float">
+<img src="images/pmin_hl.png" alt="Cold days in Winter, 2024" />
+<div class="figcaption">Cold days in Winter, 2024</div>
+</div>
+<p>Definitely one particularly cold day there - it got as low as -5°C in some places.</p>
+<p>In order to see how the temperatures have changed over the years, I also split out
+the data for each month and plotted the max/min for every day in the month for each
+year - this nicely shows that the spread is a lot tighter in winter and the days in
+our summer are a lot more variable. Again I’m using the helpful <code>data = ~f(.x)</code> pattern,
+this time with <code>dplyr::slice_max()</code>.</p>
+<pre class="r"><code>ggplot(dplyr::arrange(silo_data, monthabb), aes(x = year, y = air_tmax)) +
+  geom_point(aes(col = factor(monthabb)), alpha = 0.3, show.legend = FALSE) +
+  geom_point(
+    data = ~ dplyr::slice_max(.x, air_tmax, n = 1, by = monthabb),
+    aes(x = year, y = air_tmax),
+    col = &quot;red&quot;
+  ) +
+  geom_text(
+    data = ~ dplyr::slice_max(.x, air_tmax, n = 1, by = monthabb),
+    aes(x = year, y = air_tmax + 5, label = year),
+    col = &quot;red&quot;
+  ) +
+  facet_wrap( ~ monthabb) +
+  labs(
+    title = &quot;Daily Maximum Temperature&quot;,
+    subtitle = &quot;Adelaide, South Australia, 1889-2024&quot;,
+    caption = &quot;source: https://www.longpaddock.qld.gov.au/silo/&quot;,
+    x = &quot;Year&quot;,
+    y = &quot;Daily Maximum Temperature [°C]&quot;
+  ) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(1880, 2030, 20)) +
+  ggeasy::easy_rotate_x_labels(angle = 45, side = &quot;right&quot;)</code></pre>
+<div class="float">
+<img src="images/pmax_month.png" alt="Monthly maximum temperatures and hottest days" />
+<div class="figcaption">Monthly maximum temperatures and hottest days</div>
+</div>
+<p>The same for the minimum temperatures:</p>
+<pre class="r"><code>ggplot(dplyr::arrange(silo_data, monthabb), aes(x = year, y = air_tmin)) +
+  geom_point(aes(col = factor(monthabb)), alpha = 0.3, show.legend = FALSE) +
+  geom_point(
+    data = ~ dplyr::slice_min(.x, air_tmin, n = 1, by = monthabb),
+    aes(x = year, y = air_tmin),
+    col = &quot;blue&quot;
+  ) +
+  geom_text(
+    data = ~ dplyr::slice_min(.x, air_tmin, n = 1, by = monthabb),
+    aes(x = year, y = air_tmin - 5, label = year),
+    col = &quot;blue&quot;
+  ) +
+  facet_wrap( ~ monthabb) +
+  labs(
+    title = &quot;Daily Minimum Temperature&quot;,
+    subtitle = &quot;Adelaide, South Australia, 1889-2024&quot;,
+    caption = &quot;source: https://www.longpaddock.qld.gov.au/silo/&quot;,
+    x = &quot;Year&quot;,
+    y = &quot;Daily Minimum Temperature [°C]&quot;
+  ) +
+  theme_bw() +
+  scale_x_continuous(breaks = seq(1880, 2030, 20)) +
+  ggeasy::easy_rotate_x_labels(angle = 45, side = &quot;right&quot;)</code></pre>
+<div class="float">
+<img src="images/pmin_month.png" alt="Monthly minimum temperatures and coldest days" />
+<div class="figcaption">Monthly minimum temperatures and coldest days</div>
+</div>
+<p>I’m very pleased that I’m once again able to query weather data for my country,
+and am deeply grateful to Adam Sparks for building and maintaining <code>{weatherOz}</code>.</p>
+<p>If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a>. Also let me know if you can think
+of (or make) some remix or other visualization of this data!</p>
+<p>Stay cool/warm/comfortable!</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-07-27
+##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.18    2023-06-19 [1] CRAN (R 4.3.2)
+##  bookdown      0.36    2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.6.1   2023-11-28 [3] CRAN (R 4.3.2)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [1] CRAN (R 4.3.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.34  2024-01-11 [3] CRAN (R 4.3.2)
+##  dplyr         1.1.4   2023-11-17 [3] CRAN (R 4.3.2)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.23    2023-11-01 [3] CRAN (R 4.3.2)
+##  fansi         1.0.6   2023-12-08 [1] CRAN (R 4.3.3)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  generics      0.1.3   2022-07-05 [3] CRAN (R 4.2.1)
+##  glue          1.7.0   2024-01-09 [1] CRAN (R 4.3.3)
+##  htmltools     0.5.7   2023-11-03 [3] CRAN (R 4.3.2)
+##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.8   2023-12-04 [3] CRAN (R 4.3.2)
+##  knitr         1.45    2023-10-30 [3] CRAN (R 4.3.2)
+##  later         1.3.1   2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.4   2023-11-07 [1] CRAN (R 4.3.3)
+##  lubridate     1.9.3   2023-09-27 [3] CRAN (R 4.3.1)
+##  magrittr      2.0.3   2022-03-30 [1] CRAN (R 4.3.3)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.3.2)
+##  pillar        1.9.0   2023-03-22 [1] CRAN (R 4.3.3)
+##  pkgbuild      1.4.2   2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgconfig     2.0.3   2019-09-22 [1] CRAN (R 4.3.3)
+##  pkgload       1.3.3   2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0   2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.3   2023-12-10 [3] CRAN (R 4.3.2)
+##  profvis       0.3.8   2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1   2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.6   2024-01-18 [3] CRAN (R 4.3.2)
+##  purrr         1.0.2   2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1   2021-08-19 [1] CRAN (R 4.3.3)
+##  Rcpp          1.0.11  2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1 2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.4   2024-06-04 [1] CRAN (R 4.3.3)
+##  rmarkdown     2.25    2023-09-18 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.8   2023-12-06 [3] CRAN (R 4.3.2)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1 2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.8.3   2023-12-11 [3] CRAN (R 4.3.2)
+##  stringr       1.5.1   2023-11-14 [3] CRAN (R 4.3.2)
+##  tibble        3.2.1   2023-03-20 [1] CRAN (R 4.3.3)
+##  tidyselect    1.2.0   2022-10-10 [3] CRAN (R 4.2.1)
+##  timechange    0.3.0   2024-01-18 [3] CRAN (R 4.3.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       2.2.2   2023-07-06 [1] CRAN (R 4.3.2)
+##  utf8          1.2.4   2023-10-22 [1] CRAN (R 4.3.3)
+##  vctrs         0.6.5   2023-12-01 [1] CRAN (R 4.3.3)
+##  withr         3.0.0   2024-01-16 [1] CRAN (R 4.3.3)
+##  xfun          0.41    2023-11-01 [3] CRAN (R 4.3.2)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.8   2023-12-11 [3] CRAN (R 4.3.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
