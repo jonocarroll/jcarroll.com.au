@@ -106,7 +106,7 @@ can help repay some of that kindness.
 ([announcement]( https://rstats.me/@adamhsparks/112855926571892452)) and so can be installed with
 
 ```{r, eval = FALSE}
-install.packages("weatherOz)
+install.packages("weatherOz")
 ```
 
 Adam also has a nice blog post exploring some temperature data 
