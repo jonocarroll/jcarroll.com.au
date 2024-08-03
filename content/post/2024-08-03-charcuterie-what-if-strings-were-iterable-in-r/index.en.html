@@ -1,0 +1,293 @@
+---
+title: '{charcuterie} - What if Strings Were Iterable in R?'
+author: Jonathan Carroll
+date: '2024-08-03'
+slug: charcuterie-what-if-strings-were-iterable-in-r
+categories:
+  - rstats
+tags:
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>I’ve been using a lot of programming languages recently and they all have their
+quirks, differentiating features, and unique qualities, but one thing most of
+them have is that they handle strings as a collection of characters. R doesn’t,
+it has a “character” type which is 0 or more characters, and that’s what we call
+a “string”, but what if it <em>did</em> have iterable strings?</p>
+<!--more-->
+<p>I’ve been using a lot of programming languages recently and they all have their
+quirks, differentiating features, and unique qualities, but one thing most of
+them have is that they handle strings as a collection of characters. R doesn’t,
+it has a “character” type which is 0 or more characters, and that’s what we call
+a “string”, but what if it <em>did</em> have iterable strings?</p>
+<p>For comparison, here’s some Python code</p>
+<pre class="python"><code>for i in &quot;string&quot;:
+    print(i)
+</code></pre>
+<pre class="r bg-success"><code>s
+t
+r
+i
+n
+g</code></pre>
+<p>and some Haskell</p>
+<pre class="haskell"><code>upperA = map (\c -&gt; if c == &#39;a&#39; then &#39;A&#39; else c)
+upperA &quot;banana&quot;</code></pre>
+<pre class="r bg-success"><code>&quot;bAnAnA&quot;</code></pre>
+<p>and some Julia</p>
+<pre class="julia"><code>[x+1 for x in &quot;HAL&quot;]</code></pre>
+<pre class="r bg-success"><code>3-element Vector{Char}:
+ &#39;I&#39;: ASCII/Unicode U+0049 (category Lu: Letter, uppercase)
+ &#39;B&#39;: ASCII/Unicode U+0042 (category Lu: Letter, uppercase)
+ &#39;M&#39;: ASCII/Unicode U+004D (category Lu: Letter, uppercase)</code></pre>
+<p>In each of these cases the string is treated as a collection of individual
+characters. Many languages make this distinction, going so far as using different
+quotes to distinguish them; e.g. double quotes for strings <code>"string"</code> and single
+quotes for individual characters <code>'s'</code>. This makes a even more sense when the
+language supports <em>types</em> in that a string has a <code>String</code> type that is composed
+of 0 or more <code>Char</code> types.</p>
+<p>R is dynamically typed, so we don’t strictly enforce type signatures, and is an
+array language, so it has natural support for arrays (vectors, lists, matrices).
+So why are strings not collections of characters?</p>
+<p>My guess is that for the majority of use-cases, it wasn’t necessary - a lot of
+the time when we read in text data we want the entirety of the string and don’t
+want to worry about dealing with a collection on top of the collection of strings
+themselves. Plus, if you really need the individual characters you can split the
+text up with <code>strsplit(x, "")</code>.</p>
+<p>But if you <em>do</em> want to work with individual characters, calling
+<code>strsplit(x, "")[[1]]</code> throughout your code gets ugly. I solved the Exercism
+problem ‘Anagram’ in R and really didn’t like <a href="https://exercism.org/tracks/r/exercises/anagram/solutions/jonocarroll">how it looked</a></p>
+<pre class="r"><code>anagram &lt;- function(subject, candidates) {
+  # remove any same words and inconsistent lengths
+  nonsames &lt;- candidates[tolower(candidates) != tolower(subject) &amp; 
+                           nchar(subject) == nchar(candidates)]
+  if (!length(nonsames)) return(c()) # no remaining candidates
+  s_letters &lt;- sort(tolower(strsplit(subject, &quot;&quot;)[[1]]))
+  c_letters &lt;- sapply(sapply(nonsames, \(x) strsplit(x, &quot;&quot;)), sort, simplify = FALSE)
+  # find all cases where the letters are all the same
+  anagrams &lt;- nonsames[sapply(c_letters, \(x) all(s_letters == tolower(x)))]
+  # if none found, return NULL
+  if(!length(anagrams)) NULL else anagrams
+}</code></pre>
+<p>Two calls to <code>strsplit</code>, then needing to <code>sapply</code> over that collection to sort it…
+not pretty at all. Here’s <a href="https://exercism.org/tracks/haskell/exercises/anagram/solutions/jontra">a Haskell solution</a>
+from someone very knowledgeable in our local functional programming Meetup group</p>
+<pre class="haskell"><code>import Data.List (sort)
+import Data.Char (toLower)
+anagramsFor :: String -&gt; [String] -&gt; [String]
+anagramsFor xs = filter (isAnagram xs&#39; . map toLower)
+  where xs&#39; = map toLower xs
+isAnagram :: String -&gt; String -&gt; Bool
+isAnagram a b
+  | a == b = False
+  | otherwise = sort a == sort b</code></pre>
+<p>which, excluding the type declarations and the fact that it needs to deal with
+the edge case that it <em>has to be</em> a rearrangement, could nearly be a one-liner</p>
+<pre class="haskell"><code>import Data.List (sort)
+import Data.Char (toLower)
+isAnagram a b = sort (map toLower a) == sort (map toLower b)</code></pre>
+<p>Wouldn’t it be nice if we could do things like this in R?</p>
+<div class="float">
+<img src="images/iterablestrings.jpg" alt="The world if R had iterable strings" />
+<div class="figcaption">The world if R had iterable strings</div>
+</div>
+<p>I don’t expect it would ever happen (maaaybe via some special string handling
+like the bare strings <code>r"(this doesn't need escaping)"</code> but unlikely). I
+couldn’t find a package that did this (by all means, let me know if there <em>is</em>
+one) so I decided to build it myself and see how it could work.</p>
+<p>Introducing <a href="https://github.com/jonocarroll/charcuterie">{charcuterie}</a> - named
+partly because it looks like “cut” “char”, and partly because of charcuterie boards
+involving lots of little bits of appetizers.</p>
+<div class="float">
+<img src="images/charcuterie_small.jpeg" alt="image by Google gemini" />
+<div class="figcaption">image by Google gemini</div>
+</div>
+<pre class="r"><code>library(charcuterie)</code></pre>
+<p>At its core, this is just defining <code>chars(x)</code> as <code>strsplit(x, "")[[1]]</code> and
+slapping a new class on the output, but big improvements don’t immediately come
+from moonshots, they come from incremental improvements. Once I had this, I wanted
+to do things with it like sort the individual characters. There is of course a
+sort method for vectors (but not for individual strings) so</p>
+<pre class="r"><code>sort(&quot;string&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;string&quot;</code></pre>
+<pre class="r"><code>sort(c(&quot;s&quot;, &quot;t&quot;, &quot;r&quot;, &quot;i&quot;, &quot;n&quot;, &quot;g&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;g&quot; &quot;i&quot; &quot;n&quot; &quot;r&quot; &quot;s&quot; &quot;t&quot;</code></pre>
+<p>One aspect of treating strings as collections of characters is that they should
+<em>always</em> look like strings, so I needed to modify the sort method to return an
+object of this new class, and make this class display collections of characters
+as a string. That just involves pasting the characters back together for printing,
+so now I can have this</p>
+<pre class="r"><code>s &lt;- chars(&quot;string&quot;)
+s</code></pre>
+<pre class="bg-success"><code>## [1] &quot;string&quot;</code></pre>
+<pre class="r"><code>sort(s)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ginrst&quot;</code></pre>
+<p>It <em>looks</em> like a string, but it behaves like a collection of characters!</p>
+<div class="float">
+<img src="images/doright.jpg" alt="When you do things right, people won’t know you’ve done anything at all" />
+<div class="figcaption">When you do things right, people won’t know you’ve done anything at all</div>
+</div>
+<p>I thought about what other operations I might want to do and now I have methods to</p>
+<ul>
+<li>sort with <code>sort</code></li>
+<li>reverse with <code>rev</code></li>
+<li>index with <code>[</code></li>
+<li>concatenate with <code>c</code></li>
+<li>print with <code>format</code> and <code>print</code></li>
+<li>slice with <code>head</code> and <code>tail</code></li>
+<li>set operations with <code>setdiff</code>, <code>union</code>, <code>intersect</code>, and a new <code>except</code></li>
+<li>leverage existing vectorised operations like <code>unique</code>, <code>toupper</code>, and <code>tolower</code></li>
+</ul>
+<p>I suspect the concatenation will be the one that raises the most eyebrows… I’ve
+dealt with the way that other languages join together strings <a href="https://jcarroll.com.au/2018/10/06/adding-strings-in-r/">before</a>
+and I’m certainly open to what this version <em>should</em> do, but I think it makes
+sense to add the collections as</p>
+<pre class="r"><code>c(chars(&quot;butter&quot;), chars(&quot;fly&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] &quot;butterfly&quot;</code></pre>
+<p>If you need more than one <code>chars</code> at a time, you’re asking for a vector of vectors,
+which R doesn’t support - it supports a <em>list</em> of them, though</p>
+<pre class="r"><code>x &lt;- lapply(c(&quot;butter&quot;, &quot;fly&quot;), chars)
+x</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1] &quot;butter&quot;
+## 
+## [[2]]
+## [1] &quot;fly&quot;</code></pre>
+<pre class="r"><code>unclass(x[[2]])</code></pre>
+<pre class="bg-success"><code>## [1] &quot;f&quot; &quot;l&quot; &quot;y&quot;</code></pre>
+<p>This still sounds simple, and it is - the point is that it feels a lot more
+ergonomic to use this inside a function compared to <code>strsplit(x, "")[[1]]</code> and
+working with the collection manually.</p>
+<p>I added an entire vignette of examples to the package, including identifying vowels</p>
+<pre class="r"><code>vowels &lt;- function(word) {
+  ch &lt;- chars(word)
+  setNames(ch %in% chars(&quot;aeiou&quot;), ch)
+}
+vowels(&quot;string&quot;)</code></pre>
+<pre class="bg-success"><code>##     s     t     r     i     n     g 
+## FALSE FALSE FALSE  TRUE FALSE FALSE</code></pre>
+<pre class="r"><code>vowels(&quot;banana&quot;)</code></pre>
+<pre class="bg-success"><code>##     b     a     n     a     n     a 
+## FALSE  TRUE FALSE  TRUE FALSE  TRUE</code></pre>
+<p>palindromes</p>
+<pre class="r"><code>palindrome &lt;- function(a, ignore_spaces = FALSE) {
+  a &lt;- chars(a)
+  if (ignore_spaces) a &lt;- except(a, &quot; &quot;)
+  all(rev(a) == a)
+}
+palindrome(&quot;palindrome&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>palindrome(&quot;racecar&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>palindrome(&quot;never odd or even&quot;, ignore_spaces = TRUE)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>and performing character-level substitutions</p>
+<pre class="r"><code>spongebob &lt;- function(phrase) {
+  x &lt;- chars(phrase)
+  odds &lt;- seq(1, length(x), 2)
+  x[odds] &lt;- toupper(x[odds])
+  string(x)
+}
+spongebob(&quot;you can&#39;t do anything useful with this package&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;YoU CaN&#39;T Do aNyThInG UsEfUl wItH ThIs pAcKaGe&quot;</code></pre>
+<div class="float">
+<img src="images/spongebob.jpg" alt="YoU CaN’T Do aNyThInG UsEfUl wItH ThIs pAcKaGe" />
+<div class="figcaption">YoU CaN’T Do aNyThInG UsEfUl wItH ThIs pAcKaGe</div>
+</div>
+<p>On top of all that, I felt it was worthwhile stretching my R package building
+muscles, so I’ve added tests with 100% coverage, and ensured it fully passes
+<code>check()</code>.</p>
+<p>I don’t expect this would be used on huge text sources, but it’s useful to me
+for silly little projects. If you have any suggestions for functionality that
+could extend this then by all means let me know either in
+<a href="https://github.com/jonocarroll/charcuterie/issues">GitHub Issues</a>, the comment section
+below, or <a href="https://fosstodon.org/@jonocarroll">Mastodon</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-08-03
+##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version    date (UTC) lib source
+##  blogdown      1.18       2023-06-19 [1] CRAN (R 4.3.2)
+##  bookdown      0.36       2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.6.1      2023-11-28 [3] CRAN (R 4.3.2)
+##  cachem        1.0.8      2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3      2022-11-02 [3] CRAN (R 4.2.2)
+##  charcuterie * 0.0.0.9000 2024-08-03 [1] local
+##  cli           3.6.1      2023-03-23 [1] CRAN (R 4.3.3)
+##  crayon        1.5.2      2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5      2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.34     2024-01-11 [3] CRAN (R 4.3.2)
+##  ellipsis      0.3.2      2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.23       2023-11-01 [3] CRAN (R 4.3.2)
+##  fastmap       1.1.1      2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3      2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.7.0      2024-01-09 [1] CRAN (R 4.3.3)
+##  htmltools     0.5.7      2023-11-03 [3] CRAN (R 4.3.2)
+##  htmlwidgets   1.6.2      2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12     2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1      2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4      2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.8      2023-12-04 [3] CRAN (R 4.3.2)
+##  knitr         1.45       2023-10-30 [3] CRAN (R 4.3.2)
+##  later         1.3.1      2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.4      2023-11-07 [1] CRAN (R 4.3.3)
+##  magrittr      2.0.3      2022-03-30 [1] CRAN (R 4.3.3)
+##  memoise       2.0.1      2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12       2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1    2018-05-18 [1] CRAN (R 4.3.2)
+##  pkgbuild      1.4.2      2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgload       1.3.3      2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0      2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.3      2023-12-10 [3] CRAN (R 4.3.2)
+##  profvis       0.3.8      2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1      2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.6      2024-01-18 [3] CRAN (R 4.3.2)
+##  purrr         1.0.2      2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1      2021-08-19 [1] CRAN (R 4.3.3)
+##  Rcpp          1.0.11     2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1    2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.4      2024-06-04 [1] CRAN (R 4.3.3)
+##  rmarkdown     2.25       2023-09-18 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0     2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.8      2023-12-06 [3] CRAN (R 4.3.2)
+##  sessioninfo   1.2.2      2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1    2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.8.3      2023-12-11 [3] CRAN (R 4.3.2)
+##  stringr       1.5.1      2023-11-14 [3] CRAN (R 4.3.2)
+##  urlchecker    1.0.1      2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       3.0.0      2024-07-29 [1] CRAN (R 4.3.3)
+##  vctrs         0.6.5      2023-12-01 [1] CRAN (R 4.3.3)
+##  xfun          0.41       2023-11-01 [3] CRAN (R 4.3.2)
+##  xtable        1.8-4      2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.8      2023-12-11 [3] CRAN (R 4.3.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
