@@ -1,0 +1,1376 @@
+---
+title: Tidy DataFrames but not Tibbles
+author: Jonathan Carroll
+date: '2024-08-11'
+categories:
+  - bioconductor
+  - rstats
+tags:
+  - bioconductor
+  - rstats
+slug: tidy-dataframes-but-not-tibbles
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>A while ago (2019 seems so long ago now) I started working on something I
+thought was interesting but which never really got any traction. It has
+potential once more, so it’s about time I wrote up what it does and why I think
+it’s a useful idea. I’m going to talk about using the {dplyr} package on some
+data with rows and columns, but we’re not talking about <code>data.frame</code>s or
+<code>tibble</code>s…</p>
+<!--more-->
+<p>A while ago (2019 seems so long ago now) I started working on something I
+thought was interesting but which never really got any traction. It has
+potential once more, so it’s about time I wrote up what it does and why I think
+it’s a useful idea. I’m going to talk about using the {dplyr} package on some
+data with rows and columns, but we’re not talking about <code>data.frame</code>s or
+<code>tibble</code>s…</p>
+<p>Okay, I probably do need to talk about them a little to start with.</p>
+<p>I’m also taking this opportunity to reinforce my own understanding of all
+these pieces - I find the best way to learn something is to teach it.</p>
+<div id="data.frame" class="section level2">
+<h2><code>data.frame</code></h2>
+<p>One of the basic building blocks of data in R is the <code>data.frame</code> - technically
+a list of vectors (vectors must have the same ‘type’ but lists don’t have this
+restriction) where the vectors are all the same length. An example looks like
+this</p>
+<pre class="r"><code>d &lt;- data.frame(x = 2:5, y = LETTERS[2:5], z = 4:7+2i)
+d</code></pre>
+<pre class="bg-success"><code>##   x y    z
+## 1 2 B 4+2i
+## 2 3 C 5+2i
+## 3 4 D 6+2i
+## 4 5 E 7+2i</code></pre>
+<p>If we unpack that a bit, it <em>is</em> just a list of vectors</p>
+<pre class="r"><code>unclass(d)</code></pre>
+<pre class="bg-success"><code>## $x
+## [1] 2 3 4 5
+## 
+## $y
+## [1] &quot;B&quot; &quot;C&quot; &quot;D&quot; &quot;E&quot;
+## 
+## $z
+## [1] 4+2i 5+2i 6+2i 7+2i
+## 
+## attr(,&quot;row.names&quot;)
+## [1] 1 2 3 4</code></pre>
+<p>and there we see one more feature; they have an attribute <code>row.names</code>. By default
+these are just numbers (encoded as strings) which we can get to with the <code>rownames()</code>
+function</p>
+<pre class="r"><code>rownames(d)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;1&quot; &quot;2&quot; &quot;3&quot; &quot;4&quot;</code></pre>
+<p>If you’ve read any guides to using R you will likely have seen the <code>mtcars</code> dataset
+which features these row names prominently - here’s the first 4 rows and columns</p>
+<pre class="r"><code>mtcars[1:4, 1:4]</code></pre>
+<pre class="bg-success"><code>##                 mpg cyl disp  hp
+## Mazda RX4      21.0   6  160 110
+## Mazda RX4 Wag  21.0   6  160 110
+## Datsun 710     22.8   4  108  93
+## Hornet 4 Drive 21.4   6  258 110</code></pre>
+<p>We can extract those row names</p>
+<pre class="r"><code>rownames(mtcars[1:4, 1:4])</code></pre>
+<pre class="bg-success"><code>## [1] &quot;Mazda RX4&quot;      &quot;Mazda RX4 Wag&quot;  &quot;Datsun 710&quot;     &quot;Hornet 4 Drive&quot;</code></pre>
+<p>This “row name” data sort of sits off to the side of the data object, but yes,
+they <em>could</em> live “in” the data just fine as their own vector. That’s the approach
+that the tidyverse takes with <code>tibble</code>s. There’s one other benefit to these that
+is often overlooked, though.</p>
+<p>In the above examples I’ve extracted some rows of the <code>mtcars</code> <code>data.frame</code> with
+indices, but the <code>[</code> method works just as well with row identifiers (strings)…</p>
+<pre class="r"><code>mercs &lt;- grep(&quot;Merc&quot;, rownames(mtcars), value = TRUE)
+mercs</code></pre>
+<pre class="bg-success"><code>## [1] &quot;Merc 240D&quot;   &quot;Merc 230&quot;    &quot;Merc 280&quot;    &quot;Merc 280C&quot;   &quot;Merc 450SE&quot; 
+## [6] &quot;Merc 450SL&quot;  &quot;Merc 450SLC&quot;</code></pre>
+<pre class="r"><code>mtcars[mercs, 1:4]</code></pre>
+<pre class="bg-success"><code>##              mpg cyl  disp  hp
+## Merc 240D   24.4   4 146.7  62
+## Merc 230    22.8   4 140.8  95
+## Merc 280    19.2   6 167.6 123
+## Merc 280C   17.8   6 167.6 123
+## Merc 450SE  16.4   8 275.8 180
+## Merc 450SL  17.3   8 275.8 180
+## Merc 450SLC 15.2   8 275.8 180</code></pre>
+<p>You’re probably more familiar with this when subsetting columns, in which case
+you’re using the column names in exactly the same way</p>
+<pre class="r"><code>metrics &lt;- c(&quot;mpg&quot;, &quot;hp&quot;, &quot;drat&quot;)
+mtcars[mercs, metrics]</code></pre>
+<pre class="bg-success"><code>##              mpg  hp drat
+## Merc 240D   24.4  62 3.69
+## Merc 230    22.8  95 3.92
+## Merc 280    19.2 123 3.92
+## Merc 280C   17.8 123 3.92
+## Merc 450SE  16.4 180 3.07
+## Merc 450SL  17.3 180 3.07
+## Merc 450SLC 15.2 180 3.07</code></pre>
+<p>As we’ll see, this becomes very convenient when we have meaningful identifiers
+in both dimensions.</p>
+</div>
+<div id="tibble" class="section level2">
+<h2>{tibble}</h2>
+<p>A <code>tibble</code> is almost exactly like a <code>data.frame</code> except that the print method shows
+it a bit differently</p>
+<pre class="r"><code>tbl &lt;- tibble::as_tibble(mtcars[1:4, 1:4])
+tbl</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 × 4
+##     mpg   cyl  disp    hp
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1  21       6   160   110
+## 2  21       6   160   110
+## 3  22.8     4   108    93
+## 4  21.4     6   258   110</code></pre>
+<p>and the row names are gone. That’s by design, and enforced quite strongly - if I
+tried to add them back, {tibble} complains, and refuses</p>
+<pre class="r"><code>rownames(tbl) &lt;- rownames(mtcars)[1:4]</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: Setting row names on a tibble is deprecated.</code></pre>
+<pre class="r"><code>tbl</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 × 4
+##     mpg   cyl  disp    hp
+## * &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1  21       6   160   110
+## 2  21       6   160   110
+## 3  22.8     4   108    93
+## 4  21.4     6   258   110</code></pre>
+<p>The world moves on, though.</p>
+<p>If you <em>have</em> row names that you really want to keep, {tibble} has a way to get them
+into their own column so that they’ll be preserved in a <code>tibble</code></p>
+<pre class="r"><code>tbl_rows &lt;- mtcars[6:10, 1:5] |&gt; 
+  tibble::rownames_to_column() |&gt; 
+  tibble::as_tibble()
+tbl_rows</code></pre>
+<pre class="bg-success"><code>## # A tibble: 5 × 6
+##   rowname      mpg   cyl  disp    hp  drat
+##   &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 Valiant     18.1     6  225    105  2.76
+## 2 Duster 360  14.3     8  360    245  3.21
+## 3 Merc 240D   24.4     4  147.    62  3.69
+## 4 Merc 230    22.8     4  141.    95  3.92
+## 5 Merc 280    19.2     6  168.   123  3.92</code></pre>
+<p>To get the named subsetting behaviour described earlier, we have to specify the
+<code>"rowname"</code> column in the output and do some filtering on it to get the rows we
+want</p>
+<pre class="r"><code>tbl_rows[tbl_rows$rowname %in% mercs, c(&quot;rowname&quot;, metrics)]</code></pre>
+<pre class="bg-success"><code>## # A tibble: 3 × 4
+##   rowname     mpg    hp  drat
+##   &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 Merc 240D  24.4    62  3.69
+## 2 Merc 230   22.8    95  3.92
+## 3 Merc 280   19.2   123  3.92</code></pre>
+<p>Of course, there’s a better way to subset a <code>tibble</code>…</p>
+</div>
+<div id="dplyr" class="section level2">
+<h2>{dplyr}</h2>
+<p>In terms of interacting with these objects, {dplyr} is great - it’s reminiscent
+of SQL syntax (<code>SELECT</code>, <code>GROUP BY</code>, … look, it’s not 1:1, but it’s somewhat
+familiar) and makes for a really clean pipeline of data processing - it got in
+early supporting the {magrittr} pipe and encouraging a ‘data as the first
+argument’ construction that meant piping from one function to another went
+smoothly.</p>
+<p>There’s not much in {dplyr} that you couldn’t do with a bunch of base functions
+if you were so inclined - and some people have gone as far as proving that with
+non-dplyr packages with matching functions but base internals, forgoing {dplyr}’s
+ability to connect to a database with the exact same code you would use on a
+local <code>tibble</code> ({dbplyr} translates the R calls into native SQL syntax behind the
+scenes) for some more debuggable code, e.g. <a href="https://nathaneastwood.github.io/poorman/">{poorman}</a>.</p>
+<p>{dplyr} functions mostly return the same class as the input; if you <code>mutate</code> a
+<code>data.frame</code> you’ll get back a <code>data.frame</code> (which wasn’t always the case, but
+is less surprising now)</p>
+<pre class="r"><code>mtcars[1:5, 1:6] |&gt; 
+  dplyr::mutate(pwr = hp / wt)</code></pre>
+<pre class="bg-success"><code>##                    mpg cyl disp  hp drat    wt      pwr
+## Mazda RX4         21.0   6  160 110 3.90 2.620 41.98473
+## Mazda RX4 Wag     21.0   6  160 110 3.90 2.875 38.26087
+## Datsun 710        22.8   4  108  93 3.85 2.320 40.08621
+## Hornet 4 Drive    21.4   6  258 110 3.08 3.215 34.21462
+## Hornet Sportabout 18.7   8  360 175 3.15 3.440 50.87209</code></pre>
+<p>One feature that <code>tibble</code> adds on top of <code>data.frame</code> is the concept of “groups”.
+For this reason, if you perform a grouping on a <code>data.frame</code> you’ll get a <code>tibble</code>
+because that’s the only supported option</p>
+<pre class="r"><code># slice(1) on a data.frame returns 1 row of a data.frame
+mtcars |&gt; 
+  dplyr::slice(1)</code></pre>
+<pre class="bg-success"><code>##           mpg cyl disp  hp drat   wt  qsec vs am gear carb
+## Mazda RX4  21   6  160 110  3.9 2.62 16.46  0  1    4    4</code></pre>
+<pre class="r"><code># slice(1) on a grouped tibble returns 1 row _per group_ 
+mtcars |&gt; 
+  dplyr::group_by(gear, am) |&gt; 
+  dplyr::slice(1)</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 × 11
+## # Groups:   gear, am [4]
+##     mpg   cyl  disp    hp  drat    wt  qsec    vs    am  gear  carb
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1  21.4     6  258    110  3.08  3.22  19.4     1     0     3     1
+## 2  24.4     4  147.    62  3.69  3.19  20       1     0     4     2
+## 3  21       6  160    110  3.9   2.62  16.5     0     1     4     4
+## 4  26       4  120.    91  4.43  2.14  16.7     0     1     5     2</code></pre>
+<p>{tibble} stores this information in a special <code>"groups"</code> attribute, and ensures
+that {dplyr} functions are aware of it. It also prints this information above
+the object (plus the number of resulting ‘groups’).</p>
+<p>Is there anything it can’t do?</p>
+</div>
+<div id="a-whole-new-world" class="section level2">
+<h2>A Whole New World</h2>
+<p>That ended up being a lot of background, glad to see you’re still with me. That’s
+{dplyr} which can take either a <code>data.frame</code> or a <code>tibble</code> to do lots of useful
+operations on data. If, like me prior to joining the world of computational
+biology, you thought that was all there was to it, the next part comes as a bit of
+an eye opener.</p>
+<p>Just like in a video game where all of a sudden the map is revealed to be twice as
+large as you knew it, there’s an entire world of R packages beyond CRAN, mainly
+targeted at computational biology/bioinformatics, known as <a href="https://bioconductor.org/">Bioconductor</a>.
+This is well supported by the R project itself, but you could spend your life
+writing R analyses and never use it if you aren’t working on bioinfo stuff.</p>
+<p>I don’t think I’d used anything from Bioconductor before I joined a large biotech -
+incidentally the one at which Robert Gentleman himself was a senior director in
+bioinformatics and computational biology until just a couple of years before I
+joined. Over the next few years, though, I’d become very familiar with the packages
+on offer in that space.</p>
+<p>In the world of sequencing data, the humble <code>data.frame</code> just doesn’t have the
+right amount of structure - rectangular data is great, but no matter which way
+you pivot (wide or long) you’re going to have some trouble representing all the
+different qualities and quantities associated with a sample; for example representing
+the level of expression of some gene for some samples belonging to some subject,
+where both the subject and the sample have metadata, as does the experiment itself,
+as do the genes. Keeping in mind that this might involve a thousand samples and
+many tens of thousands of genes, a flat table just won’t cut it.</p>
+<p>A better option is to create a different structure, one which keeps the different
+components (sample metadata, gene metadata) aligned and together, but not in the
+same table. Several of these have evolved over time, but a current favourite of
+the field is the <code>SummarizedExperiment</code> structure. This organises the components
+in a way that they can be stored and interrogated without having to perform a
+dozen filters to get to the corner of data you’re interested in.</p>
+<p>If we think of this like a database, we have a table for the actual measurements,
+another for the sample metadata, and another for the metadata on the things being
+observed (e.g. genes). The problem is, we need to define keys that link the
+different tables together. If our measurements were a giant matrix of values, e.g.</p>
+<pre class="r"><code>expression_data &lt;- matrix(c(2, 3, 1, 0, 9, 5, 3, 4, 5), ncol = 3)
+expression_data</code></pre>
+<pre class="bg-success"><code>##      [,1] [,2] [,3]
+## [1,]    2    0    3
+## [2,]    3    9    4
+## [3,]    1    5    5</code></pre>
+<p>how would we know that the second column is for sample_Y and the third row is
+for gene_DEF? The matrix itself is numeric, so we can’t just add a new row/column
+to store the sample/gene information, which is character.</p>
+<p>No points for guessing that the intro above was for a reason - those attributes
+are now really useful.</p>
+<pre class="r"><code>library(charcuterie)
+rownames(expression_data) &lt;- paste0(&quot;gene_&quot;, c(&quot;ABC&quot;, &quot;DEF&quot;, &quot;GHI&quot;))
+colnames(expression_data) &lt;- paste0(&quot;sample_&quot;, chars(&quot;XYZ&quot;))
+expression_data</code></pre>
+<pre class="bg-success"><code>##          sample_X sample_Y sample_Z
+## gene_ABC        2        0        3
+## gene_DEF        3        9        4
+## gene_GHI        1        5        5</code></pre>
+<p>Much clearer! Even better, now we have a way to link up the metadata in either
+dimension.</p>
+<p>For the samples, we can create a <code>data.frame</code> with the relevant metadata for
+each sample, and label each sample row with the relevant ID</p>
+<pre class="r"><code>sample_metadata &lt;- data.frame(name = c(&quot;Jim&quot;, &quot;Jack&quot;, &quot;Joe&quot;), age = c(51, 53, 52))
+rownames(sample_metadata) &lt;- paste0(&quot;sample_&quot;, chars(&quot;XYZ&quot;))
+sample_metadata</code></pre>
+<pre class="bg-success"><code>##          name age
+## sample_X  Jim  51
+## sample_Y Jack  53
+## sample_Z  Joe  52</code></pre>
+<p>Now we can imagine taking this metadata and sort of turning it sideways so that
+the labels align like interlocking puzzle pieces. These run across the columns,
+so we can call them the “column data” of the final structure. Similarly, we can
+do the same for the genes, perhaps annotating the chromosome they’re on, and
+other identifiers, and use these as the “row data”.</p>
+<p>This is the basic structure of the <code>SummarizedExperiment</code>, but all is not well.</p>
+<p>Bioconductor leans heavily into the S4 object model, making use of multiple
+dispatch as well as object validation. For example, if I wanted to create a range
+of fake genomic locations I could use</p>
+<pre class="r"><code>gr &lt;- GenomicRanges::GRanges(&quot;chrX&quot;, IRanges::IRanges(1:6, width = 6:1))
+gr</code></pre>
+<pre class="bg-success"><code>## GRanges object with 6 ranges and 0 metadata columns:
+##       seqnames    ranges strand
+##          &lt;Rle&gt; &lt;IRanges&gt;  &lt;Rle&gt;
+##   [1]     chrX       1-6      *
+##   [2]     chrX       2-6      *
+##   [3]     chrX       3-6      *
+##   [4]     chrX       4-6      *
+##   [5]     chrX       5-6      *
+##   [6]     chrX         6      *
+##   -------
+##   seqinfo: 1 sequence from an unspecified genome; no seqlengths</code></pre>
+<p>Now, and this is just a toy example, if I wanted to use some of these in a
+<code>data.frame</code>…</p>
+<pre class="r"><code>d &lt;- data.frame(a = 1:6, b = gr)
+d</code></pre>
+<pre class="bg-success"><code>##   a b.seqnames b.start b.end b.width b.strand
+## 1 1       chrX       1     6       6        *
+## 2 2       chrX       2     6       5        *
+## 3 3       chrX       3     6       4        *
+## 4 4       chrX       4     6       3        *
+## 5 5       chrX       5     6       2        *
+## 6 6       chrX       6     6       1        *</code></pre>
+<p>Hmmm… it looks like it unfolded and did something strange. It was expecting a
+vector, not … whatever <code>gr</code> is.</p>
+<p>Not to worry, though - the Bioconductor ecosystem defines a <code>DataFrame</code> object
+that <em>does</em> know how to deal with S4 classes just fine (there will be a lot of R
+noise here, I can’t help that - lots of masking)</p>
+<pre class="r"><code>library(S4Vectors)</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: stats4</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: BiocGenerics</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;BiocGenerics&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     IQR, mad, sd, var, xtabs</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     anyDuplicated, aperm, append, as.data.frame, basename, cbind,
+##     colnames, dirname, do.call, duplicated, eval, evalq, Filter, Find,
+##     get, grep, grepl, intersect, is.unsorted, lapply, Map, mapply,
+##     match, mget, order, paste, pmax, pmax.int, pmin, pmin.int,
+##     Position, rank, rbind, Reduce, rownames, sapply, setdiff, sort,
+##     table, tapply, union, unique, unsplit, which.max, which.min</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;S4Vectors&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:utils&#39;:
+## 
+##     findMatches</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     expand.grid, I, unname</code></pre>
+<pre class="r"><code>DataFrame(a = 1:6, b = gr)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 6 rows and 2 columns
+##           a         b
+##   &lt;integer&gt; &lt;GRanges&gt;
+## 1         1  chrX:1-6
+## 2         2  chrX:2-6
+## 3         3  chrX:3-6
+## 4         4  chrX:4-6
+## 5         5  chrX:5-6
+## 6         6    chrX:6</code></pre>
+<p>You might say - “hey, that looks familiar! It’s kind of like a <code>tibble</code>” and
+you’re right; the <em>types</em> of each column are shown at the top, and in the case
+of the <code>GRanges</code> object, it’s a non-atomic type, handled correctly. There’s
+important differences compared to a <code>tibble</code>, though. Importantly, we can add
+row names to this just fine</p>
+<pre class="r"><code>DataFrame(a = 1:6, b = gr, row.names = paste0(&quot;range&quot;, 1:6))</code></pre>
+<pre class="bg-success"><code>## DataFrame with 6 rows and 2 columns
+##                a         b
+##        &lt;integer&gt; &lt;GRanges&gt;
+## range1         1  chrX:1-6
+## range2         2  chrX:2-6
+## range3         3  chrX:3-6
+## range4         4  chrX:4-6
+## range5         5  chrX:5-6
+## range6         6    chrX:6</code></pre>
+<p>If we break the object, it will let us know because S4 performs object validation</p>
+<pre class="r"><code>a &lt;- DataFrame(x = 1:3, y = LETTERS[1:3])
+a</code></pre>
+<pre class="bg-success"><code>## DataFrame with 3 rows and 2 columns
+##           x           y
+##   &lt;integer&gt; &lt;character&gt;
+## 1         1           A
+## 2         2           B
+## 3         3           C</code></pre>
+<pre class="r"><code>validObject(a)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code># look away, I&#39;m not supposed to do this
+names(a@listData) &lt;- NULL
+a</code></pre>
+<pre class="bg-success"><code>## DataFrame with 3 rows and 2 columns
+##   c(&quot;1&quot;, &quot;2&quot;, &quot;3&quot;) c(&quot;A&quot;, &quot;B&quot;, &quot;C&quot;)
+##          &lt;integer&gt;      &lt;character&gt;
+## 1                1                A
+## 2                2                B
+## 3                3                C</code></pre>
+<pre class="r"><code>validObject(a)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in validObject(a): invalid class &quot;DFrame&quot; object: 
+##     column names should not be NULL</code></pre>
+<p>This is the right class for our sample metadata</p>
+<pre class="r"><code>as(sample_metadata, &quot;DataFrame&quot;)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 3 rows and 2 columns
+##                 name       age
+##          &lt;character&gt; &lt;numeric&gt;
+## sample_X         Jim        51
+## sample_Y        Jack        53
+## sample_Z         Joe        52</code></pre>
+<p>Perfect!</p>
+<p>If we look at an actual example of a <code>SummarizedExperiment</code>, e.g. from the {airway}
+package which captures read counts per gene for an airway smooth muscle cell lines
+<a href="https://en.wikipedia.org/wiki/RNA-Seq">RNA-Seq</a> experiment</p>
+<pre class="r"><code>library(&quot;airway&quot;)</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: SummarizedExperiment</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: MatrixGenerics</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: matrixStats</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;MatrixGenerics&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:matrixStats&#39;:
+## 
+##     colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+##     colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+##     colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+##     colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+##     colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+##     colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+##     colWeightedMeans, colWeightedMedians, colWeightedSds,
+##     colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+##     rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+##     rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+##     rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+##     rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+##     rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+##     rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+##     rowWeightedSds, rowWeightedVars</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: GenomicRanges</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: IRanges</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: GenomeInfoDb</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: Biobase</code></pre>
+<pre class="bg-info text-info"><code>## Welcome to Bioconductor
+## 
+##     Vignettes contain introductory material; view with
+##     &#39;browseVignettes()&#39;. To cite Bioconductor, see
+##     &#39;citation(&quot;Biobase&quot;)&#39;, and for packages &#39;citation(&quot;pkgname&quot;)&#39;.</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;Biobase&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:MatrixGenerics&#39;:
+## 
+##     rowMedians</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:matrixStats&#39;:
+## 
+##     anyMissing, rowMedians</code></pre>
+<pre class="r"><code>data(&quot;airway&quot;)
+se &lt;- airway
+se</code></pre>
+<pre class="bg-success"><code>## class: RangedSummarizedExperiment 
+## dim: 63677 8 
+## metadata(1): &#39;&#39;
+## assays(1): counts
+## rownames(63677): ENSG00000000003 ENSG00000000005 ... ENSG00000273492
+##   ENSG00000273493
+## rowData names(10): gene_id gene_name ... seq_coord_system symbol
+## colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
+## colData names(9): SampleName cell ... Sample BioSample</code></pre>
+<p>we see a lot of information - the “dimensions” of this object is 63677
+genes measured for 8 samples. The ‘rownames’ element shows the IDs
+of these genes which will link the ‘rowData’ to the counts assay rows, and the ‘colnames’
+element shows the sample IDs which will link the ‘colData’ to the counts assay columns.</p>
+<p>Pulling this apart…</p>
+<pre class="r"><code>cd &lt;- colData(se)
+cd</code></pre>
+<pre class="bg-success"><code>## DataFrame with 8 rows and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862  N61311     untrt    untrt SRR1039508       126
+## SRR1039509 GSM1275863  N61311     trt      untrt SRR1039509       126
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039513 GSM1275867  N052611    trt      untrt SRR1039513        87
+## SRR1039516 GSM1275870  N080611    untrt    untrt SRR1039516       120
+## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039512  SRX384349 SRS508571 SAMN02422678
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039516  SRX384353 SRS508575 SAMN02422682
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039520  SRX384357 SRS508579 SAMN02422683
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<p>we see the sample metadata includes whether or not the sample was treated, and some
+details about the experiment. Similarly, the gene metadata details the various IDs
+and genomic locations.</p>
+<pre class="r"><code>rowData(se)[1:3, ]</code></pre>
+<pre class="bg-success"><code>## DataFrame with 3 rows and 10 columns
+##                         gene_id   gene_name  entrezid   gene_biotype
+##                     &lt;character&gt; &lt;character&gt; &lt;integer&gt;    &lt;character&gt;
+## ENSG00000000003 ENSG00000000003      TSPAN6        NA protein_coding
+## ENSG00000000005 ENSG00000000005        TNMD        NA protein_coding
+## ENSG00000000419 ENSG00000000419        DPM1        NA protein_coding
+##                 gene_seq_start gene_seq_end    seq_name seq_strand
+##                      &lt;integer&gt;    &lt;integer&gt; &lt;character&gt;  &lt;integer&gt;
+## ENSG00000000003       99883667     99894988           X         -1
+## ENSG00000000005       99839799     99854882           X          1
+## ENSG00000000419       49551404     49575092          20         -1
+##                 seq_coord_system      symbol
+##                        &lt;integer&gt; &lt;character&gt;
+## ENSG00000000003               NA      TSPAN6
+## ENSG00000000005               NA        TNMD
+## ENSG00000000419               NA        DPM1</code></pre>
+<p>Tying these together is the actual assay data</p>
+<pre class="r"><code>assay(se)[1:5, 1:5]</code></pre>
+<pre class="bg-success"><code>##                 SRR1039508 SRR1039509 SRR1039512 SRR1039513 SRR1039516
+## ENSG00000000003        679        448        873        408       1138
+## ENSG00000000005          0          0          0          0          0
+## ENSG00000000419        467        515        621        365        587
+## ENSG00000000457        260        211        263        164        245
+## ENSG00000000460         60         55         40         35         78</code></pre>
+<p>It all works really nicely - there are also additional places to store metadata
+about the experiment shared across samples, and metadata about the columns themselves</p>
+<pre class="r"><code>mcols(colData(se)) &lt;- DataFrame(
+  position = paste0(&quot;column &quot;, 1:9), 
+  is_ID = c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, TRUE)
+)
+mcols(colData(se))</code></pre>
+<pre class="bg-success"><code>## DataFrame with 9 rows and 2 columns
+##               position     is_ID
+##            &lt;character&gt; &lt;logical&gt;
+## SampleName    column 1      TRUE
+## cell          column 2      TRUE
+## dex           column 3     FALSE
+## albut         column 4     FALSE
+## Run           column 5      TRUE
+## avgLength     column 6     FALSE
+## Experiment    column 7      TRUE
+## Sample        column 8      TRUE
+## BioSample     column 9      TRUE</code></pre>
+</div>
+<div id="filtering-a-dataframe" class="section level2">
+<h2>Filtering a DataFrame</h2>
+<p>Now we get to a really interesting part - we want to do some analysis on this data.</p>
+<p>First, we want to look at the samples which were untreated. A <code>DataFrame</code> uses the
+same <code>[</code> subsetting mechanism as a <code>data.frame</code> so we could do</p>
+<pre class="r"><code>cd[cd$dex == &quot;untrt&quot;, c(&quot;SampleName&quot;, &quot;avgLength&quot;)]</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 2 columns
+##            SampleName avgLength
+##              &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862       126
+## SRR1039512 GSM1275866       126
+## SRR1039516 GSM1275870       120
+## SRR1039520 GSM1275874       101</code></pre>
+<p>or even</p>
+<pre class="r"><code>subset(cd, dex == &quot;untrt&quot;, select = c(&quot;SampleName&quot;, &quot;avgLength&quot;))</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 2 columns
+##            SampleName avgLength
+##              &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862       126
+## SRR1039512 GSM1275866       126
+## SRR1039516 GSM1275870       120
+## SRR1039520 GSM1275874       101</code></pre>
+<p>and those work fine.</p>
+<p>What can often happen is you want the data for a specific sample. Sure, that ID
+might be encoded in a column, but typically the sample identifiers are used as
+the rownames of the <code>colData</code>, so we can get the data for sample “SRR1039512” with</p>
+<pre class="r"><code>cd[&quot;SRR1039512&quot;, ]</code></pre>
+<pre class="bg-success"><code>## DataFrame with 1 row and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039512  SRX384349 SRS508571 SAMN02422678</code></pre>
+<p>What would be really nice, though, is to be able to use {dplyr}!</p>
+<p>Let’s try…</p>
+<pre class="r"><code>dplyr::filter(cd, dex == &quot;untrt&quot;)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in UseMethod(&quot;filter&quot;): no applicable method for &#39;filter&#39; applied to an object of class &quot;c(&#39;DFrame&#39;, &#39;DataFrame&#39;, &#39;SimpleList&#39;, &#39;RectangularData&#39;, &#39;List&#39;, &#39;DataFrame_OR_NULL&#39;, &#39;Vector&#39;, &#39;list_OR_List&#39;, &#39;Annotated&#39;, &#39;vector_OR_Vector&#39;)&quot;</code></pre>
+<p>Nope, it’s not defined for this class.</p>
+<p>One of the most frequent workarounds for this is to convert this <code>DataFrame</code> to
+a <code>tibble</code>, at which point, yes, {dplyr} should work</p>
+<pre class="r"><code>tbl_untrt &lt;- dplyr::filter(tibble::as_tibble(cd), dex == &quot;untrt&quot;)
+tbl_untrt</code></pre>
+<pre class="bg-success"><code>## # A tibble: 4 × 9
+##   SampleName cell    dex   albut Run       avgLength Experiment Sample BioSample
+##   &lt;fct&gt;      &lt;fct&gt;   &lt;fct&gt; &lt;fct&gt; &lt;fct&gt;         &lt;int&gt; &lt;fct&gt;      &lt;fct&gt;  &lt;fct&gt;    
+## 1 GSM1275862 N61311  untrt untrt SRR10395…       126 SRX384345  SRS50… SAMN0242…
+## 2 GSM1275866 N052611 untrt untrt SRR10395…       126 SRX384349  SRS50… SAMN0242…
+## 3 GSM1275870 N080611 untrt untrt SRR10395…       120 SRX384353  SRS50… SAMN0242…
+## 4 GSM1275874 N061011 untrt untrt SRR10395…       101 SRX384357  SRS50… SAMN0242…</code></pre>
+<p>That works, but there are two problems - both of them are that we now have a
+<code>tibble</code>, firstly because it now has no row names, and secondly, as a consequence,
+we can’t “put it back” into the <code>SummarizedExperiment</code>.</p>
+<p>We have the same problem with the gene information - we <em>can</em> convert to <code>tibble</code>
+and use {dplyr}, but we’re stuck there</p>
+<pre class="r"><code>dplyr::filter(tibble::as_tibble(rowData(airway)), symbol == &quot;CD38&quot;)</code></pre>
+<pre class="bg-success"><code>## # A tibble: 1 × 10
+##   gene_id   gene_name entrezid gene_biotype gene_seq_start gene_seq_end seq_name
+##   &lt;chr&gt;     &lt;chr&gt;        &lt;int&gt; &lt;chr&gt;                 &lt;int&gt;        &lt;int&gt; &lt;chr&gt;   
+## 1 ENSG0000… CD38            NA protein_cod…       15779898     15854853 4       
+## # ℹ 3 more variables: seq_strand &lt;int&gt;, seq_coord_system &lt;int&gt;, symbol &lt;chr&gt;</code></pre>
+<p>Critically, <code>tibble</code> suffers from the same lack of S4 support as regular <code>data.frame</code>s,
+so if there <em>are</em> any of those columns, this workflow will break</p>
+<pre class="r"><code>d &lt;- tibble::tibble(a = 1)
+d</code></pre>
+<pre class="bg-success"><code>## # A tibble: 1 × 1
+##       a
+##   &lt;dbl&gt;
+## 1     1</code></pre>
+<pre class="r"><code>d$grX &lt;- GenomicRanges::GRanges(&quot;chrX&quot;, IRanges::IRanges(1:6, width = 6:1))</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in `$&lt;-`:
+## ! Assigned data `GenomicRanges::GRanges(&quot;chrX&quot;, IRanges::IRanges(1:6,
+##   width = 6:1))` must be a vector.
+## Caused by error in `vec_size()`:
+## ! `x` must be a vector, not a &lt;GRanges&gt; object.</code></pre>
+<p>What else can we do?</p>
+</div>
+<div id="of-course-i-have-a-proposed-solution" class="section level2">
+<h2>Of Course I Have a Proposed Solution</h2>
+<p>Let’s create a gnarly <code>DataFrame</code> with S4 columns and row names</p>
+<pre class="r"><code>m &lt;- mtcars[, c(&quot;cyl&quot;, &quot;hp&quot;, &quot;am&quot;, &quot;gear&quot;, &quot;disp&quot;)]
+d &lt;- as(m, &quot;DataFrame&quot;)
+d</code></pre>
+<pre class="bg-success"><code>## DataFrame with 32 rows and 5 columns
+##                         cyl        hp        am      gear      disp
+##                   &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;
+## Mazda RX4                 6       110         1         4       160
+## Mazda RX4 Wag             6       110         1         4       160
+## Datsun 710                4        93         1         4       108
+## Hornet 4 Drive            6       110         0         3       258
+## Hornet Sportabout         8       175         0         3       360
+## ...                     ...       ...       ...       ...       ...
+## Lotus Europa              4       113         1         5      95.1
+## Ford Pantera L            8       264         1         5     351.0
+## Ferrari Dino              6       175         1         5     145.0
+## Maserati Bora             8       335         1         5     301.0
+## Volvo 142E                4       109         1         4     121.0</code></pre>
+<pre class="r"><code>d$grX &lt;- GenomicRanges::GRanges(&quot;chrX&quot;, IRanges::IRanges(1:32, width=10))
+d$grY &lt;- GenomicRanges::GRanges(&quot;chrY&quot;, IRanges::IRanges(1:32, width = 10))
+d$nl &lt;- IRanges::NumericList(lapply(d$gear, function(n) round(rnorm(n), 2)))
+d</code></pre>
+<pre class="bg-success"><code>## DataFrame with 32 rows and 8 columns
+##                         cyl        hp        am      gear      disp        grX
+##                   &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;  &lt;GRanges&gt;
+## Mazda RX4                 6       110         1         4       160  chrX:1-10
+## Mazda RX4 Wag             6       110         1         4       160  chrX:2-11
+## Datsun 710                4        93         1         4       108  chrX:3-12
+## Hornet 4 Drive            6       110         0         3       258  chrX:4-13
+## Hornet Sportabout         8       175         0         3       360  chrX:5-14
+## ...                     ...       ...       ...       ...       ...        ...
+## Lotus Europa              4       113         1         5      95.1 chrX:28-37
+## Ford Pantera L            8       264         1         5     351.0 chrX:29-38
+## Ferrari Dino              6       175         1         5     145.0 chrX:30-39
+## Maserati Bora             8       335         1         5     301.0 chrX:31-40
+## Volvo 142E                4       109         1         4     121.0 chrX:32-41
+##                          grY                    nl
+##                    &lt;GRanges&gt;         &lt;NumericList&gt;
+## Mazda RX4          chrY:1-10 -1.72,-0.23,-1.00,...
+## Mazda RX4 Wag      chrY:2-11    0.74,0.93,0.80,...
+## Datsun 710         chrY:3-12 -2.29,-1.13,-0.08,...
+## Hornet 4 Drive     chrY:4-13      0.00,-0.32, 0.21
+## Hornet Sportabout  chrY:5-14      0.15,-0.04,-0.50
+## ...                      ...                   ...
+## Lotus Europa      chrY:28-37 -0.77, 0.95,-0.12,...
+## Ford Pantera L    chrY:29-38    0.74,0.56,0.01,...
+## Ferrari Dino      chrY:30-39    0.55,1.49,1.72,...
+## Maserati Bora     chrY:31-40 -0.68,-0.33, 0.85,...
+## Volvo 142E        chrY:32-41  1.29,-0.61, 0.84,...</code></pre>
+<p>and add some more metadata about the <code>colData</code> columns</p>
+<pre class="r"><code>mcols(colData(se)) &lt;- DataFrame(
+  position = paste0(&quot;column &quot;, 1:9), 
+  is_ID = c(TRUE, TRUE, FALSE, FALSE, TRUE, FALSE, TRUE, TRUE, TRUE)
+)
+mcols(colData(se))</code></pre>
+<pre class="bg-success"><code>## DataFrame with 9 rows and 2 columns
+##               position     is_ID
+##            &lt;character&gt; &lt;logical&gt;
+## SampleName    column 1      TRUE
+## cell          column 2      TRUE
+## dex           column 3     FALSE
+## albut         column 4     FALSE
+## Run           column 5      TRUE
+## avgLength     column 6     FALSE
+## Experiment    column 7      TRUE
+## Sample        column 8      TRUE
+## BioSample     column 9      TRUE</code></pre>
+<p>My solution was to write the {dplyr} verbs in a way that was compatible with <code>DataFrame</code>
+but which avoids passing through a <code>tibble</code> wherever possible. That became {DFplyr}
+and it’s been sitting around <a href="https://github.com/jonocarroll/DFplyr/">on GitHub</a>
+not doing much for the last 5 years.</p>
+<p>I wrote a first version of this package despite being quite naive to the actual
+implementation of <code>DataFrame</code>, so I’m very grateful to Michael Lawrence and
+Hervé Pagès who helped improve compatibility and pointed out bugs with what I’d
+done.</p>
+<p>Time to take it for a tour</p>
+<pre class="r"><code>library(DFplyr)</code></pre>
+<pre class="bg-info text-info"><code>## Loading required package: dplyr</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;dplyr&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:Biobase&#39;:
+## 
+##     combine</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:GenomicRanges&#39;:
+## 
+##     intersect, setdiff, union</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:GenomeInfoDb&#39;:
+## 
+##     intersect</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:IRanges&#39;:
+## 
+##     collapse, desc, intersect, setdiff, slice, union</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:matrixStats&#39;:
+## 
+##     count</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:S4Vectors&#39;:
+## 
+##     first, intersect, rename, setdiff, setequal, union</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:BiocGenerics&#39;:
+## 
+##     combine, intersect, setdiff, union</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:stats&#39;:
+## 
+##     filter, lag</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:base&#39;:
+## 
+##     intersect, setdiff, setequal, union</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: replacing previous import &#39;S4Vectors::rename&#39; by &#39;dplyr::rename&#39; when
+## loading &#39;DFplyr&#39;</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;DFplyr&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:dplyr&#39;:
+## 
+##     count, desc</code></pre>
+<pre class="bg-info text-info"><code>## The following objects are masked from &#39;package:IRanges&#39;:
+## 
+##     desc, slice</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:matrixStats&#39;:
+## 
+##     count</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked from &#39;package:stats&#39;:
+## 
+##     filter</code></pre>
+<pre class="r"><code>colData(se)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 8 rows and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862  N61311     untrt    untrt SRR1039508       126
+## SRR1039509 GSM1275863  N61311     trt      untrt SRR1039509       126
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039513 GSM1275867  N052611    trt      untrt SRR1039513        87
+## SRR1039516 GSM1275870  N080611    untrt    untrt SRR1039516       120
+## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039512  SRX384349 SRS508571 SAMN02422678
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039516  SRX384353 SRS508575 SAMN02422682
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039520  SRX384357 SRS508579 SAMN02422683
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<pre class="r"><code>cd &lt;- colData(se) </code></pre>
+<p>One thing I added was a custom ‘label’ if you’re using this package within RStudio,
+in which case the Environment pane will show <code>cd</code> as “Formal class DataFrame (dplyr-compatible)”.
+That’s not a change in the object itself, but rather all <code>DataFrame</code> objects will
+now show this, because {dplyr} verbs should work on them.</p>
+<p>Now I can just <code>filter</code> the <code>colData</code> as if it was a <code>data.frame</code> or a <code>tibble</code>,
+but the result is still a <code>DataFrame</code></p>
+<pre class="r"><code>treated &lt;- filter(cd, dex == &quot;trt&quot;)
+treated</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039509 GSM1275863  N61311       trt    untrt SRR1039509       126
+## SRR1039513 GSM1275867  N052611      trt    untrt SRR1039513        87
+## SRR1039517 GSM1275871  N080611      trt    untrt SRR1039517       126
+## SRR1039521 GSM1275875  N061011      trt    untrt SRR1039521        98
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<p>Importantly, the row names and metadata are completely preserved, relevant to
+this filtered subset</p>
+<pre class="r"><code>rownames(treated)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;SRR1039509&quot; &quot;SRR1039513&quot; &quot;SRR1039517&quot; &quot;SRR1039521&quot;</code></pre>
+<pre class="r"><code>mcols(treated)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 9 rows and 2 columns
+##               position     is_ID
+##            &lt;character&gt; &lt;logical&gt;
+## SampleName    column 1      TRUE
+## cell          column 2      TRUE
+## dex           column 3     FALSE
+## albut         column 4     FALSE
+## Run           column 5      TRUE
+## avgLength     column 6     FALSE
+## Experiment    column 7      TRUE
+## Sample        column 8      TRUE
+## BioSample     column 9      TRUE</code></pre>
+<pre class="r"><code>exp &lt;- select(cd, Experiment, Sample, BioSample)
+exp</code></pre>
+<pre class="bg-success"><code>## DataFrame with 8 rows and 3 columns
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039512  SRX384349 SRS508571 SAMN02422678
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039516  SRX384353 SRS508575 SAMN02422682
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039520  SRX384357 SRS508579 SAMN02422683
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<pre class="r"><code>mcols(exp)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 3 rows and 2 columns
+##               position     is_ID
+##            &lt;character&gt; &lt;logical&gt;
+## Experiment    column 7      TRUE
+## Sample        column 8      TRUE
+## BioSample     column 9      TRUE</code></pre>
+<p>I can <em>add</em> more sample data if I have it</p>
+<pre class="r"><code>cdq &lt;- mutate(cd, quality = runif(nrow(cd)))
+cdq</code></pre>
+<pre class="bg-success"><code>## DataFrame with 8 rows and 10 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862  N61311     untrt    untrt SRR1039508       126
+## SRR1039509 GSM1275863  N61311     trt      untrt SRR1039509       126
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039513 GSM1275867  N052611    trt      untrt SRR1039513        87
+## SRR1039516 GSM1275870  N080611    untrt    untrt SRR1039516       120
+## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+##            Experiment    Sample    BioSample   quality
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt; &lt;numeric&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669  0.296219
+## SRR1039509  SRX384346 SRS508567 SAMN02422675  0.367130
+## SRR1039512  SRX384349 SRS508571 SAMN02422678  0.807582
+## SRR1039513  SRX384350 SRS508572 SAMN02422670  0.536167
+## SRR1039516  SRX384353 SRS508575 SAMN02422682  0.102532
+## SRR1039517  SRX384354 SRS508576 SAMN02422673  0.598395
+## SRR1039520  SRX384357 SRS508579 SAMN02422683  0.825653
+## SRR1039521  SRX384358 SRS508580 SAMN02422677  0.785908</code></pre>
+<pre class="r"><code>mcols(cdq)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 10 rows and 2 columns
+##               position     is_ID
+##            &lt;character&gt; &lt;logical&gt;
+## SampleName    column 1      TRUE
+## cell          column 2      TRUE
+## dex           column 3     FALSE
+## albut         column 4     FALSE
+## Run           column 5      TRUE
+## avgLength     column 6     FALSE
+## Experiment    column 7      TRUE
+## Sample        column 8      TRUE
+## BioSample     column 9      TRUE
+## quality             NA        NA</code></pre>
+<p>and since no metadata about this new column was available, it has a blank row in
+the <code>mcols</code> entry.</p>
+<p>If I perform an operation that doesn’t make sense in terms of row names, they <em>will</em>
+be removed</p>
+<pre class="r"><code>cdq |&gt; 
+  group_by(dex) |&gt; 
+  summarise(avg_quality = mean(quality))</code></pre>
+<pre class="bg-success"><code>##     dex avg_quality
+## 1   trt   0.5718999
+## 2 untrt   0.5079965</code></pre>
+<p>but rearranging them is fine</p>
+<pre class="r"><code>cdq |&gt; 
+  arrange(desc(quality)) |&gt; 
+  slice(1:4)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 10 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+##            Experiment    Sample    BioSample   quality
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt; &lt;numeric&gt;
+## SRR1039520  SRX384357 SRS508579 SAMN02422683  0.825653
+## SRR1039512  SRX384349 SRS508571 SAMN02422678  0.807582
+## SRR1039521  SRX384358 SRS508580 SAMN02422677  0.785908
+## SRR1039517  SRX384354 SRS508576 SAMN02422673  0.598395</code></pre>
+<p>One thing that <code>DataFrame</code> lacks - as does <code>data.frame</code> - is the concept of groups.
+{tibble} resolved this by adding a <code>"groups"</code> attribute, so I did the same in {DFplyr} -
+I don’t own {S4Vectors}, so I had to mask some functions in order to build in this
+support. I can now perform grouped operations on a <code>DataFrame</code> and have the
+grouping information printed like {tibble} does</p>
+<pre class="r"><code>cd |&gt; 
+  group_by(dex) </code></pre>
+<pre class="bg-success"><code>## DataFrame with 8 rows and 9 columns
+## Groups:  dex 
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862  N61311     untrt    untrt SRR1039508       126
+## SRR1039509 GSM1275863  N61311     trt      untrt SRR1039509       126
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039513 GSM1275867  N052611    trt      untrt SRR1039513        87
+## SRR1039516 GSM1275870  N080611    untrt    untrt SRR1039516       120
+## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039512  SRX384349 SRS508571 SAMN02422678
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039516  SRX384353 SRS508575 SAMN02422682
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039520  SRX384357 SRS508579 SAMN02422683
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<pre class="r"><code>cd |&gt; 
+  group_by(dex) |&gt; 
+  summarise(meanAvgLength = mean(avgLength))</code></pre>
+<pre class="bg-success"><code>##     dex meanAvgLength
+## 1   trt        109.25
+## 2 untrt        118.25</code></pre>
+<p>If I try to “put back” the subset <code>colData</code> I get an error, because there is
+assay data for samples we dropped</p>
+<pre class="r"><code>colData(se)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 8 rows and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862  N61311     untrt    untrt SRR1039508       126
+## SRR1039509 GSM1275863  N61311     trt      untrt SRR1039509       126
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039513 GSM1275867  N052611    trt      untrt SRR1039513        87
+## SRR1039516 GSM1275870  N080611    untrt    untrt SRR1039516       120
+## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039512  SRX384349 SRS508571 SAMN02422678
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039516  SRX384353 SRS508575 SAMN02422682
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039520  SRX384357 SRS508579 SAMN02422683
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<pre class="r"><code>treated</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039509 GSM1275863  N61311       trt    untrt SRR1039509       126
+## SRR1039513 GSM1275867  N052611      trt    untrt SRR1039513        87
+## SRR1039517 GSM1275871  N080611      trt    untrt SRR1039517       126
+## SRR1039521 GSM1275875  N061011      trt    untrt SRR1039521        98
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039509  SRX384346 SRS508567 SAMN02422675
+## SRR1039513  SRX384350 SRS508572 SAMN02422670
+## SRR1039517  SRX384354 SRS508576 SAMN02422673
+## SRR1039521  SRX384358 SRS508580 SAMN02422677</code></pre>
+<pre class="r"><code>colData(se) &lt;- treated</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in `colData&lt;-`(`*tmp*`, value = new(&quot;DFrame&quot;, rownames = c(&quot;SRR1039509&quot;, : nrow of supplied &#39;colData&#39; must equal ncol of object</code></pre>
+<p>But as long as I have some metadata for all the samples, it’s fine - <code>cdq</code> was the
+version of <code>colData</code> with quality information, and you can see it’s incorporated
+on the last line of this output</p>
+<pre class="r"><code>colData(se) &lt;- cdq
+se</code></pre>
+<pre class="bg-success"><code>## class: RangedSummarizedExperiment 
+## dim: 63677 8 
+## metadata(1): &#39;&#39;
+## assays(1): counts
+## rownames(63677): ENSG00000000003 ENSG00000000005 ... ENSG00000273492
+##   ENSG00000273493
+## rowData names(10): gene_id gene_name ... seq_coord_system symbol
+## colnames(8): SRR1039508 SRR1039509 ... SRR1039520 SRR1039521
+## colData names(10): SampleName cell ... BioSample quality</code></pre>
+<p>Storing S4 classes isn’t all we can do - performing {dplyr} operations on S4 columns
+is perfectly fine; here, adding more S4 columns based on others</p>
+<pre class="r"><code>myrange &lt;- GenomicRanges::GRanges(&quot;chrX&quot;, IRanges::IRanges(2:5, width = 10))
+
+d &lt;- mutate(d, quality = runif(32), overlaps = GenomicRanges::countOverlaps(grX, myrange))
+d &lt;- mutate(d, nearest = plyranges::join_nearest(grX, myrange))
+d</code></pre>
+<pre class="bg-success"><code>## DataFrame with 32 rows and 11 columns
+##                         cyl        hp        am      gear      disp        grX
+##                   &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;  &lt;GRanges&gt;
+## Mazda RX4                 6       110         1         4       160  chrX:1-10
+## Mazda RX4 Wag             6       110         1         4       160  chrX:2-11
+## Datsun 710                4        93         1         4       108  chrX:3-12
+## Hornet 4 Drive            6       110         0         3       258  chrX:4-13
+## Hornet Sportabout         8       175         0         3       360  chrX:5-14
+## ...                     ...       ...       ...       ...       ...        ...
+## Lotus Europa              4       113         1         5      95.1 chrX:28-37
+## Ford Pantera L            8       264         1         5     351.0 chrX:29-38
+## Ferrari Dino              6       175         1         5     145.0 chrX:30-39
+## Maserati Bora             8       335         1         5     301.0 chrX:31-40
+## Volvo 142E                4       109         1         4     121.0 chrX:32-41
+##                          grY                    nl  overlaps   quality
+##                    &lt;GRanges&gt;         &lt;NumericList&gt; &lt;integer&gt; &lt;numeric&gt;
+## Mazda RX4          chrY:1-10 -1.72,-0.23,-1.00,...         4  0.601271
+## Mazda RX4 Wag      chrY:2-11    0.74,0.93,0.80,...         4  0.235676
+## Datsun 710         chrY:3-12 -2.29,-1.13,-0.08,...         4  0.601253
+## Hornet 4 Drive     chrY:4-13      0.00,-0.32, 0.21         4  0.922080
+## Hornet Sportabout  chrY:5-14      0.15,-0.04,-0.50         4  0.381433
+## ...                      ...                   ...       ...       ...
+## Lotus Europa      chrY:28-37 -0.77, 0.95,-0.12,...         0 0.8200803
+## Ford Pantera L    chrY:29-38    0.74,0.56,0.01,...         0 0.5455487
+## Ferrari Dino      chrY:30-39    0.55,1.49,1.72,...         0 0.8182348
+## Maserati Bora     chrY:31-40 -0.68,-0.33, 0.85,...         0 0.0362457
+## Volvo 142E        chrY:32-41  1.29,-0.61, 0.84,...         0 0.4937573
+##                      nearest
+##                    &lt;GRanges&gt;
+## Mazda RX4          chrX:1-10
+## Mazda RX4 Wag      chrX:2-11
+## Datsun 710         chrX:3-12
+## Hornet 4 Drive     chrX:4-13
+## Hornet Sportabout  chrX:5-14
+## ...                      ...
+## Lotus Europa      chrX:28-37
+## Ford Pantera L    chrX:29-38
+## Ferrari Dino      chrX:30-39
+## Maserati Bora     chrX:31-40
+## Volvo 142E        chrX:32-41</code></pre>
+<p>or filtering rows</p>
+<pre class="r"><code>d |&gt; 
+  arrange(desc(quality)) |&gt; 
+  filter(overlaps &gt; 0) |&gt; 
+  slice(1:4)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 11 columns
+##                      cyl        hp        am      gear      disp        grX
+##                &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;  &lt;GRanges&gt;
+## Hornet 4 Drive         6       110         0         3     258.0  chrX:4-13
+## Merc 450SLC            8       180         0         3     275.8 chrX:14-23
+## Mazda RX4              6       110         1         4     160.0  chrX:1-10
+## Datsun 710             4        93         1         4     108.0  chrX:3-12
+##                       grY                    nl  overlaps   quality    nearest
+##                 &lt;GRanges&gt;         &lt;NumericList&gt; &lt;integer&gt; &lt;numeric&gt;  &lt;GRanges&gt;
+## Hornet 4 Drive  chrY:4-13      0.00,-0.32, 0.21         4  0.922080  chrX:4-13
+## Merc 450SLC    chrY:14-23        0.68,1.26,0.44         1  0.628694 chrX:14-23
+## Mazda RX4       chrY:1-10 -1.72,-0.23,-1.00,...         4  0.601271  chrX:1-10
+## Datsun 710      chrY:3-12 -2.29,-1.13,-0.08,...         4  0.601253  chrX:3-12</code></pre>
+<p>You don’t necessarily need to extract the <code>DataFrame</code> into a variable, either -
+working with the extraction directly could be cleaner in some cases</p>
+<pre class="r"><code>count(colData(se), cell)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 2 columns
+##       cell         n
+##   &lt;factor&gt; &lt;integer&gt;
+## 1  N052611         2
+## 2  N061011         2
+## 3  N080611         2
+## 4  N61311          2</code></pre>
+</div>
+<div id="you-want-more" class="section level2">
+<h2>You Want More?</h2>
+<p>When I first wrote {DFplyr} a <code>DataFrame</code> wouldn’t work in {ggplot2}, but it seems
+it does now, so we can easily plot sample metadata</p>
+<pre class="r"><code>library(ggplot2)
+
+ggplot(colData(airway), aes(dex, avgLength)) + 
+  geom_boxplot() +
+  geom_point(aes(col = cell), position = position_jitter(width = 0.2), size = 4)</code></pre>
+<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-50-1.png" width="672" /></p>
+<p>I suppose I can remove the support from {DFplyr} now.</p>
+</div>
+<div id="other-ways-to-filter" class="section level2">
+<h2>Other Ways to Filter</h2>
+<p>Using {dplyr} syntax on a <code>DataFrame</code> is very convenient, but that’s only one
+component of a <code>SummarizedExperiment</code> - it would be great to be able to extend
+this further and do something like</p>
+<pre class="r"><code>filter(airway, rows = ..., cols = ...)</code></pre>
+<p>It <em>is</em> possible to do something like this - if I generate IDs of the ‘rows’ and
+‘columns’ I want to subset to, I can pass these in to a <code>[</code> extraction</p>
+<pre class="r"><code>untrt &lt;- colData(airway) |&gt; filter(dex == &quot;untrt&quot;) |&gt; rownames()
+untrt</code></pre>
+<pre class="bg-success"><code>## [1] &quot;SRR1039508&quot; &quot;SRR1039512&quot; &quot;SRR1039516&quot; &quot;SRR1039520&quot;</code></pre>
+<pre class="r"><code>genes &lt;- rowData(airway)[c(1:3, 8:10), ] |&gt; rownames()
+genes</code></pre>
+<pre class="bg-success"><code>## [1] &quot;ENSG00000000003&quot; &quot;ENSG00000000005&quot; &quot;ENSG00000000419&quot; &quot;ENSG00000001036&quot;
+## [5] &quot;ENSG00000001084&quot; &quot;ENSG00000001167&quot;</code></pre>
+<pre class="r"><code>airway_sub &lt;- airway[genes, untrt]
+airway_sub</code></pre>
+<pre class="bg-success"><code>## class: RangedSummarizedExperiment 
+## dim: 6 4 
+## metadata(1): &#39;&#39;
+## assays(1): counts
+## rownames(6): ENSG00000000003 ENSG00000000005 ... ENSG00000001084
+##   ENSG00000001167
+## rowData names(10): gene_id gene_name ... seq_coord_system symbol
+## colnames(4): SRR1039508 SRR1039512 SRR1039516 SRR1039520
+## colData names(9): SampleName cell ... Sample BioSample</code></pre>
+<pre class="r"><code>dim(airway_sub)</code></pre>
+<pre class="bg-success"><code>## [1] 6 4</code></pre>
+<pre class="r"><code>colData(airway_sub)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 9 columns
+##            SampleName     cell      dex    albut        Run avgLength
+##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
+## SRR1039508 GSM1275862  N61311     untrt    untrt SRR1039508       126
+## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
+## SRR1039516 GSM1275870  N080611    untrt    untrt SRR1039516       120
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+##            Experiment    Sample    BioSample
+##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt;
+## SRR1039508  SRX384345 SRS508568 SAMN02422669
+## SRR1039512  SRX384349 SRS508571 SAMN02422678
+## SRR1039516  SRX384353 SRS508575 SAMN02422682
+## SRR1039520  SRX384357 SRS508579 SAMN02422683</code></pre>
+<pre class="r"><code>rowData(airway_sub)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 6 rows and 10 columns
+##                         gene_id   gene_name  entrezid   gene_biotype
+##                     &lt;character&gt; &lt;character&gt; &lt;integer&gt;    &lt;character&gt;
+## ENSG00000000003 ENSG00000000003      TSPAN6        NA protein_coding
+## ENSG00000000005 ENSG00000000005        TNMD        NA protein_coding
+## ENSG00000000419 ENSG00000000419        DPM1        NA protein_coding
+## ENSG00000001036 ENSG00000001036       FUCA2        NA protein_coding
+## ENSG00000001084 ENSG00000001084        GCLC        NA protein_coding
+## ENSG00000001167 ENSG00000001167        NFYA        NA protein_coding
+##                 gene_seq_start gene_seq_end    seq_name seq_strand
+##                      &lt;integer&gt;    &lt;integer&gt; &lt;character&gt;  &lt;integer&gt;
+## ENSG00000000003       99883667     99894988           X         -1
+## ENSG00000000005       99839799     99854882           X          1
+## ENSG00000000419       49551404     49575092          20         -1
+## ENSG00000001036      143815948    143832827           6         -1
+## ENSG00000001084       53362139     53481768           6         -1
+## ENSG00000001167       41040684     41067715           6          1
+##                 seq_coord_system      symbol
+##                        &lt;integer&gt; &lt;character&gt;
+## ENSG00000000003               NA      TSPAN6
+## ENSG00000000005               NA        TNMD
+## ENSG00000000419               NA        DPM1
+## ENSG00000001036               NA       FUCA2
+## ENSG00000001084               NA        GCLC
+## ENSG00000001167               NA        NFYA</code></pre>
+<p>Notice that this new object now has only 6 genes and 4 samples (the original has
+63677 genes and 8 samples).</p>
+<p>This sort of filtering is even nicer in <code>MultiAssayExperiment</code> where multiple
+<code>SummarizedExperiments</code> (or similar objects) are aggregated into a super object
+where the <code>colData</code> may be relevant to samples which appear in multiple assays.</p>
+<div class="float">
+<img src="images/mae.png" alt="MultiAssayExperiment data layout" />
+<div class="figcaption">MultiAssayExperiment data layout</div>
+</div>
+<p><code>MultiAssayExperiment</code> has some of the best written <a href="https://bioconductor.org/packages/release/bioc/vignettes/MultiAssayExperiment/inst/doc/QuickStartMultiAssay.html">vignettes</a>
+I’ve seen, and I thoroughly recommend reading them if you have any need to use
+this format</p>
+<pre class="r"><code>library(MultiAssayExperiment)</code></pre>
+<p>(building the object not shown)</p>
+<pre class="r"><code>mae &lt;- MultiAssayExperiment(experiments = ExpList, 
+                            colData = colDat,
+                            sampleMap = sampMap
+)
+
+mae</code></pre>
+<pre class="bg-success"><code>## A MultiAssayExperiment object of 4 listed
+##  experiments with user-defined names and respective classes.
+##  Containing an ExperimentList class object of length 4:
+##  [1] Affy: SummarizedExperiment with 5 rows and 4 columns
+##  [2] Methyl450k: matrix with 5 rows and 5 columns
+##  [3] RNASeqGene: matrix with 5 rows and 4 columns
+##  [4] GISTIC: RangedSummarizedExperiment with 5 rows and 3 columns
+## Functionality:
+##  experiments() - obtain the ExperimentList instance
+##  colData() - the primary/phenotype DataFrame
+##  sampleMap() - the sample coordination DataFrame
+##  `$`, `[`, `[[` - extract colData columns, subset, or experiment
+##  *Format() - convert into a long or wide DataFrame
+##  assays() - convert ExperimentList to a SimpleList of matrices
+##  exportClass() - save data to flat files</code></pre>
+<pre class="r"><code>colData(mae)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 4 rows and 2 columns
+##                 sex       age
+##         &lt;character&gt; &lt;integer&gt;
+## Jack              M        38
+## Jill              F        39
+## Bob               M        40
+## Barbara           F        41</code></pre>
+<p>Subsetting the different dimensions (rows, columns, assays) can be done with the
+following format</p>
+<pre class="r"><code>myMultiAssay[rows, columns, assays]</code></pre>
+<p>and since <code>mae$x</code> is defined to extract a <code>colData</code> column, I can subset this
+object to measurements of two genes in any assay for just the male subjects</p>
+<pre class="r"><code>mae[c(&quot;ENST00000355076&quot;, &quot;ENST00000383323&quot;), mae$sex == &quot;M&quot;, ]</code></pre>
+<pre class="bg-success"><code>## A MultiAssayExperiment object of 4 listed
+##  experiments with user-defined names and respective classes.
+##  Containing an ExperimentList class object of length 4:
+##  [1] Affy: SummarizedExperiment with 2 rows and 2 columns
+##  [2] Methyl450k: matrix with 2 rows and 3 columns
+##  [3] RNASeqGene: matrix with 1 rows and 2 columns
+##  [4] GISTIC: RangedSummarizedExperiment with 1 rows and 2 columns
+## Functionality:
+##  experiments() - obtain the ExperimentList instance
+##  colData() - the primary/phenotype DataFrame
+##  sampleMap() - the sample coordination DataFrame
+##  `$`, `[`, `[[` - extract colData columns, subset, or experiment
+##  *Format() - convert into a long or wide DataFrame
+##  assays() - convert ExperimentList to a SimpleList of matrices
+##  exportClass() - save data to flat files</code></pre>
+<p>All of that brings us to the <a href="https://tidyomics.com/">tidyOmics</a> project which
+aims to create tidy analysis packages for omics data. One of the packages there
+is <code>tidySummarizedExperiment</code> which is a reframing of <code>SummarizedExperiment</code> in
+a ‘tidy’ sense</p>
+<pre class="r"><code># remotes::install_github(&quot;stemangiola/tidySummarizedExperiment&quot;)
+tidySummarizedExperiment::pasilla</code></pre>
+<pre class="bg-success"><code>## # A SummarizedExperiment-tibble abstraction: 102,193 × 5
+## # Features=14599 | Samples=7 | Assays=counts
+##    .feature    .sample counts condition type      
+##    &lt;chr&gt;       &lt;chr&gt;    &lt;int&gt; &lt;chr&gt;     &lt;chr&gt;     
+##  1 FBgn0000003 untrt1       0 untreated single_end
+##  2 FBgn0000008 untrt1      92 untreated single_end
+##  3 FBgn0000014 untrt1       5 untreated single_end
+##  4 FBgn0000015 untrt1       0 untreated single_end
+##  5 FBgn0000017 untrt1    4664 untreated single_end
+##  6 FBgn0000018 untrt1     583 untreated single_end
+##  7 FBgn0000022 untrt1       0 untreated single_end
+##  8 FBgn0000024 untrt1      10 untreated single_end
+##  9 FBgn0000028 untrt1       0 untreated single_end
+## 10 FBgn0000032 untrt1    1446 untreated single_end
+## # ℹ 40 more rows</code></pre>
+<p>If you’re already familiar with <code>MultiAssayExperiment</code> then you may find this
+somewhat familiar to the <code>longFormat</code> output there</p>
+<pre class="r"><code>longFormat(mae)</code></pre>
+<pre class="bg-success"><code>## DataFrame with 80 rows and 5 columns
+##           assay     primary         rowname     colname     value
+##     &lt;character&gt; &lt;character&gt;     &lt;character&gt; &lt;character&gt; &lt;numeric&gt;
+## 1          Affy        Jack ENST00000294241      array1       101
+## 2          Affy        Jack ENST00000355076      array1       102
+## 3          Affy        Jack ENST00000383706      array1       103
+## 4          Affy        Jack ENST00000234812      array1       104
+## 5          Affy        Jack ENST00000383323      array1       105
+## ...         ...         ...             ...         ...       ...
+## 76       GISTIC        Jill ENST00000135411       samp2         0
+## 77       GISTIC        Jill ENST00000135412       samp2         1
+## 78       GISTIC        Jill ENST00000135413       samp2         0
+## 79       GISTIC        Jill ENST00000135414       samp2         1
+## 80       GISTIC        Jill ENST00000383323       samp2         0</code></pre>
+</div>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>That was a bit long winded, but I’ve been wanting to spell out my love for rownames
+which comes from this Bioconductor approach for some time. {DFplyr} is a bit of a
+mess internally, but I believe it has promise to be useful, so I’m interested in
+use-cases, failure modes, etc… The tidyOmics project defines a lot of new structures
+which need to interact with <code>DataFrame</code>s and I’m reasonably sure that {DFplyr} can
+help with that.</p>
+<p>If you have comments, suggestions, or improvements - or if you think {DFplyr} could
+be useful to you, feel free to use the comment section below, or hit me up on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-08-11
+##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package                  * version     date (UTC) lib source
+##  abind                      1.4-5       2016-07-21 [1] CRAN (R 4.3.3)
+##  airway                   * 1.22.0      2023-10-26 [1] Bioconductor
+##  Biobase                  * 2.62.0      2023-10-24 [1] Bioconductor
+##  BiocBaseUtils              1.4.0       2023-10-24 [1] Bioconductor
+##  BiocGenerics             * 0.48.1      2023-11-01 [1] Bioconductor
+##  BiocIO                     1.12.0      2023-10-24 [1] Bioconductor
+##  BiocParallel               1.36.0      2023-10-24 [1] Bioconductor
+##  Biostrings                 2.70.3      2024-03-13 [1] Bioconductor 3.18 (R 4.3.3)
+##  bitops                     1.0-7       2021-04-24 [1] CRAN (R 4.3.2)
+##  blogdown                   1.18        2023-06-19 [1] CRAN (R 4.3.2)
+##  bookdown                   0.36        2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib                      0.6.1       2023-11-28 [3] CRAN (R 4.3.2)
+##  cachem                     1.0.8       2023-05-01 [3] CRAN (R 4.3.0)
+##  callr                      3.7.3       2022-11-02 [3] CRAN (R 4.2.2)
+##  charcuterie              * 0.0.2       2024-08-07 [1] local
+##  cli                        3.6.1       2023-03-23 [1] CRAN (R 4.3.3)
+##  codetools                  0.2-19      2023-02-01 [4] CRAN (R 4.2.2)
+##  colorspace                 2.1-0       2023-01-23 [1] CRAN (R 4.3.3)
+##  crayon                     1.5.2       2022-09-29 [3] CRAN (R 4.2.1)
+##  data.table                 1.15.0      2024-01-30 [3] CRAN (R 4.3.2)
+##  DelayedArray               0.28.0      2023-10-24 [1] Bioconductor
+##  devtools                   2.4.5       2022-10-11 [1] CRAN (R 4.3.2)
+##  DFplyr                   * 0.0.1.9000  2024-08-11 [1] local
+##  digest                     0.6.34      2024-01-11 [3] CRAN (R 4.3.2)
+##  dplyr                    * 1.1.4       2023-11-17 [3] CRAN (R 4.3.2)
+##  ellipsis                   0.3.2       2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate                   0.23        2023-11-01 [3] CRAN (R 4.3.2)
+##  fansi                      1.0.6       2023-12-08 [1] CRAN (R 4.3.3)
+##  farver                     2.1.2       2024-05-13 [1] CRAN (R 4.3.3)
+##  fastmap                    1.1.1       2023-02-24 [3] CRAN (R 4.2.2)
+##  fs                         1.6.3       2023-07-20 [3] CRAN (R 4.3.1)
+##  generics                   0.1.3       2022-07-05 [3] CRAN (R 4.2.1)
+##  GenomeInfoDb             * 1.38.8      2024-03-15 [1] Bioconductor 3.18 (R 4.3.3)
+##  GenomeInfoDbData           1.2.11      2024-06-21 [1] Bioconductor
+##  GenomicAlignments          1.38.2      2024-01-16 [1] Bioconductor 3.18 (R 4.3.3)
+##  GenomicRanges            * 1.54.1      2023-10-29 [1] Bioconductor
+##  ggplot2                  * 3.5.1       2024-04-23 [1] CRAN (R 4.3.3)
+##  glue                       1.7.0       2024-01-09 [1] CRAN (R 4.3.3)
+##  gtable                     0.3.5       2024-04-22 [1] CRAN (R 4.3.3)
+##  highr                      0.9         2021-04-16 [3] CRAN (R 4.1.1)
+##  htmltools                  0.5.7       2023-11-03 [3] CRAN (R 4.3.2)
+##  htmlwidgets                1.6.2       2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv                     1.6.12      2023-10-23 [1] CRAN (R 4.3.2)
+##  httr                       1.4.7       2023-08-15 [3] CRAN (R 4.3.1)
+##  icecream                   0.2.1       2023-09-27 [1] CRAN (R 4.3.2)
+##  IRanges                  * 2.36.0      2023-10-24 [1] Bioconductor
+##  jquerylib                  0.1.4       2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite                   1.8.8       2023-12-04 [3] CRAN (R 4.3.2)
+##  knitr                      1.45        2023-10-30 [3] CRAN (R 4.3.2)
+##  labeling                   0.4.3       2023-08-29 [1] CRAN (R 4.3.3)
+##  later                      1.3.1       2023-05-02 [1] CRAN (R 4.3.2)
+##  lattice                    0.22-5      2023-10-24 [4] CRAN (R 4.3.1)
+##  lazyeval                   0.2.2       2019-03-15 [1] CRAN (R 4.3.2)
+##  lifecycle                  1.0.4       2023-11-07 [1] CRAN (R 4.3.3)
+##  magrittr                   2.0.3       2022-03-30 [1] CRAN (R 4.3.3)
+##  Matrix                     1.6-5       2024-01-11 [4] CRAN (R 4.3.3)
+##  MatrixGenerics           * 1.14.0      2023-10-24 [1] Bioconductor
+##  matrixStats              * 1.1.0       2023-11-07 [1] CRAN (R 4.3.2)
+##  memoise                    2.0.1       2021-11-26 [3] CRAN (R 4.2.0)
+##  mime                       0.12        2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI                     0.1.1.1     2018-05-18 [1] CRAN (R 4.3.2)
+##  MultiAssayExperiment     * 1.28.0      2023-10-24 [1] Bioconductor
+##  munsell                    0.5.1       2024-04-01 [1] CRAN (R 4.3.3)
+##  pillar                     1.9.0       2023-03-22 [1] CRAN (R 4.3.3)
+##  pkgbuild                   1.4.2       2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgconfig                  2.0.3       2019-09-22 [1] CRAN (R 4.3.3)
+##  pkgload                    1.3.3       2023-09-22 [1] CRAN (R 4.3.2)
+##  plotly                     4.10.4      2024-01-13 [1] CRAN (R 4.3.3)
+##  plyranges                  1.22.0      2023-10-24 [1] Bioconductor
+##  prettyunits                1.2.0       2023-09-24 [3] CRAN (R 4.3.1)
+##  processx                   3.8.3       2023-12-10 [3] CRAN (R 4.3.2)
+##  profvis                    0.3.8       2023-05-02 [1] CRAN (R 4.3.2)
+##  promises                   1.2.1       2023-08-10 [1] CRAN (R 4.3.2)
+##  ps                         1.7.6       2024-01-18 [3] CRAN (R 4.3.2)
+##  purrr                      1.0.2       2023-08-10 [3] CRAN (R 4.3.1)
+##  R6                         2.5.1       2021-08-19 [1] CRAN (R 4.3.3)
+##  Rcpp                       1.0.11      2023-07-06 [1] CRAN (R 4.3.2)
+##  RCurl                      1.98-1.14   2024-01-09 [1] CRAN (R 4.3.3)
+##  remotes                    2.4.2.1     2023-07-18 [1] CRAN (R 4.3.2)
+##  restfulr                   0.0.15      2022-06-16 [1] CRAN (R 4.3.3)
+##  rjson                      0.2.21      2022-01-09 [1] CRAN (R 4.3.3)
+##  rlang                      1.1.4       2024-06-04 [1] CRAN (R 4.3.3)
+##  rmarkdown                  2.25        2023-09-18 [3] CRAN (R 4.3.1)
+##  Rsamtools                  2.18.0      2023-10-24 [1] Bioconductor
+##  rstudioapi                 0.15.0      2023-07-07 [3] CRAN (R 4.3.1)
+##  rtracklayer                1.62.0      2023-10-24 [1] Bioconductor
+##  S4Arrays                   1.2.1       2024-03-04 [1] Bioconductor 3.18 (R 4.3.3)
+##  S4Vectors                * 0.40.2      2023-11-23 [1] Bioconductor 3.18 (R 4.3.3)
+##  sass                       0.4.8       2023-12-06 [3] CRAN (R 4.3.2)
+##  scales                     1.3.0       2023-11-28 [1] CRAN (R 4.3.2)
+##  sessioninfo                1.2.2       2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny                      1.7.5.1     2023-10-14 [1] CRAN (R 4.3.2)
+##  SparseArray                1.2.4       2024-02-11 [1] Bioconductor 3.18 (R 4.3.3)
+##  stringi                    1.8.3       2023-12-11 [3] CRAN (R 4.3.2)
+##  stringr                    1.5.1       2023-11-14 [3] CRAN (R 4.3.2)
+##  SummarizedExperiment     * 1.32.0      2023-10-24 [1] Bioconductor
+##  tibble                     3.2.1       2023-03-20 [1] CRAN (R 4.3.3)
+##  tidyr                      1.3.1       2024-01-24 [3] CRAN (R 4.3.2)
+##  tidyselect                 1.2.0       2022-10-10 [3] CRAN (R 4.2.1)
+##  tidySummarizedExperiment   1.15.1      2024-08-06 [1] Github (stemangiola/tidySummarizedExperiment@4b8a4e1)
+##  ttservice                  0.4.1       2024-06-07 [1] CRAN (R 4.3.3)
+##  urlchecker                 1.0.1       2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis                    3.0.0       2024-07-29 [1] CRAN (R 4.3.3)
+##  utf8                       1.2.4       2023-10-22 [1] CRAN (R 4.3.3)
+##  vctrs                      0.6.5       2023-12-01 [1] CRAN (R 4.3.3)
+##  viridisLite                0.4.2       2023-05-02 [1] CRAN (R 4.3.3)
+##  withr                      3.0.0       2024-01-16 [1] CRAN (R 4.3.3)
+##  xfun                       0.41        2023-11-01 [3] CRAN (R 4.3.2)
+##  XML                        3.99-0.16.1 2024-01-22 [1] CRAN (R 4.3.3)
+##  xtable                     1.8-4       2019-04-21 [1] CRAN (R 4.3.2)
+##  XVector                    0.42.0      2023-10-24 [1] Bioconductor
+##  yaml                       2.3.8       2023-12-11 [3] CRAN (R 4.3.2)
+##  zlibbioc                   1.48.2      2024-03-13 [1] Bioconductor 3.18 (R 4.3.3)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
