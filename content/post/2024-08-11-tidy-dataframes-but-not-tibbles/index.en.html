@@ -641,17 +641,17 @@ d</code></pre>
 ## Volvo 142E                4       109         1         4     121.0 chrX:32-41
 ##                          grY                    nl
 ##                    &lt;GRanges&gt;         &lt;NumericList&gt;
-## Mazda RX4          chrY:1-10 -1.72,-0.23,-1.00,...
-## Mazda RX4 Wag      chrY:2-11    0.74,0.93,0.80,...
-## Datsun 710         chrY:3-12 -2.29,-1.13,-0.08,...
-## Hornet 4 Drive     chrY:4-13      0.00,-0.32, 0.21
-## Hornet Sportabout  chrY:5-14      0.15,-0.04,-0.50
+## Mazda RX4          chrY:1-10    1.94,0.80,1.02,...
+## Mazda RX4 Wag      chrY:2-11  0.90, 1.52,-0.46,...
+## Datsun 710         chrY:3-12    1.64,0.47,0.66,...
+## Hornet 4 Drive     chrY:4-13      0.06, 1.93,-1.11
+## Hornet Sportabout  chrY:5-14     -1.01,-0.77,-0.04
 ## ...                      ...                   ...
-## Lotus Europa      chrY:28-37 -0.77, 0.95,-0.12,...
-## Ford Pantera L    chrY:29-38    0.74,0.56,0.01,...
-## Ferrari Dino      chrY:30-39    0.55,1.49,1.72,...
-## Maserati Bora     chrY:31-40 -0.68,-0.33, 0.85,...
-## Volvo 142E        chrY:32-41  1.29,-0.61, 0.84,...</code></pre>
+## Lotus Europa      chrY:28-37 -0.22, 0.66,-1.10,...
+## Ford Pantera L    chrY:29-38 -1.38, 0.74, 1.24,...
+## Ferrari Dino      chrY:30-39 -0.81, 1.10, 0.85,...
+## Maserati Bora     chrY:31-40    1.59,0.65,1.32,...
+## Volvo 142E        chrY:32-41    1.07,0.78,0.00,...</code></pre>
 <p>and add some more metadata about the <code>colData</code> columns</p>
 <pre class="r"><code>mcols(colData(se)) &lt;- DataFrame(
   position = paste0(&quot;column &quot;, 1:9), 
@@ -823,14 +823,14 @@ cdq</code></pre>
 ## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
 ##            Experiment    Sample    BioSample   quality
 ##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt; &lt;numeric&gt;
-## SRR1039508  SRX384345 SRS508568 SAMN02422669  0.296219
-## SRR1039509  SRX384346 SRS508567 SAMN02422675  0.367130
-## SRR1039512  SRX384349 SRS508571 SAMN02422678  0.807582
-## SRR1039513  SRX384350 SRS508572 SAMN02422670  0.536167
-## SRR1039516  SRX384353 SRS508575 SAMN02422682  0.102532
-## SRR1039517  SRX384354 SRS508576 SAMN02422673  0.598395
-## SRR1039520  SRX384357 SRS508579 SAMN02422683  0.825653
-## SRR1039521  SRX384358 SRS508580 SAMN02422677  0.785908</code></pre>
+## SRR1039508  SRX384345 SRS508568 SAMN02422669  0.386436
+## SRR1039509  SRX384346 SRS508567 SAMN02422675  0.566096
+## SRR1039512  SRX384349 SRS508571 SAMN02422678  0.327839
+## SRR1039513  SRX384350 SRS508572 SAMN02422670  0.744911
+## SRR1039516  SRX384353 SRS508575 SAMN02422682  0.331616
+## SRR1039517  SRX384354 SRS508576 SAMN02422673  0.728328
+## SRR1039520  SRX384357 SRS508579 SAMN02422683  0.626803
+## SRR1039521  SRX384358 SRS508580 SAMN02422677  0.248757</code></pre>
 <pre class="r"><code>mcols(cdq)</code></pre>
 <pre class="bg-success"><code>## DataFrame with 10 rows and 2 columns
 ##               position     is_ID
@@ -853,8 +853,8 @@ be removed</p>
   group_by(dex) |&gt; 
   summarise(avg_quality = mean(quality))</code></pre>
 <pre class="bg-success"><code>##     dex avg_quality
-## 1   trt   0.5718999
-## 2 untrt   0.5079965</code></pre>
+## 1   trt   0.5720231
+## 2 untrt   0.4181736</code></pre>
 <p>but rearranging them is fine</p>
 <pre class="r"><code>cdq |&gt; 
   arrange(desc(quality)) |&gt; 
@@ -862,16 +862,16 @@ be removed</p>
 <pre class="bg-success"><code>## DataFrame with 4 rows and 10 columns
 ##            SampleName     cell      dex    albut        Run avgLength
 ##              &lt;factor&gt; &lt;factor&gt; &lt;factor&gt; &lt;factor&gt;   &lt;factor&gt; &lt;integer&gt;
-## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
-## SRR1039512 GSM1275866  N052611    untrt    untrt SRR1039512       126
-## SRR1039521 GSM1275875  N061011    trt      untrt SRR1039521        98
+## SRR1039513 GSM1275867  N052611    trt      untrt SRR1039513        87
 ## SRR1039517 GSM1275871  N080611    trt      untrt SRR1039517       126
+## SRR1039520 GSM1275874  N061011    untrt    untrt SRR1039520       101
+## SRR1039509 GSM1275863  N61311     trt      untrt SRR1039509       126
 ##            Experiment    Sample    BioSample   quality
 ##              &lt;factor&gt;  &lt;factor&gt;     &lt;factor&gt; &lt;numeric&gt;
-## SRR1039520  SRX384357 SRS508579 SAMN02422683  0.825653
-## SRR1039512  SRX384349 SRS508571 SAMN02422678  0.807582
-## SRR1039521  SRX384358 SRS508580 SAMN02422677  0.785908
-## SRR1039517  SRX384354 SRS508576 SAMN02422673  0.598395</code></pre>
+## SRR1039513  SRX384350 SRS508572 SAMN02422670  0.744911
+## SRR1039517  SRX384354 SRS508576 SAMN02422673  0.728328
+## SRR1039520  SRX384357 SRS508579 SAMN02422683  0.626803
+## SRR1039509  SRX384346 SRS508567 SAMN02422675  0.566096</code></pre>
 <p>One thing that <code>DataFrame</code> lacks - as does <code>data.frame</code> - is the concept of groups.
 {tibble} resolved this by adding a <code>"groups"</code> attribute, so I did the same in {DFplyr} -
 I don’t own {S4Vectors}, so I had to mask some functions in order to build in this
@@ -984,17 +984,17 @@ d</code></pre>
 ## Volvo 142E                4       109         1         4     121.0 chrX:32-41
 ##                          grY                    nl  overlaps   quality
 ##                    &lt;GRanges&gt;         &lt;NumericList&gt; &lt;integer&gt; &lt;numeric&gt;
-## Mazda RX4          chrY:1-10 -1.72,-0.23,-1.00,...         4  0.601271
-## Mazda RX4 Wag      chrY:2-11    0.74,0.93,0.80,...         4  0.235676
-## Datsun 710         chrY:3-12 -2.29,-1.13,-0.08,...         4  0.601253
-## Hornet 4 Drive     chrY:4-13      0.00,-0.32, 0.21         4  0.922080
-## Hornet Sportabout  chrY:5-14      0.15,-0.04,-0.50         4  0.381433
+## Mazda RX4          chrY:1-10    1.94,0.80,1.02,...         4  0.144992
+## Mazda RX4 Wag      chrY:2-11  0.90, 1.52,-0.46,...         4  0.726243
+## Datsun 710         chrY:3-12    1.64,0.47,0.66,...         4  0.146000
+## Hornet 4 Drive     chrY:4-13      0.06, 1.93,-1.11         4  0.695177
+## Hornet Sportabout  chrY:5-14     -1.01,-0.77,-0.04         4  0.921556
 ## ...                      ...                   ...       ...       ...
-## Lotus Europa      chrY:28-37 -0.77, 0.95,-0.12,...         0 0.8200803
-## Ford Pantera L    chrY:29-38    0.74,0.56,0.01,...         0 0.5455487
-## Ferrari Dino      chrY:30-39    0.55,1.49,1.72,...         0 0.8182348
-## Maserati Bora     chrY:31-40 -0.68,-0.33, 0.85,...         0 0.0362457
-## Volvo 142E        chrY:32-41  1.29,-0.61, 0.84,...         0 0.4937573
+## Lotus Europa      chrY:28-37 -0.22, 0.66,-1.10,...         0  0.371289
+## Ford Pantera L    chrY:29-38 -1.38, 0.74, 1.24,...         0  0.420842
+## Ferrari Dino      chrY:30-39 -0.81, 1.10, 0.85,...         0  0.890471
+## Maserati Bora     chrY:31-40    1.59,0.65,1.32,...         0  0.395305
+## Volvo 142E        chrY:32-41    1.07,0.78,0.00,...         0  0.532688
 ##                      nearest
 ##                    &lt;GRanges&gt;
 ## Mazda RX4          chrX:1-10
@@ -1014,18 +1014,24 @@ d</code></pre>
   filter(overlaps &gt; 0) |&gt; 
   slice(1:4)</code></pre>
 <pre class="bg-success"><code>## DataFrame with 4 rows and 11 columns
-##                      cyl        hp        am      gear      disp        grX
-##                &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;  &lt;GRanges&gt;
-## Hornet 4 Drive         6       110         0         3     258.0  chrX:4-13
-## Merc 450SLC            8       180         0         3     275.8 chrX:14-23
-## Mazda RX4              6       110         1         4     160.0  chrX:1-10
-## Datsun 710             4        93         1         4     108.0  chrX:3-12
-##                       grY                    nl  overlaps   quality    nearest
-##                 &lt;GRanges&gt;         &lt;NumericList&gt; &lt;integer&gt; &lt;numeric&gt;  &lt;GRanges&gt;
-## Hornet 4 Drive  chrY:4-13      0.00,-0.32, 0.21         4  0.922080  chrX:4-13
-## Merc 450SLC    chrY:14-23        0.68,1.26,0.44         1  0.628694 chrX:14-23
-## Mazda RX4       chrY:1-10 -1.72,-0.23,-1.00,...         4  0.601271  chrX:1-10
-## Datsun 710      chrY:3-12 -2.29,-1.13,-0.08,...         4  0.601253  chrX:3-12</code></pre>
+##                         cyl        hp        am      gear      disp        grX
+##                   &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt; &lt;numeric&gt;  &lt;GRanges&gt;
+## Merc 280C                 6       123         0         4     167.6 chrX:11-20
+## Merc 450SL                8       180         0         3     275.8 chrX:13-22
+## Merc 450SE                8       180         0         3     275.8 chrX:12-21
+## Hornet Sportabout         8       175         0         3     360.0  chrX:5-14
+##                          grY                    nl  overlaps   quality
+##                    &lt;GRanges&gt;         &lt;NumericList&gt; &lt;integer&gt; &lt;numeric&gt;
+## Merc 280C         chrY:11-20 -0.08, 0.55,-0.59,...         4  0.990185
+## Merc 450SL        chrY:13-22      1.23,-0.35, 0.04         2  0.979190
+## Merc 450SE        chrY:12-21      2.60, 0.98,-1.50         3  0.958658
+## Hornet Sportabout  chrY:5-14     -1.01,-0.77,-0.04         4  0.921556
+##                      nearest
+##                    &lt;GRanges&gt;
+## Merc 280C         chrX:11-20
+## Merc 450SL        chrX:13-22
+## Merc 450SE        chrX:12-21
+## Hornet Sportabout  chrX:5-14</code></pre>
 <p>You don’t necessarily need to extract the <code>DataFrame</code> into a variable, either -
 working with the extraction directly could be cleaner in some cases</p>
 <pre class="r"><code>count(colData(se), cell)</code></pre>
@@ -1036,18 +1042,16 @@ working with the extraction directly could be cleaner in some cases</p>
 ## 2  N061011         2
 ## 3  N080611         2
 ## 4  N61311          2</code></pre>
-</div>
-<div id="you-want-more" class="section level2">
-<h2>You Want More?</h2>
-<p>When I first wrote {DFplyr} a <code>DataFrame</code> wouldn’t work in {ggplot2}, but it seems
-it does now, so we can easily plot sample metadata</p>
-<pre class="r"><code>library(ggplot2)
-
-ggplot(colData(airway), aes(dex, avgLength)) + 
-  geom_boxplot() +
-  geom_point(aes(col = cell), position = position_jitter(width = 0.2), size = 4)</code></pre>
-<p><img src="{{< blogdown/postref >}}index.en_files/figure-html/unnamed-chunk-50-1.png" width="672" /></p>
-<p>I suppose I can remove the support from {DFplyr} now.</p>
+<!-- ## Plotting -->
+<!-- When I first wrote {DFplyr} a `DataFrame` wouldn't work in {ggplot2}, but it seems -->
+<!-- it does now, so we can easily plot sample metadata -->
+<!-- ```{r} -->
+<!-- library(ggplot2) -->
+<!-- ggplot(colData(airway), aes(dex, avgLength)) + -->
+<!--   geom_boxplot() + -->
+<!--   geom_point(aes(col = cell), position = position_jitter(width = 0.2), size = 4) -->
+<!-- ``` -->
+<!-- I suppose I can remove the support from {DFplyr} now. -->
 </div>
 <div id="other-ways-to-filter" class="section level2">
 <h2>Other Ways to Filter</h2>
@@ -1260,7 +1264,7 @@ be useful to you, feel free to use the comment section below, or hit me up on
 ##  BiocParallel               1.36.0      2023-10-24 [1] Bioconductor
 ##  Biostrings                 2.70.3      2024-03-13 [1] Bioconductor 3.18 (R 4.3.3)
 ##  bitops                     1.0-7       2021-04-24 [1] CRAN (R 4.3.2)
-##  blogdown                   1.18        2023-06-19 [1] CRAN (R 4.3.2)
+##  blogdown                   1.19        2024-02-01 [1] CRAN (R 4.3.3)
 ##  bookdown                   0.36        2023-10-16 [1] CRAN (R 4.3.2)
 ##  bslib                      0.6.1       2023-11-28 [3] CRAN (R 4.3.2)
 ##  cachem                     1.0.8       2023-05-01 [3] CRAN (R 4.3.0)
@@ -1279,7 +1283,6 @@ be useful to you, feel free to use the comment section below, or hit me up on
 ##  ellipsis                   0.3.2       2021-04-29 [3] CRAN (R 4.1.1)
 ##  evaluate                   0.23        2023-11-01 [3] CRAN (R 4.3.2)
 ##  fansi                      1.0.6       2023-12-08 [1] CRAN (R 4.3.3)
-##  farver                     2.1.2       2024-05-13 [1] CRAN (R 4.3.3)
 ##  fastmap                    1.1.1       2023-02-24 [3] CRAN (R 4.2.2)
 ##  fs                         1.6.3       2023-07-20 [3] CRAN (R 4.3.1)
 ##  generics                   0.1.3       2022-07-05 [3] CRAN (R 4.2.1)
@@ -1287,10 +1290,9 @@ be useful to you, feel free to use the comment section below, or hit me up on
 ##  GenomeInfoDbData           1.2.11      2024-06-21 [1] Bioconductor
 ##  GenomicAlignments          1.38.2      2024-01-16 [1] Bioconductor 3.18 (R 4.3.3)
 ##  GenomicRanges            * 1.54.1      2023-10-29 [1] Bioconductor
-##  ggplot2                  * 3.5.1       2024-04-23 [1] CRAN (R 4.3.3)
+##  ggplot2                    3.5.1       2024-04-23 [1] CRAN (R 4.3.3)
 ##  glue                       1.7.0       2024-01-09 [1] CRAN (R 4.3.3)
 ##  gtable                     0.3.5       2024-04-22 [1] CRAN (R 4.3.3)
-##  highr                      0.9         2021-04-16 [3] CRAN (R 4.1.1)
 ##  htmltools                  0.5.7       2023-11-03 [3] CRAN (R 4.3.2)
 ##  htmlwidgets                1.6.2       2023-03-17 [1] CRAN (R 4.3.2)
 ##  httpuv                     1.6.12      2023-10-23 [1] CRAN (R 4.3.2)
@@ -1300,7 +1302,6 @@ be useful to you, feel free to use the comment section below, or hit me up on
 ##  jquerylib                  0.1.4       2021-04-26 [3] CRAN (R 4.1.2)
 ##  jsonlite                   1.8.8       2023-12-04 [3] CRAN (R 4.3.2)
 ##  knitr                      1.45        2023-10-30 [3] CRAN (R 4.3.2)
-##  labeling                   0.4.3       2023-08-29 [1] CRAN (R 4.3.3)
 ##  later                      1.3.1       2023-05-02 [1] CRAN (R 4.3.2)
 ##  lattice                    0.22-5      2023-10-24 [4] CRAN (R 4.3.1)
 ##  lazyeval                   0.2.2       2019-03-15 [1] CRAN (R 4.3.2)

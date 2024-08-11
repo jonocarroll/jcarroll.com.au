@@ -607,20 +607,20 @@ working with the extraction directly could be cleaner in some cases
 count(colData(se), cell)
 ```
 
-## You Want More?
+<!-- ## Plotting -->
 
-When I first wrote {DFplyr} a `DataFrame` wouldn't work in {ggplot2}, but it seems 
-it does now, so we can easily plot sample metadata
+<!-- When I first wrote {DFplyr} a `DataFrame` wouldn't work in {ggplot2}, but it seems -->
+<!-- it does now, so we can easily plot sample metadata -->
 
-```{r}
-library(ggplot2)
+<!-- ```{r} -->
+<!-- library(ggplot2) -->
 
-ggplot(colData(airway), aes(dex, avgLength)) + 
-  geom_boxplot() +
-  geom_point(aes(col = cell), position = position_jitter(width = 0.2), size = 4)
-```
+<!-- ggplot(colData(airway), aes(dex, avgLength)) + -->
+<!--   geom_boxplot() + -->
+<!--   geom_point(aes(col = cell), position = position_jitter(width = 0.2), size = 4) -->
+<!-- ``` -->
 
-I suppose I can remove the support from {DFplyr} now.
+<!-- I suppose I can remove the support from {DFplyr} now. -->
 
 ## Other Ways to Filter
 
