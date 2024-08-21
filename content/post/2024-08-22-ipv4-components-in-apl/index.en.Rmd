@@ -1,0 +1,425 @@
+---
+title: IPv4 Components in APL
+author: Jonathan Carroll
+date: '2024-08-22'
+slug: ipv4-components-in-apl
+categories:
+  - APL
+  - rstats
+tags:
+  - APL
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+At a recent APL-focussed Meetup someone posed a challenge to slice up the 
+components of an IPv4 address with an APL language and it prompted me to learn 
+a bit more about how that works in general and how I could do the processing in 
+APL myself.
+
+<!--more-->
+
+At a recent APL-focussed Meetup someone posed a challenge to slice up the 
+components of an IPv4 address with an APL language and it prompted me to learn 
+a bit more about how that works in general and how I could do the processing in 
+APL myself.
+
+The person who posed the challenge had approached it themselves using [J](https://en.wikipedia.org/wiki/J_(programming_language)) 
+which I'm only vaguely familiar with, but it gave me an opportunity to learn a bit more 
+about it. It's not all that dissimilar from the Dyalog APL I know a bit better; 
+it uses a standard ASCII input with many of the same ideas - for example, determining 
+whether a year is a leapyear or not [as I explored recently](https://jcarroll.xyz/2024/08/19/leap-years-with.html)
+
+In Dyalog APL:
+
+```apl
+⍝ Dyalog APL
+      leapyear ← {(80∨⍵) > 50∨⍵}
+      years ← 1890+⍳30
+      (leapyear years) ⌿ years
+1892 1896 1904 1908 1912 1916 1920
+
+⍝ or tacit
+      leapyear ← 80∘∨ > 50∘∨
+```
+
+compared to J:
+
+```j
+NB. J
+   leapyear =: {{ (80 +. y) > (50 +. y) }}
+   years =: 1890 + i.31
+   (leapyear years) # years
+1892 1896 1904 1908 1912 1916 1920
+
+NB. or tatic
+   leapyear =: 80&+. > 50&+.
+```
+
+It's fairly straightforward to see the correlation between these two.
+
+I don't think we worked through the J solution to slicing up the components 
+of an IPv4 address, but I did have a go during the meeting at a Dyalog APL 
+solution, which we walked through and I've since improved.
+
+The problem as posed was - given an IPv4 address, e.g. '192.0.2.63' and a subnet 
+mask in [CIDR notation](https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing#CIDR_notation) 
+(e.g. `/24`), can we identify the different networking components?
+
+This is a neat problem because it potentially involves arrays - maybe we should 
+start with what this means. I'm no expert in this myself, but explaining things 
+is a great way to learn more about them, so feel free to correct me at any point.
+
+I started with [this guide](https://www.auvik.com/franklyit/blog/what-is-subnet-mask/) 
+which I _know_ already has a mistake in one of the graphics - can you find it?
+
+An IPv4 address consists of four octets separated by dots, each number representing 
+8 bits (hence 'octet') which in binary means 8 `1`s or `0`s for a maximum value of 255
+
+```
+192 = 11000000
+    = 1x(2^8) + 1x(2^7) + 0x(2^6) + 0x(2^5) + ... 
+    = 256 + 128 + 0
+```
+
+so we have four of these sets of 8 binary values that represent an address.
+
+The subnet mask is described by the CIDR block and it essentially represents how 
+many `1`s are at the start of an address, so if the mask is '255.0.0.0' then it 
+would be
+
+```
+11111111 00000000 00000000 00000000
+```
+
+which is 8 `1`s, so it would be `/8`. Similarly `/26` would have 26 `1`s and 
+converting from binary to decimal would represent a mask of '255.255.255.192'.
+
+So, given an address and a CIDR block, what is the mask?
+
+First, we need to convert our address from a string to an array of binary digits. 
+One way to partition a string at a character in APL is 
+
+```apl
+      '.'(≠⊆⊢)'192.0.2.63'
+192  0  2  63      
+```
+
+and we can convert this array of strings to numbers with 'eval'
+
+```apl
+      ⍎¨'.'(≠⊆⊢)'192.0.2.63'
+192 0 2 63
+```
+
+Converting to binary in APL is as easy as 'decode' with a radix of 8 `2`s
+
+```apl
+      2 2 2 2 2 2 2 2 ⊤ ⍎¨'.'(≠⊆⊢)'192.0.2.63'
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1
+```
+
+but of course we can write all those `2`s with either `(8⍴2)` ('reshape' a value 
+of `2` to length 8) or `(8/2)` ('repeat' `2` 8 times) so
+
+```apl
+      (8⍴2)⊤⍎¨'.'(≠⊆⊢)'192.0.2.63'
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1
+```
+
+That gives us the binary sequences for each of the octets as columns of an array. 
+It's a lot to type out each time, though, so we can create a function that 
+takes a right argument
+
+```apl
+      asbin←{(8/2)⊤⍎¨'.'(≠⊆⊢)⍵}
+      asbin '192.0.2.63'
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1
+```
+
+Of course, if we want to go back the other way and see this as an IP address made 
+of octets, we can 'paste' the values (converted back to integers) together with 
+dots between them with
+
+```apl
+      asoct←2∘⊥
+      asip←{∊(⍕¨⍵),¨'.' '.' '.' ''}
+```
+
+The first of these creates a "curried" (partially applied) 'decode' with radix `2`, 
+while the second 'format's the values in the specified pattern, so
+
+```apl
+      asoct asbin '192.0.2.63'
+192 0 2 63
+
+      asip asoct asbin '192.0.2.63'
+192.0.2.63
+```
+
+Cool, we can round-trip this.
+
+The subnet mask is a series of `1`s filled to 32 values with `0`s which we can write as
+
+```apl
+      mask←{⍉4 8 ⍴ 1=⍸⍵ 0 (32-⍵)}
+```
+
+which creates a 4x8 array of values filled with the right number of `1`s
+
+```apl
+      mask 26
+1 1 1 1
+1 1 1 1
+1 1 1 0
+1 1 1 0
+1 1 1 0
+1 1 1 0
+1 1 1 0
+1 1 1 0
+```
+
+We can view this subnet mask with this new function, too
+
+```apl
+      asoct mask 26
+255 255 255 192
+
+      asip asoct mask 26
+255.255.255.192
+```
+
+The 'network address' for this address is found by a bitwise AND between this 
+mask and the IP address, and APL has a builtin 'and' 
+
+```
+      (mask 26) ∧ asbin '192.0.2.63'
+1 0 0 0
+1 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 1 0
+0 0 0 0
+
+      asip asoct (mask 26) ∧ asbin '192.0.2.63'
+192.0.2.0
+```
+
+The 'broadcast address' is found by a bitwise OR between the _inverse_ of the 
+mask and the IP address
+
+```apl
+      (~mask 26) ∨ asbin '192.0.2.63'
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1
+
+      asip asoct (~mask 26) ∨ asbin '192.0.2.63'
+192.0.2.63
+```
+
+Looking at what we have so far, we can write out some functions
+
+```apl
+      asip←{∊(⍕¨⍵),¨'.' '.' '.' ''}
+      asoct←2∘⊥
+      mask←{⍉4 8 ⍴ 1=⍸⍵ 0 (32-⍵)}
+      smask←{asip asoct mask ⍵}
+      asbin←{(8/2)⊤⍎¨'.'(≠⊆⊢)⍵}
+      netaddr←{asip asoct (mask ⍺) ∧ asbin ⍵}
+      bcast←{asip asoct (~mask ⍺) ∨ asbin ⍵}
+```
+
+and try these on some different addresses
+
+```apl
+      ip←'192.168.0.1'
+      smask 8
+255.0.0.0
+
+      26 netaddr ip
+192.168.0.0
+
+      26 bcast ip
+192.168.0.63
+
+      ip←'142.250.70.174'
+      
+      16 netaddr ip
+142.250.0.0
+
+      16 bcast ip
+142.250.255.255
+```
+
+Cool!
+
+We could also calculate the number of hosts that can be assigned, since 
+that's just 2 to the power of the number of host bits (non-network bits), minus 
+the network and broadcast addresses
+
+```apl
+      nhosts←{¯2+2*(32-⍵)}
+      nhosts 26
+62
+```
+
+We could list the entire range of host IPs, except we need to offset the 
+network and broadcast addresses. Time to make some utilities
+
+```apl
+      netutil←{asoct (mask ⍺) ∧ asbin ⍵}
+      butil←{asoct (~mask ⍺) ∨ asbin ⍵}
+
+      bcast1←{x←⍺ butil ⍵ ⋄ x[4]←x[4]-1 ⋄ asip x}
+      netaddr1←{x←⍺ netutil ⍵ ⋄ x[4]←x[4]+1 ⋄ asip x}
+      
+      iprange←{n←⍺ netaddr1 ⍵ ⋄ b←⍺ bcast1 ⍵ ⋄ n,'-',b}
+      
+      26 iprange '192.0.2.63'
+192.0.2.1-192.0.2.62
+```
+
+That seems like a good set of utilities - and a great opportunity to learn about 
+how Dyalog APL packages up things into namespaces. One way is to write the 
+functions to a file, say `SubnetCalc.dyalog` as
+
+```
+:Namespace SubnetCalc
+    asip←{∊(⍕¨⍵),¨'.' '.' '.' ''}
+    asoct←{2⊥⍵}
+    mask←{⍉4 8 ⍴ 1=⍸⍵ 0 (32-⍵)}
+    nhosts←{¯2+2*(32-⍵)}
+    smask←{asip asoct mask ⍵}
+    asbin←{(8/2)⊤⍎¨'.'(≠⊆⊢)⍵}
+    netutil←{asoct (mask ⍺)∧asbin ⍵}
+    netaddr←{asip ⍺ netutil ⍵}
+    netaddr1←{x←⍺ netutil ⍵ ⋄ x[4]←x[4]+1 ⋄ asip x}
+    butil←{asoct (~mask ⍺)∨asbin ⍵}
+    bcast←{asip ⍺ butil ⍵}
+    bcast1←{x←⍺ butil ⍵ ⋄ x[4]←x[4]-1 ⋄ asip x}
+    iprange←{n←⍺ netaddr1 ⍵ ⋄ b←⍺ bcast1 ⍵ ⋄ n,'-',b}
+:EndNamespace
+```
+
+(noting that I needed to use explicit defuns rather than just tacit calls) then 
+load that into the RIDE editor session with
+
+```apl
+⎕FIX '/path/to/project/SubnetCalc.dyalog'
+```
+
+and give it a shorter name, if desired
+
+```apl
+'ip' ⎕NS SubnetCalc
+```
+
+Now I can call my functions even faster
+
+```apl
+      ip.smask 26
+255.255.255.192
+
+      google←'142.250.70.174'
+
+      26 ip.iprange google
+142.250.70.129-142.250.70.190
+```
+
+Dyalog has recently announced a proper package infrastructure [Tatin](https://tatin.dev/) 
+which might come as a surprise to those more familiar with newer languages, but 
+it's actually one of the _first_ package ecosystems for an APL language that I
+know of. I want to figure out whether my 'toy' package is too simplistic to be 
+shared, or if it's worth learning those ropes. At the moment all the packages 
+in that system are internally sourced, but presumably that would open up to 
+external users once it's stabilised.
+
+All of this was a lot of fun and I learned a lot. How would I go about this 
+in another language? Well, there's almost always an R package for something, and 
+sure enough there's an {ipaddress} package on CRAN that has all of this 
+functionality plus more, though it does seem to rely on compiling some C++ code 
+to do it.
+
+```{r}
+library(ipaddress)
+
+ip <- ip_address("192.0.2.44")
+ip_to_binary(ip)                     # c.f. asbin
+ipn <- ip_network("192.0.2.0/26")
+prefix_length(ipn)                   # c.f. nhosts
+network_address(ipn)                 # c.f. netaddr
+broadcast_address(ipn)               # c.f. bcast
+netmask(ipn)                         # c.f. smask
+hostmask(ipn)
+range(hosts(ipn))                    # c.f. iprange
+is_within(ip, ipn)
+```
+
+One of the advantages of the APL approach, I feel, is that you can see exactly
+what the function is doing - often there's no point naming a function because
+any useful name you might give it typically has more characters than the actual
+implementation. Digging into this package even slightly, it's not immediately
+obvious where the processing is happening. I sometimes worry that we add too
+many layers to higher and higher abstractions, though I appreciate that
+sometimes gets us a lot of benefit.
+
+I wouldn't use my APL code in production - it has no checks or error handling, but 
+building these helped me really understand what's going on between all the ones 
+and zeroes.
+
+If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+[Mastodon](https://fosstodon.org/@jonocarroll). 
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

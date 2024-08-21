@@ -1,0 +1,385 @@
+---
+title: IPv4 Components in APL
+author: Jonathan Carroll
+date: '2024-08-22'
+slug: ipv4-components-in-apl
+categories:
+  - APL
+  - rstats
+tags:
+  - APL
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>At a recent APL-focussed Meetup someone posed a challenge to slice up the
+components of an IPv4 address with an APL language and it prompted me to learn
+a bit more about how that works in general and how I could do the processing in
+APL myself.</p>
+<!--more-->
+<p>At a recent APL-focussed Meetup someone posed a challenge to slice up the
+components of an IPv4 address with an APL language and it prompted me to learn
+a bit more about how that works in general and how I could do the processing in
+APL myself.</p>
+<p>The person who posed the challenge had approached it themselves using <a href="https://en.wikipedia.org/wiki/J_(programming_language)">J</a>
+which I’m only vaguely familiar with, but it gave me an opportunity to learn a bit more
+about it. It’s not all that dissimilar from the Dyalog APL I know a bit better;
+it uses a standard ASCII input with many of the same ideas - for example, determining
+whether a year is a leapyear or not <a href="https://jcarroll.xyz/2024/08/19/leap-years-with.html">as I explored recently</a></p>
+<p>In Dyalog APL:</p>
+<pre class="apl"><code>⍝ Dyalog APL
+      leapyear ← {(80∨⍵) &gt; 50∨⍵}
+      years ← 1890+⍳30
+      (leapyear years) ⌿ years
+1892 1896 1904 1908 1912 1916 1920
+
+⍝ or tacit
+      leapyear ← 80∘∨ &gt; 50∘∨</code></pre>
+<p>compared to J:</p>
+<pre class="j"><code>NB. J
+   leapyear =: {{ (80 +. y) &gt; (50 +. y) }}
+   years =: 1890 + i.31
+   (leapyear years) # years
+1892 1896 1904 1908 1912 1916 1920
+
+NB. or tatic
+   leapyear =: 80&amp;+. &gt; 50&amp;+.</code></pre>
+<p>It’s fairly straightforward to see the correlation between these two.</p>
+<p>I don’t think we worked through the J solution to slicing up the components
+of an IPv4 address, but I did have a go during the meeting at a Dyalog APL
+solution, which we walked through and I’ve since improved.</p>
+<p>The problem as posed was - given an IPv4 address, e.g. ‘192.0.2.63’ and a subnet
+mask in <a href="https://en.wikipedia.org/wiki/Classless_Inter-Domain_Routing#CIDR_notation">CIDR notation</a>
+(e.g. <code>/24</code>), can we identify the different networking components?</p>
+<p>This is a neat problem because it potentially involves arrays - maybe we should
+start with what this means. I’m no expert in this myself, but explaining things
+is a great way to learn more about them, so feel free to correct me at any point.</p>
+<p>I started with <a href="https://www.auvik.com/franklyit/blog/what-is-subnet-mask/">this guide</a>
+which I <em>know</em> already has a mistake in one of the graphics - can you find it?</p>
+<p>An IPv4 address consists of four octets separated by dots, each number representing
+8 bits (hence ‘octet’) which in binary means 8 <code>1</code>s or <code>0</code>s for a maximum value of 255</p>
+<pre><code>192 = 11000000
+    = 1x(2^8) + 1x(2^7) + 0x(2^6) + 0x(2^5) + ... 
+    = 256 + 128 + 0</code></pre>
+<p>so we have four of these sets of 8 binary values that represent an address.</p>
+<p>The subnet mask is described by the CIDR block and it essentially represents how
+many <code>1</code>s are at the start of an address, so if the mask is ‘255.0.0.0’ then it
+would be</p>
+<pre><code>11111111 00000000 00000000 00000000</code></pre>
+<p>which is 8 <code>1</code>s, so it would be <code>/8</code>. Similarly <code>/26</code> would have 26 <code>1</code>s and
+converting from binary to decimal would represent a mask of ‘255.255.255.192’.</p>
+<p>So, given an address and a CIDR block, what is the mask?</p>
+<p>First, we need to convert our address from a string to an array of binary digits.
+One way to partition a string at a character in APL is</p>
+<pre class="apl"><code>      &#39;.&#39;(≠⊆⊢)&#39;192.0.2.63&#39;
+192  0  2  63      </code></pre>
+<p>and we can convert this array of strings to numbers with ‘eval’</p>
+<pre class="apl"><code>      ⍎¨&#39;.&#39;(≠⊆⊢)&#39;192.0.2.63&#39;
+192 0 2 63</code></pre>
+<p>Converting to binary in APL is as easy as ‘decode’ with a radix of 8 <code>2</code>s</p>
+<pre class="apl"><code>      2 2 2 2 2 2 2 2 ⊤ ⍎¨&#39;.&#39;(≠⊆⊢)&#39;192.0.2.63&#39;
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1</code></pre>
+<p>but of course we can write all those <code>2</code>s with either <code>(8⍴2)</code> (‘reshape’ a value
+of <code>2</code> to length 8) or <code>(8/2)</code> (‘repeat’ <code>2</code> 8 times) so</p>
+<pre class="apl"><code>      (8⍴2)⊤⍎¨&#39;.&#39;(≠⊆⊢)&#39;192.0.2.63&#39;
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1</code></pre>
+<p>That gives us the binary sequences for each of the octets as columns of an array.
+It’s a lot to type out each time, though, so we can create a function that
+takes a right argument</p>
+<pre class="apl"><code>      asbin←{(8/2)⊤⍎¨&#39;.&#39;(≠⊆⊢)⍵}
+      asbin &#39;192.0.2.63&#39;
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1</code></pre>
+<p>Of course, if we want to go back the other way and see this as an IP address made
+of octets, we can ‘paste’ the values (converted back to integers) together with
+dots between them with</p>
+<pre class="apl"><code>      asoct←2∘⊥
+      asip←{∊(⍕¨⍵),¨&#39;.&#39; &#39;.&#39; &#39;.&#39; &#39;&#39;}</code></pre>
+<p>The first of these creates a “curried” (partially applied) ‘decode’ with radix <code>2</code>,
+while the second ’format’s the values in the specified pattern, so</p>
+<pre class="apl"><code>      asoct asbin &#39;192.0.2.63&#39;
+192 0 2 63
+
+      asip asoct asbin &#39;192.0.2.63&#39;
+192.0.2.63</code></pre>
+<p>Cool, we can round-trip this.</p>
+<p>The subnet mask is a series of <code>1</code>s filled to 32 values with <code>0</code>s which we can write as</p>
+<pre class="apl"><code>      mask←{⍉4 8 ⍴ 1=⍸⍵ 0 (32-⍵)}</code></pre>
+<p>which creates a 4x8 array of values filled with the right number of <code>1</code>s</p>
+<pre class="apl"><code>      mask 26
+1 1 1 1
+1 1 1 1
+1 1 1 0
+1 1 1 0
+1 1 1 0
+1 1 1 0
+1 1 1 0
+1 1 1 0</code></pre>
+<p>We can view this subnet mask with this new function, too</p>
+<pre class="apl"><code>      asoct mask 26
+255 255 255 192
+
+      asip asoct mask 26
+255.255.255.192</code></pre>
+<p>The ‘network address’ for this address is found by a bitwise AND between this
+mask and the IP address, and APL has a builtin ‘and’</p>
+<pre><code>      (mask 26) ∧ asbin &#39;192.0.2.63&#39;
+1 0 0 0
+1 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 0 0
+0 0 1 0
+0 0 0 0
+
+      asip asoct (mask 26) ∧ asbin &#39;192.0.2.63&#39;
+192.0.2.0</code></pre>
+<p>The ‘broadcast address’ is found by a bitwise OR between the <em>inverse</em> of the
+mask and the IP address</p>
+<pre class="apl"><code>      (~mask 26) ∨ asbin &#39;192.0.2.63&#39;
+1 0 0 0
+1 0 0 0
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 0 1
+0 0 1 1
+0 0 0 1
+
+      asip asoct (~mask 26) ∨ asbin &#39;192.0.2.63&#39;
+192.0.2.63</code></pre>
+<p>Looking at what we have so far, we can write out some functions</p>
+<pre class="apl"><code>      asip←{∊(⍕¨⍵),¨&#39;.&#39; &#39;.&#39; &#39;.&#39; &#39;&#39;}
+      asoct←2∘⊥
+      mask←{⍉4 8 ⍴ 1=⍸⍵ 0 (32-⍵)}
+      smask←{asip asoct mask ⍵}
+      asbin←{(8/2)⊤⍎¨&#39;.&#39;(≠⊆⊢)⍵}
+      netaddr←{asip asoct (mask ⍺) ∧ asbin ⍵}
+      bcast←{asip asoct (~mask ⍺) ∨ asbin ⍵}</code></pre>
+<p>and try these on some different addresses</p>
+<pre class="apl"><code>      ip←&#39;192.168.0.1&#39;
+      smask 8
+255.0.0.0
+
+      26 netaddr ip
+192.168.0.0
+
+      26 bcast ip
+192.168.0.63
+
+      ip←&#39;142.250.70.174&#39;
+      
+      16 netaddr ip
+142.250.0.0
+
+      16 bcast ip
+142.250.255.255</code></pre>
+<p>Cool!</p>
+<p>We could also calculate the number of hosts that can be assigned, since
+that’s just 2 to the power of the number of host bits (non-network bits), minus
+the network and broadcast addresses</p>
+<pre class="apl"><code>      nhosts←{¯2+2*(32-⍵)}
+      nhosts 26
+62</code></pre>
+<p>We could list the entire range of host IPs, except we need to offset the
+network and broadcast addresses. Time to make some utilities</p>
+<pre class="apl"><code>      netutil←{asoct (mask ⍺) ∧ asbin ⍵}
+      butil←{asoct (~mask ⍺) ∨ asbin ⍵}
+
+      bcast1←{x←⍺ butil ⍵ ⋄ x[4]←x[4]-1 ⋄ asip x}
+      netaddr1←{x←⍺ netutil ⍵ ⋄ x[4]←x[4]+1 ⋄ asip x}
+      
+      iprange←{n←⍺ netaddr1 ⍵ ⋄ b←⍺ bcast1 ⍵ ⋄ n,&#39;-&#39;,b}
+      
+      26 iprange &#39;192.0.2.63&#39;
+192.0.2.1-192.0.2.62</code></pre>
+<p>That seems like a good set of utilities - and a great opportunity to learn about
+how Dyalog APL packages up things into namespaces. One way is to write the
+functions to a file, say <code>SubnetCalc.dyalog</code> as</p>
+<pre><code>:Namespace SubnetCalc
+    asip←{∊(⍕¨⍵),¨&#39;.&#39; &#39;.&#39; &#39;.&#39; &#39;&#39;}
+    asoct←{2⊥⍵}
+    mask←{⍉4 8 ⍴ 1=⍸⍵ 0 (32-⍵)}
+    nhosts←{¯2+2*(32-⍵)}
+    smask←{asip asoct mask ⍵}
+    asbin←{(8/2)⊤⍎¨&#39;.&#39;(≠⊆⊢)⍵}
+    netutil←{asoct (mask ⍺)∧asbin ⍵}
+    netaddr←{asip ⍺ netutil ⍵}
+    netaddr1←{x←⍺ netutil ⍵ ⋄ x[4]←x[4]+1 ⋄ asip x}
+    butil←{asoct (~mask ⍺)∨asbin ⍵}
+    bcast←{asip ⍺ butil ⍵}
+    bcast1←{x←⍺ butil ⍵ ⋄ x[4]←x[4]-1 ⋄ asip x}
+    iprange←{n←⍺ netaddr1 ⍵ ⋄ b←⍺ bcast1 ⍵ ⋄ n,&#39;-&#39;,b}
+:EndNamespace</code></pre>
+<p>(noting that I needed to use explicit defuns rather than just tacit calls) then
+load that into the RIDE editor session with</p>
+<pre class="apl"><code>⎕FIX &#39;/path/to/project/SubnetCalc.dyalog&#39;</code></pre>
+<p>and give it a shorter name, if desired</p>
+<pre class="apl"><code>&#39;ip&#39; ⎕NS SubnetCalc</code></pre>
+<p>Now I can call my functions even faster</p>
+<pre class="apl"><code>      ip.smask 26
+255.255.255.192
+
+      google←&#39;142.250.70.174&#39;
+
+      26 ip.iprange google
+142.250.70.129-142.250.70.190</code></pre>
+<p>Dyalog has recently announced a proper package infrastructure <a href="https://tatin.dev/">Tatin</a>
+which might come as a surprise to those more familiar with newer languages, but
+it’s actually one of the <em>first</em> package ecosystems for an APL language that I
+know of. I want to figure out whether my ‘toy’ package is too simplistic to be
+shared, or if it’s worth learning those ropes. At the moment all the packages
+in that system are internally sourced, but presumably that would open up to
+external users once it’s stabilised.</p>
+<p>All of this was a lot of fun and I learned a lot. How would I go about this
+in another language? Well, there’s almost always an R package for something, and
+sure enough there’s an {ipaddress} package on CRAN that has all of this
+functionality plus more, though it does seem to rely on compiling some C++ code
+to do it.</p>
+<pre class="r"><code>library(ipaddress)
+
+ip &lt;- ip_address(&quot;192.0.2.44&quot;)
+ip_to_binary(ip)                     # c.f. asbin</code></pre>
+<pre class="bg-success"><code>## [1] &quot;11000000000000000000001000101100&quot;</code></pre>
+<pre class="r"><code>ipn &lt;- ip_network(&quot;192.0.2.0/26&quot;)
+prefix_length(ipn)                   # c.f. nhosts</code></pre>
+<pre class="bg-success"><code>## [1] 26</code></pre>
+<pre class="r"><code>network_address(ipn)                 # c.f. netaddr</code></pre>
+<pre class="bg-success"><code>## &lt;ip_address[1]&gt;
+## [1] 192.0.2.0</code></pre>
+<pre class="r"><code>broadcast_address(ipn)               # c.f. bcast</code></pre>
+<pre class="bg-success"><code>## &lt;ip_address[1]&gt;
+## [1] 192.0.2.63</code></pre>
+<pre class="r"><code>netmask(ipn)                         # c.f. smask</code></pre>
+<pre class="bg-success"><code>## &lt;ip_address[1]&gt;
+## [1] 255.255.255.192</code></pre>
+<pre class="r"><code>hostmask(ipn)</code></pre>
+<pre class="bg-success"><code>## &lt;ip_address[1]&gt;
+## [1] 0.0.0.63</code></pre>
+<pre class="r"><code>range(hosts(ipn))                    # c.f. iprange</code></pre>
+<pre class="bg-success"><code>## &lt;ip_address[2]&gt;
+## [1] 192.0.2.1  192.0.2.62</code></pre>
+<pre class="r"><code>is_within(ip, ipn)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>One of the advantages of the APL approach, I feel, is that you can see exactly
+what the function is doing - often there’s no point naming a function because
+any useful name you might give it typically has more characters than the actual
+implementation. Digging into this package even slightly, it’s not immediately
+obvious where the processing is happening. I sometimes worry that we add too
+many layers to higher and higher abstractions, though I appreciate that
+sometimes gets us a lot of benefit.</p>
+<p>I wouldn’t use my APL code in production - it has no checks or error handling, but
+building these helped me really understand what’s going on between all the ones
+and zeroes.</p>
+<p>If you have comments, suggestions, or improvements, as always, feel free to use
+the comment section below, or hit me up on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a>.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-08-22
+##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.19    2024-02-01 [1] CRAN (R 4.3.3)
+##  bookdown      0.36    2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.6.1   2023-11-28 [3] CRAN (R 4.3.2)
+##  cachem        1.0.8   2023-05-01 [3] CRAN (R 4.3.0)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [1] CRAN (R 4.3.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.34  2024-01-11 [3] CRAN (R 4.3.2)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.23    2023-11-01 [3] CRAN (R 4.3.2)
+##  fastmap       1.1.1   2023-02-24 [3] CRAN (R 4.2.2)
+##  fs            1.6.3   2023-07-20 [3] CRAN (R 4.3.1)
+##  glue          1.7.0   2024-01-09 [1] CRAN (R 4.3.3)
+##  htmltools     0.5.7   2023-11-03 [3] CRAN (R 4.3.2)
+##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.3.2)
+##  ipaddress   * 1.0.2   2023-12-01 [1] CRAN (R 4.3.3)
+##  jquerylib     0.1.4   2021-04-26 [3] CRAN (R 4.1.2)
+##  jsonlite      1.8.8   2023-12-04 [3] CRAN (R 4.3.2)
+##  knitr         1.45    2023-10-30 [3] CRAN (R 4.3.2)
+##  later         1.3.1   2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.4   2023-11-07 [1] CRAN (R 4.3.3)
+##  magrittr      2.0.3   2022-03-30 [1] CRAN (R 4.3.3)
+##  memoise       2.0.1   2021-11-26 [3] CRAN (R 4.2.0)
+##  mime          0.12    2021-09-28 [3] CRAN (R 4.2.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.3.2)
+##  pkgbuild      1.4.2   2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgload       1.3.3   2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0   2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.3   2023-12-10 [3] CRAN (R 4.3.2)
+##  profvis       0.3.8   2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1   2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.6   2024-01-18 [3] CRAN (R 4.3.2)
+##  purrr         1.0.2   2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1   2021-08-19 [1] CRAN (R 4.3.3)
+##  Rcpp          1.0.11  2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1 2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.4   2024-06-04 [1] CRAN (R 4.3.3)
+##  rmarkdown     2.25    2023-09-18 [3] CRAN (R 4.3.1)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.8   2023-12-06 [3] CRAN (R 4.3.2)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1 2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.8.3   2023-12-11 [3] CRAN (R 4.3.2)
+##  stringr       1.5.1   2023-11-14 [3] CRAN (R 4.3.2)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       3.0.0   2024-07-29 [1] CRAN (R 4.3.3)
+##  vctrs         0.6.5   2023-12-01 [1] CRAN (R 4.3.3)
+##  xfun          0.41    2023-11-01 [3] CRAN (R 4.3.2)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.8   2023-12-11 [3] CRAN (R 4.3.2)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
