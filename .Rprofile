@@ -6,8 +6,9 @@ if (file.exists("~/.Rprofile")) {
 options(
   blogdown.author = "Jonathan Carroll",
   blogdown.ext = ".Rmd",
+  blogdown.method = "html",
   blogdown.yaml.empty = TRUE,
   blogdown.new_bundle = TRUE,
   blogdown.title_case = TRUE,
-  blogdown.hugo.version = "0.111.3"
+  blogdown.hugo.version = "0.112.3"
 )
