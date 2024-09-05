@@ -1,0 +1,881 @@
+---
+title: Side by Side Comparison - Gleam vs R
+author: Jonathan Carroll
+date: '2024-09-05'
+slug: side-by-side-comparison-gleam-vs-r
+categories:
+  - rstats
+  - gleam
+tags:
+  - rstats
+  - gleam
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+![](https://jcarroll.com.au/2024/09/05/side-by-side-comparison-gleam-vs-r/images/supereffective.jpg){width=600px}
+
+I thoroughly dislike 'hot takes' comparing programming languages based solely on
+a "feel" or differential familiarity ("I know this one better therefore it _is_ 
+better) so when I came across a blog post detailing a small learning project 
+written in Gleam I wanted to understand what advantages and disadvantages that 
+language brings to the problem. This post details a side-by-side comparison after 
+rewriting the project in R with a goal of better understanding the approach on 
+both sides.
+
+<!--more-->
+
+![Gleam vs R](images/supereffective.jpg){width=600px}
+
+I thoroughly dislike 'hot takes' comparing programming languages based solely on
+a "feel" or differential familiarity ("I know this one better therefore it _is_ 
+better) so when I came across a blog post detailing a small learning project 
+written in Gleam I wanted to understand what advantages and disadvantages that 
+language brings to the problem. This post details a side-by-side comparison after 
+rewriting the project in R with a goal of better understanding the approach on 
+both sides.
+
+### What is Gleam?
+
+
+<img src="https://gleam.run/images/lucy/lucy.svg" width="100">
+
+[Gleam](https://gleam.run/) is a relatively new language - first released in 2016
+and reaching version 1.0 in March this year. It's implemented in Rust, but 
+runs on [BEAM](https://en.wikipedia.org/wiki/BEAM_(Erlang_virtual_machine)), Erlang's
+virtual machine. It's garbage collected but compiles down to JavaScript, the combination 
+of which makes it fairly fast.
+
+It's type-safe with strict immutability and embraces a functional paradigm - 
+no loops at all, just recursion. It's pretty straightforward to learn in a day
+or so if you're already familiar with programming and there's a nice online
+[language tour](https://tour.gleam.run/) with a built-in playground. In terms of
+a package ecosystem the [repository](https://packages.gleam.run/) has just under
+600 packages but because it can also run Elixir packages, it actually has a lot
+of packages available - hex.pm has around [16k packages](https://hex.pm/packages).
+
+A simple 'Hello, World!" looks like this
+
+```gleam
+import gleam/io
+
+pub fn main() {
+  io.println("hello, friend!")
+}
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+hello, friend!
+```
+
+but outside of the playground you need to go through a compile step to actually 
+run the code. Like Rust, it helps you get to the end goal, with no null values, 
+no exceptions, and clear error messages.
+
+It seems to be used a lot for web development, but I'm less familiar with the 
+common use-cases.
+
+### What is R?
+
+<img src="https://www.r-project.org/Rlogo.png" width="100">
+
+[R](https://www.r-project.org/) has been around longer - first released in 1993 
+and currently at version 4.4.1. It's implemented in C with some self-sufficient 
+code in R and leaning on numerical libraries in Fortran. It's also garbage collected 
+but it's an interpreted language, so it runs a Read-Evaluate-Print-Loop (REPL) in 
+which you can enter expressions and get their results back without having to compile 
+the entire 'program'. For this reason, it's frequently used interactively in the 
+lisp sense where you essentially have a conversation with the computer about 
+some data, asking questions and getting responses, until you build up the full 
+'script' of what you want to achieve.
+
+It's dynamically typed with no type-safety guarantees - a function returns what 
+it returns. It supports a variety of paradigms, both functional and object-oriented, 
+and developers can choose to float between these freely even in a single script.
+
+The canonical package repository [CRAN](https://cran.r-project.org/) currently 
+hosts over 21k packages but users can also download package directly from other 
+repositories such as [r-universe](https://r-universe.dev/) which hosts nearly 
+26k (including copies of all of the CRAN packages).
+
+There's a lot less ceremony involved in an interpreted language, so a 
+'Hello, World!' is as straightforward as
+
+```{r}
+"Hello, World!"
+```
+
+since evaluating an object (a variable or value) prints it by default.
+
+R started life in the statistics department of the University of Auckland and 
+as such has excellent numerical support for statistics and graphing. It's often 
+referred to as "a programming language for statistical computing" but I hate the 
+connotation that it's _only_ a "statistical language" - it's sufficiently general 
+purpose that you can [build games](https://github.com/matt-dray/splendid-r-games), 
+[make generative art](https://nrennie.rbind.io/projects/generative-art/), 
+[write and play music](https://flujoo.github.io/gm/), or 
+[build a full webpage](https://shiny.posit.co/r/gallery/). I've struggled to find 
+things it _can't_ do (at all - there's plenty of things at which it's far from the 
+best choice).
+
+### The Gleam project - a web scraper
+
+The [post I read](https://pliutau.com/my-first-experience-with-gleam-lang/) details 
+a 'first experience' with the language and I fully agree with the author that it's 
+useful to learn by doing - you learn with your hands, not your eyes.
+
+It describes using Gleam to write a program which takes in a configuration containing 
+some URLs to query at given intervals, and optionally a string to search for in
+the content of that URL. The resulting status code and whether or not the text
+was matched are stored in a database, and the program is run concurrently; the
+three sites (in this case) are queried in parallel jobs at their respective
+intervals.
+
+It's a fine post - perhaps a little light on the explanation of how the code came 
+about and how it all ties together, but the ideas are mostly there. My post isn't 
+about critiquing the code or the post, but rather seeing how a similar thing might 
+look in R.
+
+I had a look at the code in the post (which didn't seem to be all of it) and the 
+rest of the code on GitHub and figured this seemed like a small enough project 
+that I could understand all of it and try to consider the advantages and 
+disadvantages of using Gleam for this task. As with pretty much any small project 
+I can imagine building it in R (for better or worse) and I wanted to really dig 
+into what makes a project a good or bad fit for R. 
+
+Sure, R can be "slow" compared to compiled languages, but that depends on what
+you're doing - if it isn't performance-critical ("oh, no, it takes 0.3s to run
+once a day vs 0.3ms - what ever will you do with all that time you saved?") then
+I consider the time one spends writing and later reading the code itself to
+factor into the 'speed'.
+
+There probably aren't many webservers built in R, but R has plenty of web-scraping 
+support. So, what does a strongly typed language like Gleam offer that R doesn't?
+
+I updated my Gleam installation (I'd used it for some 
+[Exercism exercises](https://exercism.org/tracks/gleam) but it was considerably 
+out of date now) and ran the project - it compiled and ran just fine.
+
+The post starts out by defining a configuration in yaml 
+
+```yaml
+websites:
+  - url: https://packagemain.tech
+    interval: 10
+  - url: https://pliutau.com
+    interval: 15
+  - url: https://news.ycombinator.com
+    interval: 30
+    pattern: gleam
+```
+
+and I'm already confused - my guess is that yaml is a widely used configuration
+filetype and offers 'naming' of the different nested components, but having type
+safety means writing a parser for that which does the validation. The post
+_does_ detail that and defines a `Config` type consisting of a list of `Website`
+types. This seems to be a first point of difference:
+
+```{=html}
+<div class="notice">
+    <p class="notice-title">
+        <span class="icon-notice baseline">
+            📝
+        </span>
+        Note 
+    </p>
+    <p> Static typing means that validation is enforced.</p>
+</div>
+```
+
+In R I might use a CSV to store such a configuration with one line per site. Now, 
+CSV doesn't guarantee any type safety either, but once I read it into a `data.frame`
+the columns _will_ have some types. They might not be what I naively expect, but 
+if they look like numbers they'll probably be numbers. 
+
+It seems like that would be a better shape for this data, but I suppose if the 
+configuration doesn't 'rectangle' very well, CSV might be less appropriate. I 
+think this is where my confusion arose - but how else would you get data into the 
+types of the program apart from parsing and validation?
+
+If I wanted to ingest such a configuration I'd probably do some defensive coding
+and assert that the columns are what I think they should be, at least as far as
+R's atomic type system goes.
+
+Something like
+
+```r
+config <- function(file) {
+  conf <- read.csv(file, header = TRUE)
+  expected_cols <- c("url", "interval", "pattern"),
+  stopifnot(
+    "CSV in unexpected format" = colnames(conf) == expected_cols 
+    "url should be character" = is.character(conf$url),
+    "interval should be numeric" = is.numeric(conf$interval),
+    "pattern should be character" = is.character(conf$pattern)
+  )
+  conf
+}
+```
+
+That's perhaps an unfortunate ratio of assertions to implementation, but it 
+gets the job done.
+
+One _could_ go even further in either language and validate that the URL appears 
+to be valid and that the interval is greater than 0, but I don't have a good sense 
+for when one should do that.
+
+This does raise an interesting point, too - in R I'm very familiar with using
+`data.frame` as a structure, but that's loosely constrained; it's a list of
+vectors of the same length, but those vectors could be anything - if we extend
+the idea to {tibble}s then it we can even have a list containing a list
+containing vectors with varying lengths!
+
+```{r}
+tibble::tibble(
+  id = 1:3, 
+  items = list(
+    c("apples"), 
+    c("beans", "carrots"), 
+    c("dates")
+  )
+)
+```
+
+Making that strictly typed would mean defining something like 
+
+```
+Cart(List(Vec(Int), List(Vec(String))))
+```
+
+which can go further and define each list of items
+
+```
+Items(Vec(String))
+Cart(List(Vec(Int), List(Items)))
+```
+
+[Mario Angst on Mastodon](https://fediscience.org/@mario_angst_sci/113072586583881511) 
+was trying to work with more or less this exact problem in the new 
+[S7 OOP system](https://rconsortium.github.io/S7/articles/S7.html) which really 
+demonstrated how complex that becomes compared to what is typically done in R, and 
+part of the motivation for writing this post is to better understand where that 
+prevents bugs or issues.
+
+In Mario's case it was validating that columns have a particular structure. In the 
+case of this project it is protecting against an invalid configuration. If I try 
+to break the configuration by making one of the intervals a string
+
+```
+  - url: https://packagemain.tech
+    interval: "10"
+```
+
+and build the project... it works just fine. So what's going on? The config parser 
+where the interval is read has 
+
+```gleam
+int.parse(val_str)
+```
+
+so it 'recovers' from the case where a string is used. Should it just fail there? 
+Or is combining type safety and a 'try to fix' approach the right way? Isn't that 
+defensive programming?
+
+If I use a number as the URL
+
+```
+websites:
+  - url: 1
+    interval: 10
+```
+
+it does indeed break properly
+
+```
+$ gleam run         
+   Compiled in 0.07s
+    Running websites_checker.main
+exception error: #{function => <<"main">>,line => 32,
+                   message =>
+                       <<"Failed to load config: Invalid config file format">>,
+                   module => <<"websites_checker">>,gleam_error => panic}
+  in function  websites_checker:main/0 
+```
+
+So, that's good.
+
+The next piece - querying the URL - also left me a bit lost. I could see that the 
+post details saving the `CrawlResult` from the crawler, and I could see a call to 
+`crawl_url`, but it didn't show the actual crawler. The 
+[full code](https://github.com/plutov/websites_checker/blob/aa322f0e4c59d4d5fb944ad01877fed7df9150fa/src/crawler.gleam#L19) 
+(updated since the post was written, I believe) does have that and seeing that 
+resolved that confusion.
+
+The actual querying and parsing was all done here
+
+```gleam
+let assert Ok(req) = request.to(url)
+
+  case hackney.send(req) {
+    Ok(response) -> {
+      let pattern_matched =
+        pattern != "" && response.body |> string.contains(pattern)
+```
+
+and I wanted to understand this part - it seems to use the `gleam/http/request` 
+package to create the [`Request`](https://hexdocs.pm/gleam_http/gleam/http/request.html#Request)
+object, and the `gleam/hackney` package to send the request, producing a 
+[`Response`](https://hexdocs.pm/gleam_http/gleam/http/response.html#Response) 
+object. 
+
+This was my next source of confusion - what was the 'type' of the body of the 
+response? The body field is used in the pattern matching with `string.contains(pattern)` 
+but is that doing a search on JSON? HTML? XML? I suspect this was my unfamiliarity 
+with strongly typed languages showing - the documentation actually does say
+
+> The body of the request is parameterised. The HTTP server or client you are 
+> using will have a particular set of types it supports for the body.
+
+so it's whatever the server sends. This seems... un-type-safe?
+
+```{=html}
+<div class="notice">
+    <p class="notice-title">
+        <span class="icon-notice baseline">
+            📝
+        </span>
+        Note 
+    </p>
+    <p>The outside world is messy.</p>
+</div>
+```
+
+What I really wanted to do was just fetch the data with that code and _see_ what 
+the result looks like, but that's not how compiled programs work. 
+
+My guess is that there are two options; write a different 'main()' entrypoint 
+that calls just this bit of code and outputs the result, or some sort of debug 
+statement during runtime (like [this](https://jcarroll.com.au/2023/11/07/print-debugging-now-with-icecream/)).
+
+I recall seeing someone make the statement along the lines of "if you need a REPL, 
+it just shows you're not familiar enough with the language" and I think they 
+missed the point that it's not about seeing what some function _should do_, it's 
+about what does it do to _this data_?
+
+I'll get to how I did find out, but the quick answer is that the server responds 
+with HTML, so the matching is being performed on one long string. Maybe not ideal 
+- I'd expect to at least limit the search to the 'body' of the page, but it's a 
+toy project so whatever.
+
+Once the site has been scraped, the results are stored in a database. Writing to 
+SQLite happens via a manually written query, but the libraries appear to handle 
+the rest of that interaction quite nicely
+
+```gleam
+sqlight.query(
+      "insert into websites (started_at, completed_at, status, pattern_matched, url) values (?, ?, ?, ?, ?)",
+      on: db,
+      with: [
+        sqlight.int(result.started_at),
+        sqlight.int(result.completed_at),
+        sqlight.int(result.status_code),
+        sqlight.int(result.pattern_matched |> bool.to_int),
+        sqlight.text(result.url),
+      ],
+      expecting: mock_decoder,
+    )
+```
+
+The last critical piece was looping over the sites defined in the configuration. 
+Gleam doesn't have loops, but it does have a `list.each()` that can essentially 
+do a loop. The problem is that this isn't just one loop over the sites, it's also 
+a loop to repeat the scrape at a given interval. 
+
+Part of the appeal of Gleam is concurrency, so ideally we'd do the scraping for 
+each site independently at the same time. That's achieved by writing a recursive 
+function to repeat itself after waiting for some time 
+
+```gleam
+fn process_website_recursively(
+  db_conn: sqlight.Connection,
+  website: config.Website,
+) {
+  [...]
+  process.sleep(website.interval * 1000)
+  process_website_recursively(db_conn, website)
+}
+```
+
+which is then called in the loop over the sites
+
+```gleam
+list.each(c.websites, fn(w) {
+  process.start(fn() { process_website_recursively(db_conn, w) }, True)
+})
+```
+
+Gleam then kicks off a process for each site, running on its own scheduled 
+intervals, and performs the operations.
+
+After letting it run for a bit I opened up the generated SQLite database and 
+confirmed that it had indeed captured the relevant information for the three 
+configured sites. Cool! 
+
+Now, how would I do it in R?
+
+### Reproducing the project in R
+
+The very first thing I do in an R project is to start interacting with the data 
+itself; maybe plotting it if I already have it, but if I don't, then getting a 
+sample of it to play around with is a first step.
+
+Since R has a REPL, I can evaluate expressions straight away without building a 
+'program' around them. I do write my expressions in an actual file in RStudio, and 
+can execute them individually in a REPL with a key combo, so I get the best of 
+both worlds of recording what I'm doing and having the results immediately at hand.
+
+With a new `.R` file open I can type out and run
+
+```{r}
+url <- "https://jcarroll.com.au"
+
+resp <- httr2::request(url) |> 
+  httr2::req_perform()
+```
+
+This uses the {httr2} library to build a request object and perform the request. 
+
+I can inspect the `resp` object to see what sort of thing I'm getting
+
+```{r}
+resp
+```
+
+```{=html}
+<div class="notice">
+    <p class="notice-title">
+        <span class="icon-notice baseline">
+            📝
+        </span>
+        Note 
+    </p>
+    <p> R <em>does</em> have some properly classed objects, but they're less common.</p>
+</div>
+```
+
+Okay, it's `text/html` - that means I can extract the contents with something like 
+`httr2::resp_body_html()` or, if I just want one big string...
+
+```{r}
+content <- httr2::resp_body_string(resp)
+```
+
+Looking at the first chunk of characters, and cleaning it up a little for 
+presenting here, I see
+
+```{r}
+cat(gsub("[ ]*\\\n\\\n", "", substr(content, 1, 521)))
+```
+
+Great - that's the HTML response for this blog.
+
+I don't know how anyone codes without being able to just crack open a piece of 
+data and see what it looks like inside.
+
+I'll want to store the config, and as I noted above I could store that in a CSV. 
+For now I'll just load a `data.frame` containing that data
+
+```{r}
+sites <- data.frame(url = c("https://packagemain.tech",
+                            "https://pliutau.com",
+                            "https://news.ycombinator.com"),
+                    interval = c(10, 15, 30),
+                    pattern = c("", "", "tech")
+)
+sites
+```
+
+(I changed the pattern to search to one that almost certainly appears in that 
+last URL's content)
+
+The `data.frame` constructor sort of ensures that I have consistent 'types' in 
+the columns, since vectors must be homogenous.
+
+If I wanted to perform the crawl on one row of this data, I could write a function 
+that calculates the time, performs the query, calculates the time again, then 
+constructs a `data.frame` with the relevant output
+
+```{r}
+test_crawl <- function(url, interval, pattern = "") {
+  
+  start_time <- format(Sys.time(), "%s")
+  
+  resp <- httr2::request(url) |> 
+    httr2::req_perform()
+  
+  end_time <- format(Sys.time(), "%s")
+  
+  data.frame(
+    start_time = start_time,
+    end_time = end_time,
+    status = httr2::resp_status(resp),
+    pattern_matched = pattern != "" && grepl(pattern, httr2::resp_body_string(resp)),
+    url = url
+  )
+  
+}
+```
+
+A really useful tool for functional programming in R is {purrr} and it has a `pmap` 
+function which 'splats' a list of values out to arguments in a `map`, and that 
+comes in really handy here to take the columns from the rows of `sites` and pass 
+them to the crawling function
+
+```{r}
+purrr::pmap(sites[1, ], test_crawl)
+```
+
+I could do the same for all of the rows, and since the results have the same shape, 
+I could 'bind' them together as rows of a new `data.frame` with `pmap_df`
+
+```{r}
+purrr::pmap_df(sites, test_crawl)
+```
+
+That's all I need to get a preview of the data. The next step was to put that 
+data into a database. R has great support for this, too. If I define an empty 
+structure with the appropriate types for the data
+
+```{r}
+websites <- data.frame(
+  start_time = integer(),
+  end_time = integer(),
+  status = integer(),
+  pattern_matched = logical(),
+  url = character()
+)
+```
+
+I can write that empty table to a new database
+
+```{r, eval = FALSE}
+con <- DBI::dbConnect(RSQLite::SQLite(), "websites.sqlite")
+DBI::dbWriteTable(con, "websites", websites)
+DBI::dbDisconnect(con)
+```
+
+Now I need a way to perform the crawls on a schedule. If I expand the
+single-site crawling function to optionally write to the database (possibly
+defined by an environment variable)
+
+```{r}
+single_crawl <- function(url, 
+                         pattern = "", 
+                         write = TRUE, 
+                         db = Sys.getenv("CRAWL_DB")) {
+  
+  start_time <- format(Sys.time(), "%s")
+  resp <- httr2::request(url) |> 
+    httr2::req_perform()
+  end_time <- format(Sys.time(), "%s")
+  
+  res <- data.frame(
+    start_time = start_time,
+    end_time = end_time,
+    status = httr2::resp_status(resp),
+    pattern_matched = pattern != "" && grepl(pattern, httr2::resp_body_string(resp)),
+    url = url
+  )
+  
+  if (!write) {
+    return(res)
+  } 
+  
+  con <- DBI::dbConnect(RSQLite::SQLite(), db)
+  DBI::dbWriteTable(con, "websites", res, append = TRUE)
+  DBI::dbDisconnect(con)
+  
+  invisible()
+}
+```
+
+```{=html}
+<div class="notice">
+    <p class="notice-title">
+        <span class="icon-notice baseline">
+            📝
+        </span>
+        Note 
+    </p>
+    <p> Being able to play around with whether the result is sent to a database 
+    or just returned is only possible <em>without</em> type safety.</p>
+</div>
+```
+
+I can also test that, but since writing to the database produces no output, I can 
+use the `walk` variant instead of `map`, which doesn't return output
+
+```{r, eval = FALSE}
+purrr::pwalk(sites, single_crawl, db = "websites.sqlite")
+```
+
+I can wrap the individual crawling function with one that runs in a loop. This 
+version only runs 4 times for each site, but you could just as easily make it 
+an infinite loop that you need to kill.
+
+```{r}
+crawl <- function(url,
+                  interval, 
+                  pattern = "", 
+                  write = TRUE, 
+                  db = Sys.getenv("CRAWL_DB")) {
+  
+  for (i in 1:4) {
+    message(glue::glue("Crawling {url} ({i})"))
+    single_crawl(url = url, pattern = pattern, write = write, db = db)
+    Sys.sleep(interval)
+  }
+  
+}
+```
+
+Now when I run this I should get the data inserted into a new database (that I've 
+also created ahead of time) 
+
+```{r, eval = FALSE}
+purrr::pwalk(sites, crawl, db = "websites_seq.sqlite")
+```
+
+Does it work, though? Opening up the database I can see 12 entries. So far, so 
+good.
+
+Another reason that I like R is that not only can I do general computing like this, 
+but when it comes time to _analyse_ the data produced, R is also a great fit. I'm 
+not sure what tooling Gleam has for inspecting the data dropped into that database, 
+but I suspect the use-case is some other language.
+
+I can plot the data I've stored by connecting to the database with R and pulling 
+out the data. I offset the times relative to the very first one, then plot the 
+start and end times for each site scraped
+
+```{r, eval = FALSE}
+con <- DBI::dbConnect(RSQLite::SQLite(), "websites_seq.sqlite")
+
+times <- tbl(con, "websites") |> 
+  collect() |> 
+  mutate(start_s = start_time - start_time[1]) |> 
+  mutate(end_s = end_time - start_time[1])
+
+library(ggplot2)
+
+ggplot(times) + 
+  geom_point(aes(start_s, 1), col = "green", size = 6) + 
+  geom_point(aes(end_s, 1), col = "red", size = 6) + 
+  facet_wrap(~url, ncol = 1) + 
+  theme_minimal() + 
+  theme(axis.text.y = element_blank(), 
+        axis.title.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  scale_x_continuous(breaks = seq(0, 200, 10))
+```
+
+<a href="images/crawl_timings.png">
+![](images/crawl_timings_seq.png){width=600px}
+</a>
+<p class="caption">Timings for a sequential crawl; click to embiggen</p>
+
+As you can see, these are performed sequentially - 4 crawls of each site, one 
+site at a time.
+
+In order to also make this concurrent, all I need to do is swap out the `purrr::pwalk()`
+with a `furrr::future_pwalk()` which wraps the {future} package
+
+```{r, eval = FALSE}
+library(future)
+plan(multisession)
+
+furrr::future_pwalk(sites, crawl, db = "~/Projects/websites_par.sqlite")
+```
+
+Using this database and producing the same plot I get
+
+<a href="images/crawl_timings.png">
+![](images/crawl_timings.png){width=600px}
+</a>
+<p class="caption">Timings for parallel crawls; click to embiggen</p>
+
+and yes, the timings show that the crawls occurred in parallel!
+
+The entire project in R is then the following (less than 100) lines, including 
+the configuration, database connection, execution, and analysis.
+
+```r
+## Config
+
+sites <- data.frame(url = c("https://packagemain.tech",
+                            "https://pliutau.com",
+                            "https://news.ycombinator.com"),
+                    interval = c(10, 15, 30),
+                    pattern = c("", "", "tech")
+)
+
+## Database
+
+## write a blank table to preserve types
+websites <- data.frame(
+  start_time = integer(),
+  end_time = integer(),
+  status = integer(),
+  pattern_matched = logical(),
+  url = character()
+)
+
+con <- DBI::dbConnect(RSQLite::SQLite(), "~/Projects/websites_par.sqlite")
+DBI::dbWriteTable(con, "websites", websites, overwrite = TRUE)
+DBI::dbDisconnect(con)
+
+## Crawl
+
+single_crawl <- function(url, 
+                         pattern = "", 
+                         write = TRUE, 
+                         db = Sys.getenv("CRAWL_DB")) {
+  
+  start_time <- format(Sys.time(), "%s")
+  resp <- httr2::request(url) |> 
+    httr2::req_perform()
+  end_time <- format(Sys.time(), "%s")
+  
+  res <- data.frame(
+    start_time = start_time,
+    end_time = end_time,
+    status = httr2::resp_status(resp),
+    pattern_matched = pattern != "" && grepl(pattern, httr2::resp_body_string(resp)),
+    url = url
+  )
+  
+  if (!write) {
+    return(res)
+  } 
+  
+  con <- DBI::dbConnect(RSQLite::SQLite(), db)
+  DBI::dbWriteTable(con, "websites", res, append = TRUE)
+  DBI::dbDisconnect(con)
+  
+  invisible()
+}
+
+crawl <- function(url,
+                  interval, 
+                  pattern = "", 
+                  write = TRUE, 
+                  db = Sys.getenv("CRAWL_DB")) {
+  
+  for (i in 1:4) {
+    message(glue::glue("Crawling {url} ({i})"))
+    single_crawl(url = url, pattern = pattern, write = write, db = db)
+    Sys.sleep(interval)
+  }
+  
+}
+
+## Execute
+
+library(future)
+plan(multisession)
+
+furrr::future_pwalk(sites, crawl, db = "websites_par.sqlite")
+
+## Analysis 
+
+con <- DBI::dbConnect(RSQLite::SQLite(), "websites_par.sqlite"))
+times <- tbl(con, "websites") |> 
+  collect() |> 
+  mutate(start_s = start_time - start_time[1]) |> 
+  mutate(end_s = end_time - start_time[1])
+DBI::dbDisconnect(con)
+
+library(ggplot2)
+
+ggplot(times) + 
+  geom_point(aes(start_s, 1), col = "green", size = 6) + 
+  geom_point(aes(end_s, 1), col = "red", size = 6) + 
+  facet_wrap(~url, ncol = 1) + 
+  theme_minimal() + 
+  theme(axis.text.y = element_blank(), 
+        axis.title.y = element_blank(),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank()) +
+  scale_x_continuous(breaks = seq(0, 200, 10))
+```
+
+One point I think it worth making is that a lot of academics write code this way 
+- starting with something interactive that works, and that's fantastic, but leaving 
+it in this state is probably a mistake, especially if you ever plan to use it 
+again. 
+
+What should really be done next is to wrap it up into an R package - the equivalent 
+of the Gleam program - with defined entry points, maybe an exported `paralell_crawl()` 
+function, but including the well-defined imports. I haven't done that here for the 
+sake of simplicity - I don't actually plan to use this. 
+
+Let's say you did, though - how would you run it? Even as a script, you could 
+go beyond interactively running it and do so from the command line
+
+```
+Rscript myfile.R
+```
+
+(especially if it doesn't need command-line arguments).
+
+## Comparing approaches
+
+The point of all of this wasn't to say which language is better or which one you 
+_should_ use for anything - that's entirely dependent on your familiarity with a 
+language and its tooling and support for what you're trying to do. My goal was 
+to compare the approaches and see what I like about each of them.
+
+I really like R's ability to dive into the data itself in the REPL and have that 
+guide what I'm writing next. That does all-too frequently lead to leaving code 
+in an 'interactive' state, which is a poor way to structure a project.
+
+The strongly typed nature of the Gleam code means that it's less likely to mishandle 
+any pieces of data. I was hoping I'd spot somewhere in the Gleam code where I could 
+say "ah, if I tried to pass _this_ in here I'd get a compile error" but perhaps 
+this is too small a project for that to be an issue. 
+
+That strict typing possibly also makes it _harder_ to 'just work' with the data
+- I haven't tried it, but I wonder if the custom `CrawlResult` structure has a
+print method, or if it just prints all the fields. 
+
+The R approach has less 'ceremony', largely because it lacks the type handling. I 
+also believe R to better handle the data across its journey from crawling to 
+analysis, and re-emphasise that this wasn't a 'statistics' project.
+
+I'd love to hear what people think about this comparison - are there points I've
+overlooked where Gleam has an advantage? Considerations I've missed? Big wins on
+either side? As always, I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
