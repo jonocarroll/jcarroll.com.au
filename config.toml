@@ -14,9 +14,10 @@ disqusShortname = "jcarroll-com-au"
 googleAnalytics = "UA-135066967-1"
 enableGitInfo = true
 enableEmoji = true
-ignoreFiles = ["\\.Rmd$", "_files$", "_cache$"]
+ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
 rssLimit = 50
 buildFuture = true
+enableInlineShortcodes = true
 
 [Params]
 #  homeTitle = "Beautiful Hugo Theme" # Set a different text for the header on the home page
@@ -121,6 +122,10 @@ buildFuture = true
     name = "Tags"
     url = "tags"
     weight = 3
+
+[module]
+    [[module.imports]]
+        path = 'beautifulhugo'
 
 [markup]
   [markup.goldmark]

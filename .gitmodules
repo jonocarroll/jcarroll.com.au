@@ -2,3 +2,6 @@
 	path = themes/beautifulhugo
 	url = https://github.com/jonocarroll/beautifulhugo.git
 	branch = "master"
+[submodule "themes/hugo-notice"]
+	path = themes/hugo-notice
+	url = https://github.com/martignoni/hugo-notice.git
