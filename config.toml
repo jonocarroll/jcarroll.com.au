@@ -2,7 +2,7 @@ baseurl = "https://jcarroll.com.au"
 DefaultContentLanguage = "en"
 #DefaultContentLanguage = "ja"
 title = "Irregularly Scheduled Programming"
-theme = ["hugo-notice", "beautifulhugo"]
+theme = "beautifulhugo"
 metaDataFormat = "yaml"
 pygmentsStyle = "trac"
 pygmentsUseClasses = true
@@ -124,8 +124,6 @@ enableInlineShortcodes = true
     weight = 3
 
 [module]
-    [[module.imports]]
-        path = 'hugo-notice'
     [[module.imports]]
         path = 'beautifulhugo'
 
