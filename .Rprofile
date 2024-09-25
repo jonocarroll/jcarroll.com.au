@@ -10,5 +10,5 @@ options(
   blogdown.yaml.empty = TRUE,
   blogdown.new_bundle = TRUE,
   blogdown.title_case = TRUE,
-  blogdown.hugo.version = "0.112.3"
+  blogdown.hugo.version = "0.111.3"
 )
