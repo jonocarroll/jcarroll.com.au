@@ -1,0 +1,482 @@
+---
+title: In-Place Modifications
+author: Jonathan Carroll
+date: '2024-09-25'
+categories:
+  - APL
+  - python
+  - rstats
+  - julia
+tags:
+  - APL
+  - python
+  - rstats
+  - julia
+slug: in-place-modifications
+editor_options:
+  chunk_output_type: console
+---
+
+
+
+<p>In this post I explore some differences between R, python, julia, and APL in
+terms of mutability, and try to make something that probably shouldn’t exist.</p>
+<!--more-->
+<p>In this post I explore some differences between R, python, julia, and APL in
+terms of mutability, and try to make something that probably shouldn’t exist.</p>
+<p>I watched <a href="https://youtu.be/O9AsxoQzNdI">this code_report</a> video which describes
+a <a href="https://leetcode.com/problems/final-array-state-after-k-multiplication-operations-i/description/">leetcode problem</a>;</p>
+<blockquote>
+<p>You are given an integer array <code>nums</code>, an integer <code>k</code>, and an integer <code>multiplier</code>.</p>
+<p>You need to perform <code>k</code> operations on <code>nums</code>. In each operation:</p>
+<ul>
+<li>Find the minimum value <code>x</code> in <code>nums</code>. If there are multiple occurrences of the minimum value, select the one that appears first.</li>
+<li>Replace the selected minimum value <code>x</code> with <code>x * multiplier</code>.</li>
+</ul>
+<p>Return an integer array denoting the final state of nums after performing all <code>k</code> operations.</p>
+</blockquote>
+<p>Conor’s python solution in the video was</p>
+<pre class="python"><code>def getFinalState(nums, k, m): 
+  for _ in range(k): 
+    i = nums.index(min(nums)) 
+    nums[i] *= m
+  return nums
+
+x = [2, 1, 3, 5, 6]
+k = 5
+mult = 2
+
+getFinalState(x, k, mult)</code></pre>
+<pre class="bg-success"><code>## [8, 4, 6, 5, 6]</code></pre>
+<p>and, as always, I wanted to see how I’d do that in R. I came up with this</p>
+<pre class="r"><code>getFinalState = function(nums, k, m) {
+  for (i in 1:k) {
+    m &lt;- which.min(nums)[1]
+    nums[m] &lt;- mult * nums[m]
+  }
+  nums
+}
+
+x &lt;- c(2, 1, 3, 5, 6)
+k &lt;- 5
+mult &lt;- 2
+
+getFinalState(x, k, mult)</code></pre>
+<pre class="bg-success"><code>## [1] 8 4 6 5 6</code></pre>
+<p>It’s worth noting that I can’t use a <code>map</code> in this function because iterations
+are dependent; the minimum value at any iteration depends on the previous
+values.</p>
+<p>I also had a chance to discuss this solution with some APL’ers at a meetup and
+a J solution was presented, but I don’t think I wrote it down.</p>
+<p>My solution is nearly word-for-word the same as the python solution with a
+couple of notable exceptions arising from the difference between the two
+languages:</p>
+<p>First, R has <code>which.min()</code> as a built-in rather than needing to query the index
+of the minimum value (and two references to <code>nums</code>). Also, R has no compound
+assignment like <code>x *= 2</code> which modifies in-place - the closest thing I can think
+of is the <code>%&lt;&gt;%</code> operator in {magrittr} (not re-exported in {dplyr} because this
+behaviour is considered bad practice in R, despite not really being “in-place”)</p>
+<pre class="r"><code>library(magrittr)
+
+m &lt;- data.frame(x = 1:6, y = letters[1:6])
+m</code></pre>
+<pre class="bg-success"><code>##   x y
+## 1 1 a
+## 2 2 b
+## 3 3 c
+## 4 4 d
+## 5 5 e
+## 6 6 f</code></pre>
+<pre class="r"><code>m %&lt;&gt;% head(2)
+m</code></pre>
+<pre class="bg-success"><code>##   x y
+## 1 1 a
+## 2 2 b</code></pre>
+<p>although I can certainly see the case for it - this operator avoids repeating
+the variable being used and assigned, because the alternative using the
+traditional pipe is</p>
+<pre class="r"><code>m &lt;- data.frame(x = 1:6, y = letters[1:6])
+m</code></pre>
+<pre class="bg-success"><code>##   x y
+## 1 1 a
+## 2 2 b
+## 3 3 c
+## 4 4 d
+## 5 5 e
+## 6 6 f</code></pre>
+<pre class="r"><code>m &lt;- m %&gt;% head(2)
+m</code></pre>
+<pre class="bg-success"><code>##   x y
+## 1 1 a
+## 2 2 b</code></pre>
+<p>One could argue that writing out even a longer variable name twice still makes
+it clear that shadowing is taking place; the value is being overwritten with
+a new value, but it does feel a little frustrating to have to type it out twice</p>
+<pre class="r"><code>important_variable &lt;- important_variable * 2</code></pre>
+<p>Back to my R solution, the indexing at a specific set of values got me thinking
+that it would be clean if we could pass a <em>function</em> to <code>[</code> so that we could
+write</p>
+<pre class="r"><code>nums[which.min] &lt;- value</code></pre>
+<p>(maybe not so much for this example where <code>m</code> is used twice, but it piqued my
+interest)</p>
+<p>Let’s say I want to set all the even values of a vector to some other value.
+That’s easy enough to do</p>
+<pre class="r"><code>x[x %% 2 == 0] &lt;- 0</code></pre>
+<p>but I don’t love that it requires two references to <code>x</code>, which may (should?) be
+a much longer name</p>
+<pre class="r"><code>important_variable[important_variable %% 2 == 0] &lt;- 0</code></pre>
+<p>I want something like <code>x[f] &lt;- y</code> to set the values of <code>x</code> where <code>f(x)</code> is
+<code>TRUE</code> to <code>y</code>. This seemed like it might be possible, maybe with a <code>function</code>
+method to <code>[&lt;-</code>, but <code>[&lt;-</code> dispatches on the class of <code>x</code>, not what’s inside
+<code>[</code>, so no dice. In theory (which will <em>never</em> happen) the built-in <code>[&lt;-</code> could
+have some branch logic for dealing with a function passed as the indices to be
+modified, but I’m not about to go rebuilding R from source myself just to play
+with that idea.</p>
+<p>Nonetheless, if I define some functions that do accomplish this</p>
+<pre class="r"><code>is_even &lt;- function(z) z %% 2 == 0
+
+set_if &lt;- function(x, f, value) {
+  x[f(x)] &lt;- value
+  x
+}</code></pre>
+<p>then I can try this out on a vector</p>
+<pre class="r"><code>a &lt;- 1:10
+a</code></pre>
+<pre class="bg-success"><code>##  [1]  1  2  3  4  5  6  7  8  9 10</code></pre>
+<pre class="r"><code>set_if(a, is_even, 0)</code></pre>
+<pre class="bg-success"><code>##  [1] 1 0 3 0 5 0 7 0 9 0</code></pre>
+<pre class="r"><code>a # unchanged</code></pre>
+<pre class="bg-success"><code>##  [1]  1  2  3  4  5  6  7  8  9 10</code></pre>
+<p>It works, but I’m back to having to write <code>a &lt;- do_stuff(a)</code> because <code>a</code> isn’t
+actually modified by this function.</p>
+<p>Ideally, my function would operate the same as this does</p>
+<pre class="r"><code>a &lt;- 1:10
+a[is_even(a)] &lt;- 0
+a</code></pre>
+<pre class="bg-success"><code>##  [1] 1 0 3 0 5 0 7 0 9 0</code></pre>
+<p>which <em>does</em> modify <code>a</code> in-place; R is not entirely pure, and does occasionally
+allow what looks like direct mutation, though under the hood, it’s not - a new
+object is actually created</p>
+<pre class="r"><code># not using a range e.g. 1:n because that&#39;s internally 
+# a &quot;compact&quot; representation
+a &lt;- c(2, 3, 4)
+.Internal(inspect(a))</code></pre>
+<pre class="bg-success"><code>## @63a4d9b05be8 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
+<pre class="r"><code>a[2] &lt;- 9
+.Internal(inspect(a))</code></pre>
+<pre class="bg-success"><code>## @63a4d9b0fbf8 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
+<p>Note that the memory address has changed.</p>
+<p>If I was working with a language which did support (enable?) modify-in-place
+then that might look like</p>
+<pre class="python"><code>def is_even(x):
+   return x % 2 == 0
+
+def set_if(x, f, value):
+     for i in range(len(x)):
+         if f(x[i]):
+             x[i] = value
+
+a = list(range(10))
+a</code></pre>
+<pre class="bg-success"><code>## [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]</code></pre>
+<pre class="python"><code>set_if(a, is_even, 0)
+a</code></pre>
+<pre class="bg-success"><code>## [0, 1, 0, 3, 0, 5, 0, 7, 0, 9]</code></pre>
+<p>Now, that’s not always a great thing. In such a language with mutable structures
+(e.g. lists) we can do maddening things like this</p>
+<pre class="python"><code>x = [3, 4, 5]
+y = x
+y is x</code></pre>
+<pre class="bg-success"><code>## True</code></pre>
+<pre class="python"><code>y[1] = 9
+x # still &#39;bound&#39; to y</code></pre>
+<pre class="bg-success"><code>## [3, 9, 5]</code></pre>
+<p>Here, <code>is</code> means “are these two things identical in the sense of referring to
+the same block of memory”, noting that literals (e.g. single numbers) are
+referenced that way, but tuples aren’t</p>
+<pre class="python"><code>abc = (11, 99)
+xyz = (11, 99)
+abc is xyz</code></pre>
+<pre class="bg-success"><code>## False</code></pre>
+<pre class="python"><code>abc == xyz</code></pre>
+<pre class="bg-success"><code>## True</code></pre>
+<p>The big question is can I hack together some solution that <em>does</em> work in-place
+in R? Yeah, with some ill-advised calls</p>
+<pre class="r"><code>set_if &lt;- function(x, f, value) {
+  # can&#39;t use &lt;&lt;- because the value passed in as the x argument isn&#39;t 
+  # necessarily named &#39;x&#39; in the parent scope
+  .x &lt;- x
+  .x[f(.x)] &lt;- value
+  e &lt;- parent.env(environment())
+  assign(deparse(substitute(x)), .x, pos = e)
+  invisible(.x)
+}
+
+
+a &lt;- 1:10
+a</code></pre>
+<pre class="bg-success"><code>##  [1]  1  2  3  4  5  6  7  8  9 10</code></pre>
+<pre class="r"><code>set_if(a, is_even, 0)
+a</code></pre>
+<pre class="bg-success"><code>##  [1] 1 0 3 0 5 0 7 0 9 0</code></pre>
+<p>As I note in the comment there, I can’t use the super-assignment arrow <code>&lt;&lt;-</code>
+inside this function because I don’t know the name of the variable I’m updating;
+it needs to be deparsed from the incoming argument.</p>
+<p>This means that it works regardless of the name of the variable being modified</p>
+<pre class="r"><code>b &lt;- 10:20
+b</code></pre>
+<pre class="bg-success"><code>##  [1] 10 11 12 13 14 15 16 17 18 19 20</code></pre>
+<pre class="r"><code>set_if(b, is_even, 0)
+b</code></pre>
+<pre class="bg-success"><code>##  [1]  0 11  0 13  0 15  0 17  0 19  0</code></pre>
+<p>I tried to think of some other languages which might support this sort of in-place
+<code>set_if(x, f, value)</code> modification and (Dyalog) APL was worth a thought.</p>
+<pre class="apl"><code>    ⍝ create a vector from 1 to 10
+    x←⍳10
+    x
+1 2 3 4 5 6 7 8 9 10
+
+    ⍝ the function {0=2|⍵} calculates a boolean vector with 
+    ⍝ 1 where the value is even
+    {0=2|⍵} x
+0 1 0 1 0 1 0 1 0 1
+
+    ⍝ the `@` operator takes a value (or function) on the left and 
+    ⍝ a function (or boolean values) on the right and applies it to the 
+    ⍝ other argument on the right
+    0@{0=2|⍵} x 
+1 0 3 0 5 0 7 0 9 0
+
+    ⍝ alternatively a point-free function defined as the negation (`~`) of a 
+    ⍝ binding (`∘`) of the value 2 to modulo (`|`); the negation is needed
+    ⍝ otherwise this returns the result of the modulo, not where it is 0
+    0@(~2∘|)⍳10
+1 0 3 0 5 0 7 0 9 0
+
+    ⍝ x is, however, unchanged as APL is typically immutable
+    x
+1 2 3 4 5 6 7 8 9 10</code></pre>
+<p>So there’s no way to do the in-place modification. it is nice, though, that
+<code>0@(~2∘|)x</code> only refers to <code>x</code> once.</p>
+<p>Julia makes a nice distinction between functions which mutate arguments and
+those which don’t; (by convention) the former are named ending with an
+exclamation mark, e.g.</p>
+<pre class="julia"><code>vec = collect(1:5)</code></pre>
+<pre class="bg-success"><code>## 5-element Vector{Int64}:
+##  1
+##  2
+##  3
+##  4
+##  5</code></pre>
+<pre class="julia"><code># non-mutating
+reverse(vec)</code></pre>
+<pre class="bg-success"><code>## 5-element Vector{Int64}:
+##  5
+##  4
+##  3
+##  2
+##  1</code></pre>
+<pre class="julia"><code>vec</code></pre>
+<pre class="bg-success"><code>## 5-element Vector{Int64}:
+##  1
+##  2
+##  3
+##  4
+##  5</code></pre>
+<pre class="julia"><code># mutating
+reverse!(vec)</code></pre>
+<pre class="bg-success"><code>## 5-element Vector{Int64}:
+##  5
+##  4
+##  3
+##  2
+##  1</code></pre>
+<pre class="julia"><code>vec</code></pre>
+<pre class="bg-success"><code>## 5-element Vector{Int64}:
+##  5
+##  4
+##  3
+##  2
+##  1</code></pre>
+<p>In julia, the <code>iseven()</code> function is already built-in, but vectorisation is
+explicit via a broadcast operator <code>.</code> and the setting of even values to 0
+looks like</p>
+<pre class="julia"><code>x = collect(1:10);
+x[iseven.(x)] .= 0;
+x</code></pre>
+<pre class="bg-success"><code>## 10-element Vector{Int64}:
+##  1
+##  0
+##  3
+##  0
+##  5
+##  0
+##  7
+##  0
+##  9
+##  0</code></pre>
+<p>which looks very much like the R version with some dots where scalar functions
+are vectorised. If I don’t use the last <code>.</code> to perform vectorised assignment,
+the error tells me that the failure involved the <code>setindex!</code> function which does
+sound like what I want, but this doesn’t work</p>
+<pre class="julia"><code>setindex!(x, 0, iseven.(x))</code></pre>
+<p>because it’s trying to assign the value 0 multiple times and I only provided one
+of them. Instead,</p>
+<pre class="julia"><code>x = collect(1:10);
+setindex!(x, zeros(Int8, 5), iseven.(x));
+x</code></pre>
+<pre class="bg-success"><code>## 10-element Vector{Int64}:
+##  1
+##  0
+##  3
+##  0
+##  5
+##  0
+##  7
+##  0
+##  9
+##  0</code></pre>
+<p>does work, but I had to manually count how many 0 entries this requires, so the
+<code>[</code> approach seems cleaner. Either way, I’ve had to explicitly calculate
+<code>iseven(x)</code> and pass that result somewhere.</p>
+<p>Since Julia allows users to extend methods, I <em>could</em> do that modification myself!</p>
+<pre class="julia"><code>import Base.setindex! 
+  
+function setindex!(A::Vector{Int64}, v::Int64, f::Function) 
+  A[f.(A)] .= v
+end</code></pre>
+<pre class="bg-success"><code>## setindex! (generic function with 240 methods)</code></pre>
+<pre class="julia"><code>x = collect(1:10);
+setindex!(x, 0, iseven);
+x</code></pre>
+<pre class="bg-success"><code>## 10-element Vector{Int64}:
+##  1
+##  0
+##  3
+##  0
+##  5
+##  0
+##  7
+##  0
+##  9
+##  0</code></pre>
+<p>which I could just as easily call <code>set_if!</code></p>
+<pre class="julia"><code>set_if! = setindex!;
+x = collect(1:10);
+set_if!(x, 0, iseven);
+x</code></pre>
+<pre class="bg-success"><code>## 10-element Vector{Int64}:
+##  1
+##  0
+##  3
+##  0
+##  5
+##  0
+##  7
+##  0
+##  9
+##  0</code></pre>
+<p>Nice! I do wonder if I can “hack” (ahem, extend) Julia’s <code>[</code> to get my prized
+<code>x[f] = 0</code> solution but I doubt it’s worth it when the above does the right
+thing.</p>
+<p>I don’t imagine I’ll package up my <code>set_if()</code> anywhere, and I should probably
+even avoid using it myself, but it’s been an interesting journey thinking about
+this stuff. Maybe there’s a better way to do it? Maybe there’s a language which
+better supports something like that? If you know, or you have comments or
+suggestions, I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comment section below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-09-25
+##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.19    2024-02-01 [1] CRAN (R 4.3.3)
+##  bookdown      0.36    2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.8.0   2024-07-29 [1] CRAN (R 4.3.3)
+##  cachem        1.1.0   2024-05-16 [1] CRAN (R 4.3.3)
+##  callr         3.7.3   2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1   2023-03-23 [1] CRAN (R 4.3.3)
+##  crayon        1.5.2   2022-09-29 [3] CRAN (R 4.2.1)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.37  2024-08-19 [1] CRAN (R 4.3.3)
+##  ellipsis      0.3.2   2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.24.0  2024-06-10 [1] CRAN (R 4.3.3)
+##  fastmap       1.2.0   2024-05-15 [1] CRAN (R 4.3.3)
+##  fs            1.6.4   2024-04-25 [1] CRAN (R 4.3.3)
+##  glue          1.7.0   2024-01-09 [1] CRAN (R 4.3.3)
+##  htmltools     0.5.8.1 2024-04-04 [1] CRAN (R 4.3.3)
+##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1   2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.3.3)
+##  jsonlite      1.8.8   2023-12-04 [1] CRAN (R 4.3.3)
+##  JuliaCall     0.17.5  2022-09-08 [1] CRAN (R 4.3.3)
+##  knitr         1.48    2024-07-07 [1] CRAN (R 4.3.3)
+##  later         1.3.1   2023-05-02 [1] CRAN (R 4.3.2)
+##  lattice       0.22-5  2023-10-24 [4] CRAN (R 4.3.1)
+##  lifecycle     1.0.4   2023-11-07 [1] CRAN (R 4.3.3)
+##  magrittr    * 2.0.3   2022-03-30 [1] CRAN (R 4.3.3)
+##  Matrix        1.6-5   2024-01-11 [4] CRAN (R 4.3.3)
+##  memoise       2.0.1   2021-11-26 [1] CRAN (R 4.3.3)
+##  mime          0.12    2021-09-28 [1] CRAN (R 4.3.3)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.3.2)
+##  pkgbuild      1.4.2   2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgload       1.3.3   2023-09-22 [1] CRAN (R 4.3.2)
+##  png           0.1-8   2022-11-29 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0   2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.3   2023-12-10 [3] CRAN (R 4.3.2)
+##  profvis       0.3.8   2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1   2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.6   2024-01-18 [3] CRAN (R 4.3.2)
+##  purrr         1.0.2   2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1   2021-08-19 [1] CRAN (R 4.3.3)
+##  Rcpp          1.0.11  2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1 2023-07-18 [1] CRAN (R 4.3.2)
+##  reticulate    1.34.0  2023-10-12 [1] CRAN (R 4.3.2)
+##  rlang         1.1.4   2024-06-04 [1] CRAN (R 4.3.3)
+##  rmarkdown     2.28    2024-08-17 [1] CRAN (R 4.3.3)
+##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.9   2024-03-15 [1] CRAN (R 4.3.3)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1 2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.8.4   2024-05-06 [1] CRAN (R 4.3.3)
+##  stringr       1.5.1   2023-11-14 [1] CRAN (R 4.3.3)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       3.0.0   2024-07-29 [1] CRAN (R 4.3.3)
+##  vctrs         0.6.5   2023-12-01 [1] CRAN (R 4.3.3)
+##  xfun          0.47    2024-08-17 [1] CRAN (R 4.3.3)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.10  2024-07-26 [1] CRAN (R 4.3.3)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ─ Python configuration ───────────────────────────────────────────────────────
+##  python:         /home/jono/.virtualenvs/r-reticulate/bin/python
+##  libpython:      /usr/lib/python3.10/config-3.10-x86_64-linux-gnu/libpython3.10.so
+##  pythonhome:     /home/jono/.virtualenvs/r-reticulate:/home/jono/.virtualenvs/r-reticulate
+##  version:        3.10.12 (main, Jul 29 2024, 16:56:48) [GCC 11.4.0]
+##  numpy:           [NOT FOUND]
+##  
+##  NOTE: Python version was forced by VIRTUAL_ENV
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
