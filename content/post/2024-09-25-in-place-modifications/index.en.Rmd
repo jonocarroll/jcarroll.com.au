@@ -405,6 +405,10 @@ then please add an Issue!
 the minimum value from the code_report video _does_ indeed work with this new 
 package
 
+```{r, echo = FALSE}
+rm(list = ls())
+```
+
 ```{r}
 library(vec)
 

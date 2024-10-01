@@ -161,10 +161,10 @@ object is actually created</p>
 # a &quot;compact&quot; representation
 a &lt;- c(2, 3, 4)
 .Internal(inspect(a))</code></pre>
-<pre class="bg-success"><code>## @5e1b56dbb4d8 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
+<pre class="bg-success"><code>## @5a784d8f2d48 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
 <pre class="r"><code>a[2] &lt;- 9
 .Internal(inspect(a))</code></pre>
-<pre class="bg-success"><code>## @5e1b56de96c8 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
+<pre class="bg-success"><code>## @5a784d91f018 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
 <p>Note that the memory address has changed.</p>
 <p>If I was working with a language which did support (enable?) modify-in-place
 then that might look like</p>
@@ -393,13 +393,9 @@ then please add an Issue!</p>
 <p><strong>UPDATE2</strong> I probably should have noted that the original motivation of updating
 the minimum value from the code_report video <em>does</em> indeed work with this new
 package</p>
-<pre class="r"><code>library(vec)</code></pre>
-<pre class="bg-info text-info"><code>## 
-## Attaching package: &#39;vec&#39;</code></pre>
-<pre class="bg-info text-info"><code>## The following object is masked _by_ &#39;.GlobalEnv&#39;:
-## 
-##     is_even</code></pre>
-<pre class="r"><code>nums &lt;- as_vec(c(4, 5, 3, 6, 8))
+<pre class="r"><code>library(vec)
+
+nums &lt;- as_vec(c(4, 5, 3, 6, 8))
 nums[which.min] &lt;- 99
 nums</code></pre>
 <pre class="bg-success"><code>## [1]  4  5 99  6  8</code></pre>
