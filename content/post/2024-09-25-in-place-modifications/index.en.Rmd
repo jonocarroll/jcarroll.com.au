@@ -401,6 +401,20 @@ as a new vector class where we could implement new features. There are already
 a couple of suggestions, and if you have something you wish R's vectors supported, 
 then please add an Issue!
 
+**UPDATE2** I probably should have noted that the original motivation of updating 
+the minimum value from the code_report video _does_ indeed work with this new 
+package
+
+```{r}
+library(vec)
+
+nums <- as_vec(c(4, 5, 3, 6, 8))
+nums[which.min] <- 99
+nums
+```
+
+and I'm very happy about that!
+
 <br />
 <details>
   <summary>

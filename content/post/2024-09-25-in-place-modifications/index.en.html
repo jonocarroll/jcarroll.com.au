@@ -161,10 +161,10 @@ object is actually created</p>
 # a &quot;compact&quot; representation
 a &lt;- c(2, 3, 4)
 .Internal(inspect(a))</code></pre>
-<pre class="bg-success"><code>## @56cbece055e8 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
+<pre class="bg-success"><code>## @5e1b56dbb4d8 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
 <pre class="r"><code>a[2] &lt;- 9
 .Internal(inspect(a))</code></pre>
-<pre class="bg-success"><code>## @56cbece356f8 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
+<pre class="bg-success"><code>## @5e1b56de96c8 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
 <p>Note that the memory address has changed.</p>
 <p>If I was working with a language which did support (enable?) modify-in-place
 then that might look like</p>
@@ -390,6 +390,20 @@ this as a real package: <a href="https://github.com/jonocarroll/vec">{vec}</a> i
 as a new vector class where we could implement new features. There are already
 a couple of suggestions, and if you have something you wish R’s vectors supported,
 then please add an Issue!</p>
+<p><strong>UPDATE2</strong> I probably should have noted that the original motivation of updating
+the minimum value from the code_report video <em>does</em> indeed work with this new
+package</p>
+<pre class="r"><code>library(vec)</code></pre>
+<pre class="bg-info text-info"><code>## 
+## Attaching package: &#39;vec&#39;</code></pre>
+<pre class="bg-info text-info"><code>## The following object is masked _by_ &#39;.GlobalEnv&#39;:
+## 
+##     is_even</code></pre>
+<pre class="r"><code>nums &lt;- as_vec(c(4, 5, 3, 6, 8))
+nums[which.min] &lt;- 99
+nums</code></pre>
+<pre class="bg-success"><code>## [1]  4  5 99  6  8</code></pre>
+<p>and I’m very happy about that!</p>
 <br />
 <details>
 <summary>
@@ -466,6 +480,7 @@ then please add an Issue!</p>
 ##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.3.2)
 ##  usethis       3.0.0   2024-07-29 [1] CRAN (R 4.3.3)
 ##  vctrs         0.6.5   2023-12-01 [1] CRAN (R 4.3.3)
+##  vec         * 0.1.0   2024-10-01 [1] local
 ##  xfun          0.47    2024-08-17 [1] CRAN (R 4.3.3)
 ##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.3.2)
 ##  yaml          2.3.10  2024-07-26 [1] CRAN (R 4.3.3)
