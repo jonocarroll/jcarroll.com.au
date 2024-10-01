@@ -115,8 +115,12 @@ package will be in a fully "working" state, passing `devtools::check()`, and wit
 some reasonable documentation.
 
 Lastly, this really only works if some of the people who would benefit from such 
-a learning opportunity find out about it, so boosts and re-shares would be 
-greatly appreciated.
+a learning opportunity find out about it, so boosts and re-shares of this post, 
+the toot announcing it, or the link to the repository itself
+
+[https://github.com/jonocarroll/safespace](https://github.com/jonocarroll/safespace)
+
+would be greatly appreciated.
 
 As always, I can be found on
 [Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
