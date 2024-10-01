@@ -161,10 +161,10 @@ object is actually created</p>
 # a &quot;compact&quot; representation
 a &lt;- c(2, 3, 4)
 .Internal(inspect(a))</code></pre>
-<pre class="bg-success"><code>## @63a4d9b05be8 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
+<pre class="bg-success"><code>## @56cbece055e8 14 REALSXP g0c3 [REF(2)] (len=3, tl=0) 2,3,4</code></pre>
 <pre class="r"><code>a[2] &lt;- 9
 .Internal(inspect(a))</code></pre>
-<pre class="bg-success"><code>## @63a4d9b0fbf8 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
+<pre class="bg-success"><code>## @56cbece356f8 14 REALSXP g0c3 [REF(1)] (len=3, tl=0) 2,9,4</code></pre>
 <p>Note that the memory address has changed.</p>
 <p>If I was working with a language which did support (enable?) modify-in-place
 then that might look like</p>
@@ -385,6 +385,11 @@ this stuff. Maybe there’s a better way to do it? Maybe there’s a language wh
 better supports something like that? If you know, or you have comments or
 suggestions, I can be found on
 <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comment section below.</p>
+<p><strong>UPDATE</strong> After some inspiration from Doug Kelkhoff I did end up implementing
+this as a real package: <a href="https://github.com/jonocarroll/vec">{vec}</a> is intended
+as a new vector class where we could implement new features. There are already
+a couple of suggestions, and if you have something you wish R’s vectors supported,
+then please add an Issue!</p>
 <br />
 <details>
 <summary>
@@ -400,7 +405,7 @@ suggestions, I can be found on
 ##  collate  en_AU.UTF-8
 ##  ctype    en_AU.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2024-09-25
+##  date     2024-10-01
 ##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
@@ -419,6 +424,7 @@ suggestions, I can be found on
 ##  fastmap       1.2.0   2024-05-15 [1] CRAN (R 4.3.3)
 ##  fs            1.6.4   2024-04-25 [1] CRAN (R 4.3.3)
 ##  glue          1.7.0   2024-01-09 [1] CRAN (R 4.3.3)
+##  here          1.0.1   2020-12-13 [1] CRAN (R 4.3.2)
 ##  htmltools     0.5.8.1 2024-04-04 [1] CRAN (R 4.3.3)
 ##  htmlwidgets   1.6.2   2023-03-17 [1] CRAN (R 4.3.2)
 ##  httpuv        1.6.12  2023-10-23 [1] CRAN (R 4.3.2)
@@ -450,6 +456,7 @@ suggestions, I can be found on
 ##  reticulate    1.34.0  2023-10-12 [1] CRAN (R 4.3.2)
 ##  rlang         1.1.4   2024-06-04 [1] CRAN (R 4.3.3)
 ##  rmarkdown     2.28    2024-08-17 [1] CRAN (R 4.3.3)
+##  rprojroot     2.0.4   2023-11-05 [1] CRAN (R 4.3.2)
 ##  rstudioapi    0.15.0  2023-07-07 [3] CRAN (R 4.3.1)
 ##  sass          0.4.9   2024-03-15 [1] CRAN (R 4.3.3)
 ##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.3.2)
@@ -472,10 +479,8 @@ suggestions, I can be found on
 ##  python:         /home/jono/.virtualenvs/r-reticulate/bin/python
 ##  libpython:      /usr/lib/python3.10/config-3.10-x86_64-linux-gnu/libpython3.10.so
 ##  pythonhome:     /home/jono/.virtualenvs/r-reticulate:/home/jono/.virtualenvs/r-reticulate
-##  version:        3.10.12 (main, Jul 29 2024, 16:56:48) [GCC 11.4.0]
+##  version:        3.10.12 (main, Sep 11 2024, 15:47:36) [GCC 11.4.0]
 ##  numpy:           [NOT FOUND]
-##  
-##  NOTE: Python version was forced by VIRTUAL_ENV
 ## 
 ## ──────────────────────────────────────────────────────────────────────────────</code></pre>
 </details>

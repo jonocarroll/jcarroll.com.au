@@ -395,6 +395,12 @@ better supports something like that? If you know, or you have comments or
 suggestions, I can be found on
 [Mastodon](https://fosstodon.org/@jonocarroll) or use the comment section below.
 
+**UPDATE** After some inspiration from Doug Kelkhoff I did end up implementing 
+this as a real package: [{vec}](https://github.com/jonocarroll/vec) is intended 
+as a new vector class where we could implement new features. There are already 
+a couple of suggestions, and if you have something you wish R's vectors supported, 
+then please add an Issue!
+
 <br />
 <details>
   <summary>
