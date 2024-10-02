@@ -85,9 +85,9 @@ comfortable with the pull request process to do that.
 There's no shortage of material on the web explaining how to work with pull requests 
 in R either at the command line or in RStudio
 
+- [https://tonyelhabr.rbind.io/posts/making-first-pull-request/](https://tonyelhabr.rbind.io/posts/making-first-pull-request/)
 - [https://r-bio.github.io/intro-git-rstudio/](https://r-bio.github.io/intro-git-rstudio/)
 - [https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/](https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/)
-- [https://www.r-bloggers.com/2019/01/a-newbies-guide-to-making-a-pull-request-for-an-r-package/](https://www.r-bloggers.com/2019/01/a-newbies-guide-to-making-a-pull-request-for-an-r-package/)
 - [https://r-pkgs.org/software-development-practices.html#git-pullreq](https://r-pkgs.org/software-development-practices.html#git-pullreq)
 
 but that's theory - how does a new user practice making a pull request?
@@ -144,7 +144,7 @@ the toot announcing it, or the link to the repository itself
 
 [https://github.com/jonocarroll/safespace](https://github.com/jonocarroll/safespace)
 
-would be greatly appreciated.
+would be greatly appreciated!
 
 As always, I can be found on
 [Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
