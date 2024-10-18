@@ -1,0 +1,709 @@
+---
+title: Monads in R
+author: Jonathan Carroll
+date: '2024-10-18'
+categories:
+  - rstats
+tags:
+  - rstats
+slug: monads-in-r
+---
+
+
+
+<p>In this post I describe a useful programming pattern that I implemented, and
+hopefully provide a gentle introduction to the idea of monads.</p>
+<!--more-->
+<p>In this post I describe a useful programming pattern that I implemented, and
+hopefully provide a gentle introduction to the idea of monads.</p>
+<p>The motivation for all of this was that I had a {dplyr} pipeline as part of a
+{shiny} app that queries a database and I wanted to “record” what steps were in
+that pipeline so that I could offer them as a way to ‘reproduce’ the query. Some
+of the steps might be user-defined via the UI, so it was a little more
+complicated than just a hardcoded query.</p>
+<p>One quick-and-dirty solution that might come to mind would be to make a
+<code>with_logging()</code> function that takes an expression, writes a text-representation
+of it to a file or a global, then evaluates the expression. This would probably
+work, but it means that every step of the pipeline needs to be wrapped in that.
+Not the worst, but I had a feeling I knew of something more suitable. I’ve been
+trying to learn Haskell this year, and so far it’s going sort of okay, but I’m
+taking a detour through Elm which has most of the same syntax but less of the
+hardcore ‘maths’ constructs.</p>
+<p>Returning readers may have seen me use the term ‘monadic’ in the context of APL
+where it means that a function ‘takes one argument’ (as compared to ‘dyadic’
+which takes two) and I believe this definition predates the mathematical one I’m
+going to use for the rest of this post.</p>
+<p>‘Monad’ is a term often best avoided in conversation, and is often described in
+overly mathematical terms, the “meme” definition being the category theory
+version which states</p>
+<blockquote>
+<p>“a monad is just a monoid in the category of endofunctors”</p>
+</blockquote>
+<p>which is mostly true, but also unnecessary. Nonetheless, it’s an extremely
+useful pattern that comes up a lot in functional programming.</p>
+<p><a href="https://www.adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html">This blog post</a>
+does a great job of walking through the more practical definition, and it has
+“translations” into several programming languages including <a href="https://medium.com/@tzehsiang/javascript-functor-applicative-monads-in-pictures-b567c6415221#.rdwll124i">JavaScript</a> and <a href="https://github.com/dbrattli/OSlash/wiki/Functors,-Applicatives,-And-Monads-In-Pictures">Python</a>.</p>
+<p>Basically, <code>map</code> applies some function to some values. <code>flatMap</code> does the same,
+but first “reaches inside” a context to extract some inner values, and after
+applying the function, re-wraps the result in the original context.</p>
+<p>One big advantage to this is that the ‘purity’ of the function remains; you
+always get the same output for the same input, but as well as that you can have
+some input/output operation be requested to be performed, which is how ‘pure’
+languages still manage to communicate with the outside world and not just heat
+up the CPU for no reason.</p>
+<p>The enlightening example for me is a <code>List</code> - if we have some values and want to
+apply some function to them, we can do that with, e.g.</p>
+<pre class="r"><code>f &lt;- function(x) x^2
+Map(f, c(2, 4, 6))</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1] 4
+## 
+## [[2]]
+## [1] 16
+## 
+## [[3]]
+## [1] 36</code></pre>
+<p>and if we have a ‘flat’ list, this still works</p>
+<pre class="r"><code>Map(f, list(2, 4, 6))</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1] 4
+## 
+## [[2]]
+## [1] 16
+## 
+## [[3]]
+## [1] 36</code></pre>
+<p>but what if we have an ‘outer context’ list?</p>
+<pre class="r"><code>Map(f, list(c(2, 3), c(4, 5, 6)))</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1] 4 9
+## 
+## [[2]]
+## [1] 16 25 36</code></pre>
+<p>In this case, because <code>f</code> is vectorised, <code>Map</code> sends each vector to <code>f</code> and gets
+a result for each list. What if we have a list in the inner context?</p>
+<pre class="r"><code>Map(f, list(list(2, 3), list(4, 5, 6)))</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in x^2: non-numeric argument to binary operator</code></pre>
+<p>This fails because <code>f(list(2, 3))</code> fails (it doesn’t know how to deal with an
+argument which is a list).</p>
+<p>Instead, we can use a version of ‘map’ that first reaches inside the outer
+<code>list</code> context, concatenates what’s inside, applies the function, then re-wraps
+the result in a new, flat list</p>
+<pre class="r"><code>fmap &lt;- function(x, f) {
+  list(f(unlist(x)))
+}
+fmap(list(list(2, 3), list(4, 5, 6)), f)</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1]  4  9 16 25 36</code></pre>
+<p>This is the essence of a monad - something that supports such a <code>fmap</code> operation
+that performs the mapping inside the context (and potentially some other
+operations, which we’ll get to). There are various patterns which benefit from
+such a context, and this vignette describes an implementation of several of
+these via the <a href="https://jonocarroll.github.io/monads/index.html">{monads}</a>
+package.</p>
+<p>The <code>fmap</code> operation is so common that it’s typical to find it presented as an
+infix function, similar to how pipes work in R</p>
+<pre class="r"><code>list(list(2, 3), list(4, 5, 6)) |&gt; fmap(f)</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1]  4  9 16 25 36</code></pre>
+<p>and we can go one step further by defining a new pipe which is just a different
+syntax for this</p>
+<pre><code>x |&gt; fmap(f)
+
+x %&gt;&gt;=% f</code></pre>
+<p>This infix function borrows from Haskell’s <code>&gt;&gt;=</code> (pronounced “bind”) which is
+so fundamental that forms part of the language’s logo</p>
+<div class="float">
+<img src="images/haskell_logo.png" width="400" alt="The Haskell logo" />
+<div class="figcaption">The Haskell logo</div>
+</div>
+<p>With all that in mind, here’s how it looks in my (perhaps simplistic)
+implementation which you can
+<a href="https://github.com/jonocarroll/monads">get from GitHub here</a></p>
+<pre class="r"><code>library(monads)</code></pre>
+<div class="float">
+<img src="images/logo.png" alt="{monads} hex logo" />
+<div class="figcaption">{monads} hex logo</div>
+</div>
+<p>Additionally, some toy helper functions are defined in this package for
+demonstrating application of functions, e.g.</p>
+<pre class="r"><code>timestwo(4)</code></pre>
+<pre class="bg-success"><code>## [1] 8</code></pre>
+<pre class="r"><code>square(5)</code></pre>
+<pre class="bg-success"><code>## [1] 25</code></pre>
+<pre class="r"><code>add_n(3, 4)</code></pre>
+<pre class="bg-success"><code>## [1] 7</code></pre>
+<div id="list" class="section level2">
+<h2>List</h2>
+<p>As per the example above, the <code>List</code> monad wraps values (which may be additional
+<code>list</code>s) and when <code>flatMap</code>ed the results are ‘flattened’ into a single <code>List</code>.</p>
+<pre class="r"><code># identical to a regular Map
+x &lt;- listM(1, 2, 3) %&gt;&gt;=%
+  timestwo()
+x</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1] 2 4 6</code></pre>
+<pre class="r"><code># only possible with the flatMap approach
+y &lt;- listM(list(1, 2), list(3, 4, 5)) %&gt;&gt;=% 
+  timestwo()
+y</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## [1]  2  4  6  8 10</code></pre>
+<p>Note that while <code>x</code> and <code>y</code> print as regular lists, they remain <code>List</code> monads;
+a <code>print</code> method is defined which essentially extracts <code>value(x)</code>.</p>
+</div>
+<div id="logger" class="section level2">
+<h2>Logger</h2>
+<p>As I alluded to earlier, additional operations can happen while the context is
+unwrapped, including IO. What if I just kept a log of the operations and
+appended each step to it? The wrapping context can include additional
+components, and a stored ‘log’ of the expressions used at each step is entirely
+possible.</p>
+<p>All that is required is to wrap the value at the start of the pipeline in a
+<code>Logger</code> context for which there is a constructor helper, <code>loggerM()</code></p>
+<pre class="r"><code>library(dplyr, warn.conflicts = FALSE)
+
+result &lt;- loggerM(mtcars) %&gt;&gt;=%
+  filter(mpg &gt; 10) %&gt;&gt;=%
+  select(mpg, cyl, disp) %&gt;&gt;=%
+  arrange(desc(mpg)) %&gt;&gt;=%
+  head()</code></pre>
+<p>This result is still a <code>Logger</code> instance, not a value. To extract the value from
+this we can use <code>value()</code>. To extract the log of each step, use <code>logger_log()</code>
+(to avoid conflict with <code>base::log</code>)</p>
+<pre class="r"><code>value(result)</code></pre>
+<pre class="bg-success"><code>##                 mpg cyl  disp
+## Toyota Corolla 33.9   4  71.1
+## Fiat 128       32.4   4  78.7
+## Honda Civic    30.4   4  75.7
+## Lotus Europa   30.4   4  95.1
+## Fiat X1-9      27.3   4  79.0
+## Porsche 914-2  26.0   4 120.3</code></pre>
+<pre class="r"><code>logger_log(result)</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Log of 4 operations:</code></pre>
+<pre class="bg-success"><code>## 
+##  mtcars %&gt;%
+##    filter(mpg &gt; 10) %&gt;%
+##    select(mpg, cyl, disp) %&gt;%
+##    arrange(desc(mpg)) %&gt;%
+##    head()</code></pre>
+<p>This works with any data value, so we could just as easily use an in-memory
+SQLite database (or external)</p>
+<pre class="r"><code>mem &lt;- DBI::dbConnect(RSQLite::SQLite(), &quot;:memory:&quot;)
+dplyr::copy_to(mem, mtcars)
+
+res &lt;- loggerM(mem) %&gt;&gt;=%
+  tbl(&quot;mtcars&quot;) %&gt;&gt;=%
+  filter(mpg &gt; 10) %&gt;&gt;=%
+  select(mpg, cyl, disp) %&gt;&gt;=%
+  arrange(desc(mpg)) %&gt;&gt;=%
+  head()</code></pre>
+<p>Again, extracting the components from this</p>
+<pre class="r"><code>value(res)</code></pre>
+<pre class="bg-success"><code>## # Source:     SQL [6 x 3]
+## # Database:   sqlite 3.46.0 [:memory:]
+## # Ordered by: desc(mpg)
+##     mpg   cyl  disp
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1  33.9     4  71.1
+## 2  32.4     4  78.7
+## 3  30.4     4  75.7
+## 4  30.4     4  95.1
+## 5  27.3     4  79  
+## 6  26       4 120.</code></pre>
+<pre class="r"><code>logger_log(res)</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Log of 5 operations:</code></pre>
+<pre class="bg-success"><code>## 
+##  mem %&gt;%
+##    tbl(&quot;mtcars&quot;) %&gt;%
+##    filter(mpg &gt; 10) %&gt;%
+##    select(mpg, cyl, disp) %&gt;%
+##    arrange(desc(mpg)) %&gt;%
+##    head()</code></pre>
+<p>Since the log captures what operations were performed, we could re-run this
+expression, and a helper is available for that</p>
+<pre class="r"><code>rerun(res)</code></pre>
+<pre class="bg-success"><code>## # Source:     SQL [6 x 3]
+## # Database:   sqlite 3.46.0 [:memory:]
+## # Ordered by: desc(mpg)
+##     mpg   cyl  disp
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1  33.9     4  71.1
+## 2  32.4     4  78.7
+## 3  30.4     4  75.7
+## 4  30.4     4  95.1
+## 5  27.3     4  79  
+## 6  26       4 120.</code></pre>
+<p>Some similar functionality is present in the {magrittr} package which provides
+the ‘classic’ R pipe <code>%&gt;%</code>; a ‘functional sequence’ starts with a <code>.</code> and
+similarly tracks which functions are to be applied to an arbitrary input once
+evaluated - in this way, this is similar to defining a new function.</p>
+<pre class="r"><code>library(magrittr)
+
+# define a functional sequence
+fs &lt;- . %&gt;%
+  tbl(&quot;mtcars&quot;) %&gt;%
+  select(cyl, mpg)
+
+# evaluate the functional sequence with some input data
+fs(mem)</code></pre>
+<pre class="bg-success"><code>## # Source:   SQL [?? x 2]
+## # Database: sqlite 3.46.0 [:memory:]
+##      cyl   mpg
+##    &lt;dbl&gt; &lt;dbl&gt;
+##  1     6  21  
+##  2     6  21  
+##  3     4  22.8
+##  4     6  21.4
+##  5     8  18.7
+##  6     6  18.1
+##  7     8  14.3
+##  8     4  24.4
+##  9     4  22.8
+## 10     6  19.2
+## # ℹ more rows</code></pre>
+<pre class="r"><code># identify the function calls at each step of the pipeline
+magrittr::functions(fs)</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## function (.) 
+## tbl(., &quot;mtcars&quot;)
+## 
+## [[2]]
+## function (.) 
+## select(., cyl, mpg)</code></pre>
+<p>Since the functional sequence is unevaluated, errors can be present and not
+triggered</p>
+<pre class="r"><code>errfs &lt;- . %&gt;%
+  sqrt() %&gt;%
+  stop(&quot;oops&quot;) %&gt;%
+  add_n(3)
+
+x &lt;- 1:10
+
+errfs(x)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in function_list[[i]](value): 11.41421356237311.7320508075688822.236067977499792.449489742783182.645751311064592.8284271247461933.16227766016838oops</code></pre>
+<pre class="r"><code>magrittr::functions(errfs)</code></pre>
+<pre class="bg-success"><code>## [[1]]
+## function (.) 
+## sqrt(.)
+## 
+## [[2]]
+## function (.) 
+## stop(., &quot;oops&quot;)
+## 
+## [[3]]
+## function (.) 
+## add_n(., 3)</code></pre>
+<p>In the monad context, steps which do raise an error nullify the value and a
+signifier is added to the log to prevent re-running the error</p>
+<pre class="r"><code>resx &lt;- loggerM(x) %&gt;&gt;=%
+  sqrt() %&gt;&gt;=%
+  add_n(4)
+
+value(resx)</code></pre>
+<pre class="bg-success"><code>##  [1] 5.000000 5.414214 5.732051 6.000000 6.236068 6.449490 6.645751 6.828427
+##  [9] 7.000000 7.162278</code></pre>
+<pre class="r"><code>logger_log(resx)</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Log of 2 operations:</code></pre>
+<pre class="bg-success"><code>## 
+##  x %&gt;%
+##    sqrt() %&gt;%
+##    add_n(4)</code></pre>
+<pre class="r"><code>err &lt;- loggerM(x) %&gt;&gt;=%
+  sqrt() %&gt;&gt;=%
+  stop(&quot;oops&quot;) %&gt;&gt;=%
+  add_n(3)
+
+value(err)</code></pre>
+<pre class="bg-success"><code>## NULL</code></pre>
+<pre class="r"><code>logger_log(err)</code></pre>
+<pre class="bg-info text-info"><code>## ✖ Log of 3 operations: [ERROR]</code></pre>
+<pre class="bg-success"><code>## 
+##  x %&gt;%
+##    sqrt() %&gt;%
+##    [E] stop(&quot;oops&quot;) %&gt;%
+##    [E] add_n(3)</code></pre>
+<p>Aside from an error destroying the value, returning a <code>NULL</code> result will also
+produce this effect</p>
+<pre class="r"><code>nullify &lt;- loggerM(x) %&gt;&gt;=%
+  sqrt() %&gt;&gt;=%
+  ret_null() %&gt;&gt;=%
+  add_n(7)
+
+value(nullify)</code></pre>
+<pre class="bg-success"><code>## NULL</code></pre>
+<pre class="r"><code>logger_log(nullify)</code></pre>
+<pre class="bg-info text-info"><code>## ✖ Log of 3 operations: [ERROR]</code></pre>
+<pre class="bg-success"><code>## 
+##  x %&gt;%
+##    sqrt() %&gt;%
+##    [E] ret_null() %&gt;%
+##    [E] add_n(7)</code></pre>
+<p>One downside to the functional sequence approach is chaining these - since the
+first term must be <code>.</code>, that is always the first entry, and chaining multiple
+sequences is not clean.</p>
+<pre class="r"><code>a &lt;- . %&gt;% sqrt()
+a</code></pre>
+<pre class="bg-success"><code>## Functional sequence with the following components:
+## 
+##  1. sqrt(.)
+## 
+## Use &#39;functions&#39; to extract the individual functions.</code></pre>
+<pre class="r"><code>b &lt;- . %&gt;% a %&gt;% add_n(1)
+b</code></pre>
+<pre class="bg-success"><code>## Functional sequence with the following components:
+## 
+##  1. a(.)
+##  2. add_n(., 1)
+## 
+## Use &#39;functions&#39; to extract the individual functions.</code></pre>
+<pre class="r"><code>b(x)</code></pre>
+<pre class="bg-success"><code>##  [1] 2.000000 2.414214 2.732051 3.000000 3.236068 3.449490 3.645751 3.828427
+##  [9] 4.000000 4.162278</code></pre>
+<p>Because the monad context is recreated at every step, chaining these is not a
+problem</p>
+<pre class="r"><code>a &lt;- loggerM(x) %&gt;&gt;=%
+  sqrt()
+
+value(a)</code></pre>
+<pre class="bg-success"><code>##  [1] 1.000000 1.414214 1.732051 2.000000 2.236068 2.449490 2.645751 2.828427
+##  [9] 3.000000 3.162278</code></pre>
+<pre class="r"><code>logger_log(a)</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Log of 1 operations:</code></pre>
+<pre class="bg-success"><code>## 
+##  x %&gt;%
+##    sqrt()</code></pre>
+<pre class="r"><code>b &lt;- a %&gt;&gt;=%
+  add_n(1)
+
+value(b)</code></pre>
+<pre class="bg-success"><code>##  [1] 2.000000 2.414214 2.732051 3.000000 3.236068 3.449490 3.645751 3.828427
+##  [9] 4.000000 4.162278</code></pre>
+<pre class="r"><code>logger_log(b)</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Log of 2 operations:</code></pre>
+<pre class="bg-success"><code>## 
+##  x %&gt;%
+##    sqrt() %&gt;%
+##    add_n(1)</code></pre>
+<p>This achieves what I wanted in terms of ‘recording’ the steps of the pipeline,
+and it only requires wrapping the initial value and using a different pipe.</p>
+<p>But there are other monads I could also implement… so I did.</p>
+</div>
+<div id="timer" class="section level2">
+<h2>Timer</h2>
+<p>In addition to capturing the expressions in a log, the <code>Timer</code> monad also
+captures the evaluation timing for each step, storing these alongside the
+expressions themselves in a <code>data.frame</code></p>
+<pre class="r"><code>x &lt;- timerM(5) %&gt;&gt;=%
+  sleep_for(3) %&gt;&gt;=%
+  timestwo() %&gt;&gt;=%
+  sleep_for(1.3)
+
+value(x)</code></pre>
+<pre class="bg-success"><code>## [1] 10</code></pre>
+<pre class="r"><code>times(x)</code></pre>
+<pre class="bg-success"><code>##             expr  time
+## 1              5 0.000
+## 2   sleep_for(3) 3.014
+## 3     timestwo() 0.000
+## 4 sleep_for(1.3) 1.306</code></pre>
+<pre class="r"><code>y &lt;- timerM(5) %&gt;&gt;=%
+  sleep_for(2) %&gt;&gt;=%
+  ret_null() %&gt;&gt;=%
+  sleep_for(0.3)
+
+value(y)</code></pre>
+<pre class="bg-success"><code>## NULL</code></pre>
+<pre class="r"><code>times(y)</code></pre>
+<pre class="bg-success"><code>##             expr  time
+## 1              5 0.000
+## 2   sleep_for(2) 2.002
+## 3     ret_null() 0.000
+## 4 sleep_for(0.3) 0.302</code></pre>
+</div>
+<div id="maybe" class="section level2">
+<h2>Maybe</h2>
+<p>In some languages it is preferrable to return <em>something</em> rather than raising
+an error, particularly if you want to ensure that errors are handled. The
+<code>Maybe</code> pattern consists of either a <code>Nothing</code> (which is empty) or a <code>Just</code>
+containing some value; all functions applied to a <code>Maybe</code> will be one of these.</p>
+<p>For testing the result, some helpers <code>is_nothing()</code> and <code>is_just()</code> are defined.</p>
+<pre class="r"><code>x &lt;- maybeM(9) %&gt;&gt;=% 
+  sqrt() %&gt;&gt;=%
+  timestwo()
+
+value(x)</code></pre>
+<pre class="bg-success"><code>## Just:
+## [1] 6</code></pre>
+<pre class="r"><code>is_just(x)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is_nothing(x)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>y &lt;- maybeM(Nothing()) %&gt;&gt;=%
+  sqrt()
+
+value(y)</code></pre>
+<pre class="bg-success"><code>## Nothing</code></pre>
+<pre class="r"><code>is_just(y)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>is_nothing(y)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>z &lt;- maybeM(10) %&gt;&gt;=%
+  timestwo() %&gt;&gt;=%
+  add_n(Nothing())
+
+value(z)</code></pre>
+<pre class="bg-success"><code>## Nothing</code></pre>
+<pre class="r"><code>is_just(z)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>is_nothing(z)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>For what is likely a much more robust implementation, see
+<a href="https://armcn.github.io/maybe/">{maybe}</a>.</p>
+</div>
+<div id="result" class="section level2">
+<h2>Result</h2>
+<p>Similar to a <code>Maybe</code>, a <code>Result</code> can contain either a successful <code>Ok</code> wrapped
+value or an <code>Err</code> wrapped message, but it will be one of these. This pattern
+resembles (and internally, uses) the <code>tryCatch()</code> approach where the evaluation
+will not fail, but requires testing what is produced to determine success, for
+which <code>is_ok()</code> and <code>is_err()</code> are defined.</p>
+<pre class="r"><code>x &lt;- resultM(9) %&gt;&gt;=% 
+  sqrt() %&gt;&gt;=%
+  timestwo()
+
+value(x)</code></pre>
+<pre class="bg-success"><code>## OK:
+## [1] 6</code></pre>
+<pre class="r"><code>is_err(x)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>is_ok(x)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<p>When the evaluation fails, the error is reported, along with the value <em>prior</em>
+to the error</p>
+<pre class="r"><code>y &lt;- resultM(9) %&gt;&gt;=%
+  sqrt() %&gt;&gt;=%
+  ret_err(&quot;this threw an error&quot;)
+
+value(y)</code></pre>
+<pre class="bg-success"><code>## Error:
+## [1] &quot;this threw an error; previously: 3&quot;</code></pre>
+<pre class="r"><code>is_err(y)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is_ok(y)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+<pre class="r"><code>z &lt;- resultM(10) %&gt;&gt;=%
+  timestwo() %&gt;&gt;=%
+  add_n(&quot;banana&quot;)
+
+value(z)</code></pre>
+<pre class="bg-success"><code>## Error:
+## [1] &quot;n should be numeric; previously: 20&quot;</code></pre>
+<pre class="r"><code>is_err(z)</code></pre>
+<pre class="bg-success"><code>## [1] TRUE</code></pre>
+<pre class="r"><code>is_ok(z)</code></pre>
+<pre class="bg-success"><code>## [1] FALSE</code></pre>
+</div>
+<div id="extensions" class="section level2">
+<h2>Extensions</h2>
+<p>The <code>flatMap</code>/“bind” operator defined here as <code>%&gt;&gt;=%</code> is applicable to any monad
+which has a <code>bind()</code> method defined. The monads defined in this package are all
+<code>R6Class</code> objects exposing such a method of the form <code>m$bind(.call, .quo)</code> which
+expects a function and a quosure. You can add your own extensions to these by
+defining such a class (and probably a constructor helper and a <code>print()</code> method)</p>
+<pre class="r"><code># a Reporter monad which reports unpiped function calls
+Reporter &lt;- R6::R6Class(
+  c(&quot;ReporterMonad&quot;),
+  public = list(
+    value = NULL,
+    initialize = function(value) {
+      if (rlang::is_quosure(value)) {
+        self$value &lt;- rlang::eval_tidy(value)
+      } else {
+        self$value &lt;- value
+      }
+    },
+    bind = function(f, expr) {
+      ## &#39;undo&#39; the pipe and inject the lhs as an argument
+      result &lt;- unlist(lapply(unlist(self$value), f))
+      args &lt;- as.list(c(self$value, rlang::call_args(expr)))
+      fnew &lt;- rlang::call2(rlang::call_name(expr), !!!args)
+      cat(&quot; ** Calculating:&quot;, rlang::quo_text(fnew), &quot;=&quot;, result, &quot;\n&quot;)
+      Reporter$new(result)
+    }
+  )
+)
+
+reporterM &lt;- function(value) {
+  v &lt;- rlang::enquo(value)
+  Reporter$new(v)
+}
+
+print.Reporter &lt;- function(x, ...) {
+  print(value(x))
+}
+
+x &lt;- reporterM(17) %&gt;&gt;=%
+  timestwo() %&gt;&gt;=%
+  square() %&gt;&gt;=% 
+  add_n(2) %&gt;&gt;=%
+  `/`(8)</code></pre>
+<pre class="bg-success"><code>##  ** Calculating: timestwo(17) = 34 
+##  ** Calculating: square(34) = 1156 
+##  ** Calculating: add_n(1156, 2) = 1158 
+##  ** Calculating: 1158/8 = 144.75</code></pre>
+<pre class="r"><code>value(x)</code></pre>
+<pre class="bg-success"><code>## [1] 144.75</code></pre>
+<p>This is just a toy example; attempting to <code>cat()</code> a <code>data.frame</code> result would
+not go well.</p>
+</div>
+<div id="other-monads" class="section level2">
+<h2>Other Monads</h2>
+<p>There are other patterns that I haven’t implemented. One that would have been
+interesting is <code>Promise</code> - I had a ‘mind-blown’ moment reading
+<a href="https://rtfeldman.com/imperative-clothing">this post about some Roc syntax</a>
+with the throw-away line</p>
+<blockquote>
+<p>Tasks can be chained together using the <code>Task.await</code> function, similarly to
+how JavaScript Promises can be chained together using a Promise’s <code>then()</code>
+method. (You might also know functions in other languages similar to
+<code>Task.await</code> which go by names like <code>andThen</code>, <code>flatMap</code>, or <code>bind</code>.)</p>
+</blockquote>
+<p>because I had never made the connection between monads and async/await, but it’s
+a lot clearer now. I did try implementing <code>Promise</code> in {monads} using {future}
+but I couldn’t quite get the unevaluated promise object to pipe correctly.</p>
+</div>
+<div id="prior-art" class="section level2">
+<h2>Prior Art</h2>
+<p>There are a handful of existing implementations, most of which are more fleshed
+out than mine.</p>
+<ul>
+<li><p><a href="https://github.com/hadley/monads">{monads}</a> - a sketched-out implementation
+that relies on dispatch for <code>flatMap</code> operations. I’m using the same name as
+this package, but that one hasn’t been touched in quite a while.</p></li>
+<li><p><a href="https://github.com/arendsee/rmonad">{rmonad}</a> - archived on CRAN, but offers
+a sophisticated ‘funnel’ mechanism and various ways to capture steps of a pipeline.</p></li>
+<li><p><a href="https://armcn.github.io/maybe/">{maybe}</a> - a more detailed implementation of
+<code>Maybe</code>.</p></li>
+<li><p><a href="https://b-rodrigues.github.io/chronicler/">{chronicler}</a> - a way to
+post-process the result at each step and capture information, such as the
+runtime (see <code>Timer</code>) or dimensions. Requires an explicit <code>bind()</code> at each step.
+<a href="https://www.brodrigues.co/blog/2022-04-11-monads/">Associated blog post</a>.</p></li>
+</ul>
+<p>I also found <a href="https://kupac.gitlab.io/biofunctor/2019/05/25/maybe-monad-in-r/">this post</a>
+about implementing a <code>Maybe</code> monad, and <a href="https://scscript.blogspot.com/2011/03/monads-in-r-sapply-and-foreach.html?m=1">this one</a>
+comparing the {foreach} package’s <code>%do%</code> to Haskell.</p>
+<p>I’m somewhat surprised that in all of the above examples, none seem to use the
+Haskell ‘bind’ format of a pipe (<code>&gt;&gt;=</code> or as a valid R infix special, <code>%&gt;&gt;=%</code>)
+but at least I’m not stepping on other package’s toes there. One particular
+benefit of this one is that by deleting the two outermost characters inside the
+special you get the {magrittr} pipe <code>%&gt;%</code>.</p>
+<p>If nothing else, I found it really useful to go through the process of defining
+these myself - I learned a lot about {R6} classes and quosures in the process,
+too.</p>
+<p>My package comes with no guarantees - it works for the examples I’ve tried, but
+it’s possible (if not likely) that I’ve not thought of all the edge cases. I’ve
+certainly relied on R’s vectorisation (rather than explicitly re-mapping
+individual values) and my quosure skills are somewhat underdeveloped.</p>
+<p>If you do <a href="https://github.com/jonocarroll/monads">take it for a spin</a> I’d love
+to hear your thoughts on it. As always, I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> and the comment section below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.3.3 (2024-02-29)
+##  os       Pop!_OS 22.04 LTS
+##  system   x86_64, linux-gnu
+##  ui       X11
+##  language (EN)
+##  collate  en_AU.UTF-8
+##  ctype    en_AU.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-10-18
+##  pandoc   3.2 @ /usr/lib/rstudio/resources/app/bin/quarto/bin/tools/x86_64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version    date (UTC) lib source
+##  bit           4.0.4      2020-08-04 [3] CRAN (R 4.0.2)
+##  bit64         4.0.5      2020-08-30 [3] CRAN (R 4.2.0)
+##  blob          1.2.4      2023-03-17 [3] CRAN (R 4.2.3)
+##  blogdown      1.19       2024-02-01 [1] CRAN (R 4.3.3)
+##  bookdown      0.36       2023-10-16 [1] CRAN (R 4.3.2)
+##  bslib         0.8.0      2024-07-29 [1] CRAN (R 4.3.3)
+##  cachem        1.1.0      2024-05-16 [1] CRAN (R 4.3.3)
+##  callr         3.7.3      2022-11-02 [3] CRAN (R 4.2.2)
+##  cli           3.6.1      2023-03-23 [1] CRAN (R 4.3.3)
+##  crayon        1.5.2      2022-09-29 [3] CRAN (R 4.2.1)
+##  DBI           1.2.1      2024-01-12 [3] CRAN (R 4.3.2)
+##  dbplyr        2.4.0      2023-10-26 [3] CRAN (R 4.3.2)
+##  devtools      2.4.5      2022-10-11 [1] CRAN (R 4.3.2)
+##  digest        0.6.37     2024-08-19 [1] CRAN (R 4.3.3)
+##  dplyr       * 1.1.4      2023-11-17 [3] CRAN (R 4.3.2)
+##  ellipsis      0.3.2      2021-04-29 [3] CRAN (R 4.1.1)
+##  evaluate      0.24.0     2024-06-10 [1] CRAN (R 4.3.3)
+##  fansi         1.0.6      2023-12-08 [1] CRAN (R 4.3.3)
+##  fastmap       1.2.0      2024-05-15 [1] CRAN (R 4.3.3)
+##  fs            1.6.4      2024-04-25 [1] CRAN (R 4.3.3)
+##  generics      0.1.3      2022-07-05 [1] CRAN (R 4.3.3)
+##  glue          1.7.0      2024-01-09 [1] CRAN (R 4.3.3)
+##  htmltools     0.5.8.1    2024-04-04 [1] CRAN (R 4.3.3)
+##  htmlwidgets   1.6.2      2023-03-17 [1] CRAN (R 4.3.2)
+##  httpuv        1.6.12     2023-10-23 [1] CRAN (R 4.3.2)
+##  icecream      0.2.1      2023-09-27 [1] CRAN (R 4.3.2)
+##  jquerylib     0.1.4      2021-04-26 [1] CRAN (R 4.3.3)
+##  jsonlite      1.8.8      2023-12-04 [1] CRAN (R 4.3.3)
+##  knitr         1.48       2024-07-07 [1] CRAN (R 4.3.3)
+##  later         1.3.1      2023-05-02 [1] CRAN (R 4.3.2)
+##  lifecycle     1.0.4      2023-11-07 [1] CRAN (R 4.3.3)
+##  magrittr    * 2.0.3      2022-03-30 [1] CRAN (R 4.3.3)
+##  memoise       2.0.1      2021-11-26 [1] CRAN (R 4.3.3)
+##  mime          0.12       2021-09-28 [1] CRAN (R 4.3.3)
+##  miniUI        0.1.1.1    2018-05-18 [1] CRAN (R 4.3.2)
+##  monads      * 0.1.0.9000 2024-10-14 [1] local
+##  pillar        1.9.0      2023-03-22 [1] CRAN (R 4.3.3)
+##  pkgbuild      1.4.2      2023-06-26 [1] CRAN (R 4.3.2)
+##  pkgconfig     2.0.3      2019-09-22 [1] CRAN (R 4.3.3)
+##  pkgload       1.3.3      2023-09-22 [1] CRAN (R 4.3.2)
+##  prettyunits   1.2.0      2023-09-24 [3] CRAN (R 4.3.1)
+##  processx      3.8.3      2023-12-10 [3] CRAN (R 4.3.2)
+##  profvis       0.3.8      2023-05-02 [1] CRAN (R 4.3.2)
+##  promises      1.2.1      2023-08-10 [1] CRAN (R 4.3.2)
+##  ps            1.7.6      2024-01-18 [3] CRAN (R 4.3.2)
+##  purrr         1.0.2      2023-08-10 [3] CRAN (R 4.3.1)
+##  R6            2.5.1      2021-08-19 [1] CRAN (R 4.3.3)
+##  Rcpp          1.0.11     2023-07-06 [1] CRAN (R 4.3.2)
+##  remotes       2.4.2.1    2023-07-18 [1] CRAN (R 4.3.2)
+##  rlang         1.1.4      2024-06-04 [1] CRAN (R 4.3.3)
+##  rmarkdown     2.28       2024-08-17 [1] CRAN (R 4.3.3)
+##  RSQLite       2.3.7      2024-05-27 [1] CRAN (R 4.3.3)
+##  rstudioapi    0.15.0     2023-07-07 [3] CRAN (R 4.3.1)
+##  sass          0.4.9      2024-03-15 [1] CRAN (R 4.3.3)
+##  sessioninfo   1.2.2      2021-12-06 [1] CRAN (R 4.3.2)
+##  shiny         1.7.5.1    2023-10-14 [1] CRAN (R 4.3.2)
+##  stringi       1.8.4      2024-05-06 [1] CRAN (R 4.3.3)
+##  stringr       1.5.1      2023-11-14 [1] CRAN (R 4.3.3)
+##  tibble        3.2.1      2023-03-20 [1] CRAN (R 4.3.3)
+##  tidyselect    1.2.0      2022-10-10 [3] CRAN (R 4.2.1)
+##  urlchecker    1.0.1      2021-11-30 [1] CRAN (R 4.3.2)
+##  usethis       3.0.0      2024-07-29 [1] CRAN (R 4.3.3)
+##  utf8          1.2.4      2023-10-22 [1] CRAN (R 4.3.3)
+##  vctrs         0.6.5      2023-12-01 [1] CRAN (R 4.3.3)
+##  withr         3.0.0      2024-01-16 [1] CRAN (R 4.3.3)
+##  xfun          0.47       2024-08-17 [1] CRAN (R 4.3.3)
+##  xtable        1.8-4      2019-04-21 [1] CRAN (R 4.3.2)
+##  yaml          2.3.10     2024-07-26 [1] CRAN (R 4.3.3)
+## 
+##  [1] /home/jono/R/x86_64-pc-linux-gnu-library/4.3
+##  [2] /usr/local/lib/R/site-library
+##  [3] /usr/lib/R/site-library
+##  [4] /usr/lib/R/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
