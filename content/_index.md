@@ -1,3 +1,4 @@
 ---
 {} 
+outputs = ['html','rss']
 ---
