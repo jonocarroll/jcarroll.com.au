@@ -1,0 +1,531 @@
+---
+title: Polyglot Maxxie and Minnie
+author: Jonathan Carroll
+date: '2024-10-22'
+slug: polyglot-maxxie-and-minnie
+categories:
+  - rstats
+  - APL
+  - haskell
+  - julia
+  - python
+  - rust
+tags:
+  - rstats
+  - APL
+  - haskell
+  - julia
+  - python
+  - rust
+type: ''
+subtitle: ''
+image: ''
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+intro
+
+<!--more-->
+
+For an upcoming APL'ers meetup the challenge was set as posed at the end of 
+[in this post](https://ericnormand.me/issues/468), namely
+
+**Maxxie and Minnie**
+
+> The maxxie of a number n is the largest number you can achieve by swapping two
+of its digits (in decimal) (or choosing not to swap if it is already the largest
+possible). The minnie is the smallest with one swap (though you can't swap a
+zero digit into the most significant position).
+> 
+> Your task is to write a function that takes an integer and returns a tuple of
+the maxxie and minnie.
+> 
+> Notes
+> 
+> - Swap any two decimal digits
+> - No leading zeroes
+> - Don't swap if you can't make it bigger/smaller
+
+with the example solutions given in Clojure 
+
+```clojure
+(swapmaxmin 213) ;=> [312, 123]
+(swapmaxmin 12345) ;=> [52341, 12345] ;; the number was already the smallest
+(swapmaxmin 100) ;=> [100, 100] ;; no swap possible because of zeroes
+```
+
+This seems like fun - and I wanted to see how solutions might look across some 
+of the different languages I know (including an APL, for the sake of the upcoming 
+meetup).
+
+I ended up using R, (Dyalog) APL, Julia, Haskell, Python, and Rust, and I'll add
+in any others shared with me. The site linked above collected Clojure solutions
+in [this gist](https://gist.github.com/ericnormand/4ca47720a954307739aaeb12682de98a).
+
+The common approach I used in all of these cases was:
+
+- split the number into a vector of digits
+- generate all possible combinations of indices to be swapped
+- apply a swap function to perform all of those swaps
+- append the unswapped vector, if not already included
+- filter out any vectors which start with a `0`
+- recombine each vector into a single number
+- return the maximum and minimum numbers
+
+Here are my solutions in each language; it's not so much for side-by-side
+comparison, but you can switch between the different ones. The full set of files
+is [here](https://github.com/jonocarroll/maxxieminnie) if you're interested.
+
+<p></p>
+
+<div class="tabset"></div>
+
+* R<br><img src="images/r.png" height="40px">
+
+  I'm most familiar with R, so I like to start there. I created a `swap` 
+  function that swaps a vector at some indices, along with some helpers 
+  so that I could use `pmap_int()` really cleanly.
+
+  ```r
+  swap <- function(x, y, v) {
+     xx <- v[x]
+     yy <- v[y]
+     v[x] <- yy
+     v[y] <- xx
+     v
+  }
+
+  chr_swap <- function(x, y, v) {
+     paste0(swap(x, y, v), collapse = "")
+  }
+
+  toInt_swap <- function(x, y, v) {
+     as.integer(chr_swap(x, y, v))
+  }
+
+  maxmin <- function(num) {
+    chars <- strsplit(as.character(num), "")[[1]]
+    n <- nchar(num)
+    s <- seq_len(n)
+    opts <- expand.grid(x = s, y = s)
+    opts$v <- list(chars)
+    vals <- purrr::pmap_int(opts, toInt_swap)
+    keeps <- vals[nchar(vals) == n]
+    c(max(keeps), min(keeps))
+  }
+  
+  maxmin(213)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  [1] 312 123  
+  ```
+  
+  ```r
+  maxmin(12345)  
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  [1] 52341 12345  
+  ```
+  
+  ```r
+  maxmin(100)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  [1] 100 100  
+  ```
+  
+  ```r
+  maxmin(11321)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  [1] 31121 11123 
+  ```
+
+   The `expand.grid()` does create some redundant combinations, but these fall
+   out naturally so I didn't bother filtering them out. Also, since this
+   includes no-op swaps (e.g. swapping index `2` and `2`) it already contains
+   the original vector. Rather than filtering to the vectors of integers _not_
+   starting with 0, I filtered to those which contain the right number of digits
+   after converting back to integer, which is equivalent.
+
+* APL<br><img src="images/apl.png" height="40px">
+
+  In Dyalog APL it's easier to define a swap function; the `@` operator takes a
+  function (reverse) so `s` here performs a swap. The outer product is super 
+  handy for finding all the combinations of `x` and `y`: `x ∘., y`.
+
+  ```apl
+  maxmin←{
+    ⎕IO←1  ⍝ so that x[1] is subset not x[0]
+    n←⍎¨⍕⍵  ⍝ convert int to vec 
+    s←{⌽@⍵⊢⍺}  ⍝ swap two elements
+    swaps←{n s ⍵}  ⍝ apply swaps to a vec n
+    opts←,(⍳≢n)∘.,⍳≢n ⍝ combinations of 1..n
+    new←swaps¨opts  ⍝ perform the swaps
+    keep←(~0=⊃¨new)/new  ⍝ filter out values starting with 0
+    (⌈/,⌊/)10⊥¨keep  ⍝ max and min of ints
+}
+
+       maxmin 213 
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  312 123
+  ```
+    
+  ```apl
+       maxmin 12345 
+  ```
+    
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  52341 12345
+  ```
+  
+  ```apl
+       maxmin 100 
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  100 100
+  ```
+  
+  ```apl
+       maxmin 11321
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  31121 11123
+  ```
+  
+  I'm quite pleased with this solution; performing a `map` is as simple as 
+  using each (`¨`) and performing both `max` and `min` concatenated together 
+  with a fork (`(⌈/,⌊/)`) is just so aesthetic. Conversion from a vector of 
+  numbers to a single number uses a base-10 decode (`10⊥`) which is how one 
+  might need to do that in other languages, but with a loop.
+
+* Julia<br><img src="images/julia.png" height="40px">
+
+  In Julia the `swap` function can use destructuring which is nice, but since 
+  the language uses pass-by-reference semantics, I need to make a copy of the 
+  vector being swapped, otherwise I'll just keep swapping it over and over. 
+  Note: [this recent post of mine](https://jcarroll.com.au/2024/09/25/in-place-modifications/).
+
+  ```julia
+  using Combinatorics
+  
+  function swap(x, i, j)
+    y = copy(x)
+    y[i], y[j] = y[j], y[i]
+    y
+  end
+
+  function maxmin(x)
+      nvec = parse.(Int64, split(string(x), ""))
+      opts = collect(combinations(1:length(nvec), 2))
+      new = [[nvec]; map(x -> swap(nvec, x...), opts)]
+      keep = filter(x -> x[1] != 0, new)
+      vals = parse.(Int64, join.(keep))
+      (maximum(vals), minimum(vals))
+  end
+
+  maxmin(213)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (312, 123)
+  ```
+  
+  ```julia
+  maxmin(12345)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (52341, 12345)  
+  ```
+  
+  ```julia
+  maxmin(100)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (100, 100)  
+  ```
+  
+  ```julia
+  maxmin(11321)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (31121, 11123)    
+  ```
+
+  The part I probably had the most trouble with here was concatenating together 
+  the original vector with its swapped versions; it looks clean now, but 
+  figuring out how to get those all into the same vector-of-vectors took me a 
+  while.
+  
+  The splatting of `opts` variants in the `map` was nice; no need to define the 
+  swap in terms of a tuple. Overall, this is a very clean solution, in my 
+  opinion - Julia really does make for a lovely language.
+
+* Haskell<br><img src="images/haskell.png" height="40px">
+
+  Continuing my Haskell-learning journey, I figured it would be best to have a 
+  go at this. As a heavily functional language, one doesn't do a lot of 
+  defining of variables, instead one writes a lot of functions which will pass 
+  data around. This makes it a bit tricky for testing, but I got there 
+  eventually. I did have to borrow the `swapElts` function, and `nub` was a new 
+  one for me (essentially `unique()`).
+
+  ```haskell
+  import Data.List
+  import Data.Digits
+
+  uniq_pairs l = nub [(x,y) | x <- l, y <- l, x < y]
+  opts n = uniq_pairs [0..n-1]
+  -- https://gist.github.com/ijt/2010183
+  swapElts i j ls = [get k x | (k, x) <- zip [0..length ls - 1] ls]
+      where get k x | k == i = ls !! j
+                    | k == j = ls !! i
+                    | otherwise = x
+  doswap t v = swapElts (fst t) (snd t) v
+  newlist v = v : map (\x ->  doswap x v) (opts (length v))
+  keep v = filter (\x -> (head x /= 0)) (newlist v)
+  maxmin n = (maximum(x), minimum(x)) where 
+    x = map (unDigits 10) (keep (digits 10 n))
+
+  maxmin 213
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (312,123)
+  ```
+
+  ```haskell
+  maxmin 12345
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}  
+  (52341,12345)
+  ```
+  
+  ```haskell
+  maxmin 100
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (100,100)
+  ```
+
+  ```haskell
+  maxmin 11321
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (31121,11123)
+  ```
+
+  The `Data.Digits` package was very helpful here - having `digits` and 
+  `unDigits`, though if I was going to use these more I would have curried 
+  the required base 10 into something like `digits10` and `unDigits10`.
+  
+  There are likely improvements to be made here, and I'm interested in any you
+  can spot!
+
+* Python<br><img src="images/python.png" height="40px">
+
+  "Everyone" uses it, so I gotta learn it... is what I keep telling myself. I'm
+  no stranger to the quirks of different languages, but every time I try 
+  to do something functional in python I end up angry that the print method for 
+  generators shows the memory address instead of, say, the first few elements. 
+  Printing a value and seeing `<map at 0x7fb928d4a2c0>` gets me every. single.
+  time. Yes, yes, `list(value)` "collects" it, but grrr...
+  
+  Python has the destructuring syntax which is nice in the `swap` function, but 
+  again it's pass-by-reference so I need to make a copy first.
+
+  ```python
+  import itertools
+
+  def swap(x, t):
+      y = x.copy()
+      i, j = t
+      y[i], y[j] = y[j], y[i]
+      return y
+
+  def minmax(num): 
+      nums = [int(i) for i in str(num)]
+      opts = itertools.combinations(range(len(nums)), 2)
+      new = map(lambda x: swap(nums, x), list(opts))
+      keeps = list(filter(lambda x: x[0] != 0, new))
+      keeps.append(nums)
+      vals = list(map(lambda x: int(''.join(map(str, x))), keeps))
+      return (max(vals), min(vals))
+
+  minmax(213)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (312, 123)
+  ```
+  
+  ```python
+  minmax(12345)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (52341, 12345)
+  ```
+  
+  ```python
+  minmax(100)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (100, 100)
+  ```
+  
+  ```python
+  minmax(11321)
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (31121, 11123)
+  ```
+
+  Aside from my grumbles while writing it, the solution is still pretty clean.
+  The calls to `list()` interspersed throughout might be avoidable, but the 
+  need to do that while developing at least slowed me down.
+
+* Rust<br><img src="images/rust.png" height="40px">
+
+  I almost didn't do a Rust solution because I thought I'd done enough. It 
+  ended up being the most complicated, though - I'm not sure if that's because 
+  of me, or Rust. 
+
+  ```rust
+  use itertools::Itertools;
+
+  fn swap(v: Vec<u32>, t1: usize, t2: usize) -> Vec<u32> {
+      let mut vv = v;
+      let tmp1 = vv[t1];
+      let tmp2 = vv[t2];
+      vv[t1] = tmp2;
+      vv[t2] = tmp1;
+      return vv;
+  }
+
+  fn maxmin(num: u32) -> (u32, u32) {
+      let numc = num.to_string();
+      let n = numc.len();
+      let numv: Vec<u32> = numc
+          .to_string()
+          .chars()
+          .map(|c| c.to_digit(10).unwrap())
+          .collect();
+      let mut opts = Vec::new();
+      for (a, b) in (0..n).tuple_combinations() {
+          opts.push((a, b));
+      }
+      let mut new: Vec<Vec<u32>> = Vec::new();
+      new.push(numv.clone());
+      for o in opts {
+          new.push(swap(numv.clone(), o.0, o.1));
+      }
+      let keeps: Vec<Vec<u32>> = new.into_iter().filter(|x| x[0] != 0).collect();
+      let mut vals = Vec::new();
+      for v in keeps {
+          let tmp: u32 = v
+              .clone()
+              .into_iter()
+              .map(|x| x.to_string())
+              .collect::<String>()
+              .parse()
+              .unwrap();
+          vals.push(tmp);
+      }
+      let min = *vals.iter().min().unwrap();
+      let max = *vals.iter().max().unwrap();
+      (max, min)
+  }
+
+  fn main() {
+      println!("{:?}", maxmin(213));
+      println!("{:?}", maxmin(12345));
+      println!("{:?}", maxmin(100));
+      println!("{:?}", maxmin(11321))
+  }
+  ```
+  
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  (312, 123)
+  (52341, 12345)
+  (100, 100)
+  (31121, 11123)
+  ```
+
+  This solution reminded me why I like working with array (or 
+  at least vector-supporting) languages; not needing to explicitly loop over 
+  every element of a vector to do something. I had to write a lot of `push()`
+  loops to move data around. `max()` doesn't work on a vector (in the sense of
+  finding the maximum of n elements); it works that way on an iterator, and may 
+  fail, hence the longer `min` and `max` lines.
+  
+  Having to `clone()` various values explicitly because they can't be re-used 
+  was a bit annoying, but I understand _why_ it complains about those.
+  
+  This took longer than I would have liked, but of course I learned more by 
+  doing it.
+
+* J<br><img src="images/j.png" height="40px">
+
+  Someone's solution from the APL/J/K meetup
+
+  ```j
+  ???
+  ```
+
+## Summary
+
+I was most pleased with the APL solution; it does what it says on the box 
+without ambiguity because it's constructed entirely from primitives (or utility
+functions defined in terms of those). The Julia solution also feels very clean, 
+while the Haskell solution, defined entirely from functions, nicely demonstrates 
+the functional principle.
+
+I found it to be an interesting example of where pass-by-reference is _not_ so 
+helpful. For packaged Julia functions that distinction is made clear with the 
+`!` suffix to denote mutating functions, and it's common to write both a 
+mutating and non-mutating version wherever possible.
+
+Writing these taught me more and more about using each of these languages, and 
+I'm of the opinion that just reading solutions is no substitute for getting your 
+hands dirty in some actual code.
+
+<hr>
+
+Comments, improvements, or your own solutions are most welcome. I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
