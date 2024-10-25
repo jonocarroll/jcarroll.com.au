@@ -1,27 +1,24 @@
 ---
 title: Polyglot Maxxie and Minnie
 author: Jonathan Carroll
-date: '2024-10-22'
-slug: polyglot-maxxie-and-minnie
+date: '2024-10-26'
 categories:
-  - rstats
   - APL
   - haskell
+  - j
   - julia
   - python
+  - rstats
   - rust
-  - j
 tags:
-  - rstats
   - APL
   - haskell
+  - j
   - julia
   - python
+  - rstats
   - rust
-  - j
-type: ''
-subtitle: ''
-image: ''
+slug: polyglot-maxxie-and-minnie
 ---
 
 ```{r, setup, include = FALSE}
@@ -161,6 +158,11 @@ is [here](https://github.com/jonocarroll/maxxieminnie) if you're interested.
    the original vector. Rather than filtering to the vectors of integers _not_
    starting with 0, I filtered to those which contain the right number of digits
    after converting back to integer, which is equivalent.
+   
+   Try pasting the code into the 
+   [{webr} online editor here](https://webr.r-wasm.org/latest/); I'm not sure 
+   if it's possible to link to an existing state, but when it asks if you want 
+   to install {purrr} to the interface, respond that you do.
 
 * APL<br><img src="images/apl.png" height="40px">
 
@@ -223,6 +225,9 @@ is [here](https://github.com/jonocarroll/maxxieminnie) if you're interested.
   ```apl
   maxmin←{⎕IO←1 ⋄ n←⍎¨⍕⍵ ⋄ s←{⌽@⍵⊢⍺} ⋄ swaps←{n s ⍵} ⋄ opts←,(⍳≢n)∘.,⍳≢n ⋄ new←swaps¨opts ⋄ keep←(~0=⊃¨new)/new ⋄ (⌈/,⌊/)10⊥¨keep }
   ```
+  
+  You can 
+  [try this out yourself at tryapl.org](https://tryapl.org/?clear&q=maxmin%E2%86%90%7B%0A%20%20%E2%8E%95IO%E2%86%901%20%20%E2%8D%9D%20so%20that%20x%5B1%5D%20is%20subset%20not%20x%5B0%5D%0A%20%20n%E2%86%90%E2%8D%8E%C2%A8%E2%8D%95%E2%8D%B5%20%20%E2%8D%9D%20convert%20int%20to%20vec%20%0A%20%20s%E2%86%90%7B%E2%8C%BD%40%E2%8D%B5%E2%8A%A2%E2%8D%BA%7D%20%20%E2%8D%9D%20swap%20two%20elements%0A%20%20swaps%E2%86%90%7Bn%20s%20%E2%8D%B5%7D%20%20%E2%8D%9D%20apply%20swaps%20to%20a%20vec%20n%0A%20%20opts%E2%86%90%2C(%E2%8D%B3%E2%89%A2n)%E2%88%98.%2C%E2%8D%B3%E2%89%A2n%20%E2%8D%9D%20combinations%20of%201..n%0A%20%20new%E2%86%90swaps%C2%A8opts%20%20%E2%8D%9D%20perform%20the%20swaps%0A%20%20keep%E2%86%90(~0%3D%E2%8A%83%C2%A8new)%2Fnew%20%20%E2%8D%9D%20filter%20out%20values%20starting%20with%200%0A%20%20(%E2%8C%88%2F%2C%E2%8C%8A%2F)10%E2%8A%A5%C2%A8keep%20%20%E2%8D%9D%20max%20and%20min%20of%20ints%0A%20%20%7D%0A%0A%20%20%20%20%20%20maxmin%2012345%0A52341%2012345%0A%20%20%20%20%20%20maxmin%20213%0A312%20123%0A%20%20%20%20%20%20maxmin%20100%0A100%20100%0A%20%20%20%20%20%20maxmin%2011321%0A31121%2011123&run)
 
 * Julia<br><img src="images/julia.png" height="40px">
 
