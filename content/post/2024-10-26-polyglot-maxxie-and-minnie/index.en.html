@@ -1,0 +1,468 @@
+---
+title: Polyglot Maxxie and Minnie
+author: Jonathan Carroll
+date: '2024-10-26'
+categories:
+  - APL
+  - haskell
+  - j
+  - julia
+  - python
+  - rstats
+  - rust
+tags:
+  - APL
+  - haskell
+  - j
+  - julia
+  - python
+  - rstats
+  - rust
+slug: polyglot-maxxie-and-minnie
+---
+
+
+
+<p>intro</p>
+<!--more-->
+<p>For an upcoming APL’ers meetup the challenge was set as posed at the end of
+<a href="https://ericnormand.me/issues/468">in this post</a>, namely</p>
+<p><strong>Maxxie and Minnie</strong></p>
+<blockquote>
+<p>The maxxie of a number n is the largest number you can achieve by swapping two
+of its digits (in decimal) (or choosing not to swap if it is already the largest
+possible). The minnie is the smallest with one swap (though you can’t swap a
+zero digit into the most significant position).</p>
+<p>Your task is to write a function that takes an integer and returns a tuple of
+the maxxie and minnie.</p>
+<p>Notes</p>
+<ul>
+<li>Swap any two decimal digits</li>
+<li>No leading zeroes</li>
+<li>Don’t swap if you can’t make it bigger/smaller</li>
+</ul>
+</blockquote>
+<p>with the example solutions given in Clojure</p>
+<pre class="clojure"><code>(swapmaxmin 213) ;=&gt; [312, 123]
+(swapmaxmin 12345) ;=&gt; [52341, 12345] ;; the number was already the smallest
+(swapmaxmin 100) ;=&gt; [100, 100] ;; no swap possible because of zeroes</code></pre>
+<p>This seems like fun - and I wanted to see how solutions might look across some
+of the different languages I know (including an APL, for the sake of the upcoming
+meetup).</p>
+<p>I ended up using R, (Dyalog) APL, Julia, Haskell, Python, and Rust; someone
+provided a J solution; and I’ll add in any others shared with me. The site
+linked above collected Clojure solutions in
+<a href="https://gist.github.com/ericnormand/4ca47720a954307739aaeb12682de98a">this gist</a>.</p>
+<p>The common approach I used in all of these cases was:</p>
+<ul>
+<li>split the number into a vector of digits</li>
+<li>generate all possible combinations of indices to be swapped</li>
+<li>apply a swap function to perform all of those swaps</li>
+<li>append the unswapped vector, if not already included</li>
+<li>filter out any vectors which start with a <code>0</code></li>
+<li>recombine each vector into a single number</li>
+<li>return the maximum and minimum numbers</li>
+</ul>
+<p>Here are my solutions in each language; it’s not so much for side-by-side
+comparison, but you can switch between the different ones. The full set of files
+is <a href="https://github.com/jonocarroll/MaxxieAndMinnie">here</a> if you’re interested.</p>
+<p>
+</p>
+<div class="tabset">
+
+</div>
+<ul>
+<li><p>R<br><img src="images/r.png" height="40px"></p>
+<p>I’m most familiar with R, so I like to start there. I created a <code>swap</code>
+function that swaps a vector at some indices, along with some helpers
+so that I could use <code>pmap_int()</code> really cleanly.</p>
+<pre class="r"><code>swap &lt;- function(x, y, v) {
+   xx &lt;- v[x]
+   yy &lt;- v[y]
+   v[x] &lt;- yy
+   v[y] &lt;- xx
+   v
+}
+
+chr_swap &lt;- function(x, y, v) {
+   paste0(swap(x, y, v), collapse = &quot;&quot;)
+}
+
+toInt_swap &lt;- function(x, y, v) {
+   as.integer(chr_swap(x, y, v))
+}
+
+maxmin &lt;- function(num) {
+  chars &lt;- strsplit(as.character(num), &quot;&quot;)[[1]]
+  n &lt;- nchar(num)
+  s &lt;- seq_len(n)
+  opts &lt;- expand.grid(x = s, y = s)
+  opts$v &lt;- list(chars)
+  vals &lt;- purrr::pmap_int(opts, toInt_swap)
+  keeps &lt;- vals[nchar(vals) == n]
+  c(max(keeps), min(keeps))
+}
+
+maxmin(213)</code></pre>
+<pre class="r bg-success"><code>[1] 312 123  </code></pre>
+<pre class="r"><code>maxmin(12345)  </code></pre>
+<pre class="r bg-success"><code>[1] 52341 12345  </code></pre>
+<pre class="r"><code>maxmin(100)</code></pre>
+<pre class="r bg-success"><code>[1] 100 100  </code></pre>
+<pre class="r"><code>maxmin(11321)</code></pre>
+<pre class="r bg-success"><code>[1] 31121 11123 </code></pre>
+<p>The <code>expand.grid()</code> does create some redundant combinations, but these fall
+out naturally so I didn’t bother filtering them out. Also, since this
+includes no-op swaps (e.g. swapping index <code>2</code> and <code>2</code>) it already contains
+the original vector. Rather than filtering to the vectors of integers <em>not</em>
+starting with 0, I filtered to those which contain the right number of digits
+after converting back to integer, which is equivalent.</p>
+<p>Try pasting the code into the
+<a href="https://webr.r-wasm.org/latest/">{webr} online editor here</a>; I’m not sure
+if it’s possible to link to an existing state, but when it asks if you want
+to install {purrr} to the interface, respond that you do.</p></li>
+<li><p>APL<br><img src="images/apl.png" height="40px"></p>
+<p>In Dyalog APL it’s easier to define a swap function; the <code>@</code> operator takes a
+function (reverse) so <code>s</code> here performs a swap. The outer product is super
+handy for finding all the combinations of <code>x</code> and <code>y</code>: <code>x ∘., y</code>.</p>
+<pre class="apl"><code>maxmin←{
+  ⎕IO←1  ⍝ so that x[1] is subset not x[0]
+  n←⍎¨⍕⍵  ⍝ convert int to vec 
+  s←{⌽@⍵⊢⍺}  ⍝ swap two elements
+  swaps←{n s ⍵}  ⍝ apply swaps to a vec n
+  opts←,(⍳≢n)∘.,⍳≢n ⍝ combinations of 1..n
+  new←swaps¨opts  ⍝ perform the swaps
+  keep←(~0=⊃¨new)/new  ⍝ filter out values starting with 0
+  (⌈/,⌊/)10⊥¨keep  ⍝ max and min of ints
+}
+
+     maxmin 213 </code></pre>
+<pre class="r bg-success"><code>312 123</code></pre>
+<pre class="apl"><code>     maxmin 12345 </code></pre>
+<pre class="r bg-success"><code>52341 12345</code></pre>
+<pre class="apl"><code>     maxmin 100 </code></pre>
+<pre class="r bg-success"><code>100 100</code></pre>
+<pre class="apl"><code>     maxmin 11321</code></pre>
+<pre class="r bg-success"><code>31121 11123</code></pre>
+<p>I’m quite pleased with this solution; performing a <code>map</code> is as simple as
+using each (<code>¨</code>) and performing both <code>max</code> and <code>min</code> concatenated together
+with a fork (<code>(⌈/,⌊/)</code>) is just so aesthetic. Conversion from a vector of
+numbers to a single number uses a base-10 decode (<code>10⊥</code>) which is how one
+might need to do that in other languages, but with a loop.</p>
+<p>If I was to take some liberties with what one calls a ‘line’, I could say
+that this is a 1-line solution</p>
+<pre class="apl"><code>maxmin←{⎕IO←1 ⋄ n←⍎¨⍕⍵ ⋄ s←{⌽@⍵⊢⍺} ⋄ swaps←{n s ⍵} ⋄ opts←,(⍳≢n)∘.,⍳≢n ⋄ new←swaps¨opts ⋄ keep←(~0=⊃¨new)/new ⋄ (⌈/,⌊/)10⊥¨keep }</code></pre>
+<p>You can
+<a href="https://tryapl.org/?clear&amp;q=maxmin%E2%86%90%7B%0A%20%20%E2%8E%95IO%E2%86%901%20%20%E2%8D%9D%20so%20that%20x%5B1%5D%20is%20subset%20not%20x%5B0%5D%0A%20%20n%E2%86%90%E2%8D%8E%C2%A8%E2%8D%95%E2%8D%B5%20%20%E2%8D%9D%20convert%20int%20to%20vec%20%0A%20%20s%E2%86%90%7B%E2%8C%BD%40%E2%8D%B5%E2%8A%A2%E2%8D%BA%7D%20%20%E2%8D%9D%20swap%20two%20elements%0A%20%20swaps%E2%86%90%7Bn%20s%20%E2%8D%B5%7D%20%20%E2%8D%9D%20apply%20swaps%20to%20a%20vec%20n%0A%20%20opts%E2%86%90%2C(%E2%8D%B3%E2%89%A2n)%E2%88%98.%2C%E2%8D%B3%E2%89%A2n%20%E2%8D%9D%20combinations%20of%201..n%0A%20%20new%E2%86%90swaps%C2%A8opts%20%20%E2%8D%9D%20perform%20the%20swaps%0A%20%20keep%E2%86%90(~0%3D%E2%8A%83%C2%A8new)%2Fnew%20%20%E2%8D%9D%20filter%20out%20values%20starting%20with%200%0A%20%20(%E2%8C%88%2F%2C%E2%8C%8A%2F)10%E2%8A%A5%C2%A8keep%20%20%E2%8D%9D%20max%20and%20min%20of%20ints%0A%20%20%7D%0A%0A%20%20%20%20%20%20maxmin%2012345%0A52341%2012345%0A%20%20%20%20%20%20maxmin%20213%0A312%20123%0A%20%20%20%20%20%20maxmin%20100%0A100%20100%0A%20%20%20%20%20%20maxmin%2011321%0A31121%2011123&amp;run">try this out yourself at tryapl.org</a></p></li>
+<li><p>Julia<br><img src="images/julia.png" height="40px"></p>
+<p>In Julia the <code>swap</code> function can use destructuring which is nice, but since
+the language uses pass-by-reference semantics, I need to make a copy of the
+vector being swapped, otherwise I’ll just keep swapping it over and over.
+Note: <a href="https://jcarroll.com.au/2024/09/25/in-place-modifications/">this recent post of mine</a>.</p>
+<pre class="julia"><code>using Combinatorics
+
+function swap(x, i, j)
+  y = copy(x)
+  y[i], y[j] = y[j], y[i]
+  y
+end
+
+function maxmin(x)
+    nvec = parse.(Int64, split(string(x), &quot;&quot;))
+    opts = collect(combinations(1:length(nvec), 2))
+    new = [[nvec]; map(x -&gt; swap(nvec, x...), opts)]
+    keep = filter(x -&gt; x[1] != 0, new)
+    vals = parse.(Int64, join.(keep))
+    (maximum(vals), minimum(vals))
+end
+
+maxmin(213)</code></pre>
+<pre class="r bg-success"><code>(312, 123)</code></pre>
+<pre class="julia"><code>maxmin(12345)</code></pre>
+<pre class="r bg-success"><code>(52341, 12345)  </code></pre>
+<pre class="julia"><code>maxmin(100)</code></pre>
+<pre class="r bg-success"><code>(100, 100)  </code></pre>
+<pre class="julia"><code>maxmin(11321)</code></pre>
+<pre class="r bg-success"><code>(31121, 11123)    </code></pre>
+<p>The part I probably had the most trouble with here was concatenating together
+the original vector with its swapped versions; it looks clean now, but
+figuring out how to get those all into the same vector-of-vectors took me a
+while.</p>
+<p>The splatting of <code>opts</code> variants in the <code>map</code> was nice; no need to define the
+swap in terms of a tuple. Overall, this is a very clean solution, in my
+opinion - Julia really does make for a lovely language.</p></li>
+<li><p>Haskell<br><img src="images/haskell.png" height="40px"></p>
+<p>Continuing my Haskell-learning journey, I figured it would be best to have a
+go at this. As a heavily functional language, one doesn’t do a lot of
+defining of variables, instead one writes a lot of functions which will pass
+data around. This makes it a bit tricky for testing, but I got there
+eventually. I did have to borrow the <code>swapElts</code> function, and <code>nub</code> was a new
+one for me (essentially <code>unique()</code>).</p>
+<pre class="haskell"><code>import Data.List
+import Data.Digits
+
+uniq_pairs l = nub [(x,y) | x &lt;- l, y &lt;- l, x &lt; y]
+opts n = uniq_pairs [0..n-1]
+-- https://gist.github.com/ijt/2010183
+swapElts i j ls = [get k x | (k, x) &lt;- zip [0..length ls - 1] ls]
+    where get k x | k == i = ls !! j
+                  | k == j = ls !! i
+                  | otherwise = x
+doswap t v = swapElts (fst t) (snd t) v
+newlist v = v : map (\x -&gt;  doswap x v) (opts (length v))
+keep v = filter (\x -&gt; (head x /= 0)) (newlist v)
+maxmin n = (maximum(x), minimum(x)) where 
+  x = map (unDigits 10) (keep (digits 10 n))
+
+maxmin 213</code></pre>
+<pre class="r bg-success"><code>(312,123)</code></pre>
+<pre class="haskell"><code>maxmin 12345</code></pre>
+<pre class="r bg-success"><code>(52341,12345)</code></pre>
+<pre class="haskell"><code>maxmin 100</code></pre>
+<pre class="r bg-success"><code>(100,100)</code></pre>
+<pre class="haskell"><code>maxmin 11321</code></pre>
+<pre class="r bg-success"><code>(31121,11123)</code></pre>
+<p>The <code>Data.Digits</code> package was very helpful here - having <code>digits</code> and
+<code>unDigits</code>, though if I was going to use these more I would have curried
+the required base 10 into something like <code>digits10</code> and <code>unDigits10</code>.</p>
+<p>There are likely improvements to be made here, and I’m interested in any you
+can spot!</p></li>
+<li><p>Python<br><img src="images/python.png" height="40px"></p>
+<p>“Everyone” uses it, so I gotta learn it… is what I keep telling myself. I’m
+no stranger to the quirks of different languages, but every time I try
+to do something functional in python I end up angry that the print method for
+generators shows the memory address instead of, say, the first few elements.
+Printing a value and seeing <code>&lt;map at 0x7fb928d4a2c0&gt;</code> gets me every. single.
+time. Yes, yes, <code>list(value)</code> “collects” it, but grrr…</p>
+<p>Python has the destructuring syntax which is nice in the <code>swap</code> function, but
+again it’s pass-by-reference so I need to make a copy first.</p>
+<pre class="python"><code>import itertools
+
+def swap(x, t):
+    y = x.copy()
+    i, j = t
+    y[i], y[j] = y[j], y[i]
+    return y
+
+def minmax(num): 
+    nums = [int(i) for i in str(num)]
+    opts = itertools.combinations(range(len(nums)), 2)
+    new = map(lambda x: swap(nums, x), list(opts))
+    keeps = list(filter(lambda x: x[0] != 0, new))
+    keeps.append(nums)
+    vals = list(map(lambda x: int(&#39;&#39;.join(map(str, x))), keeps))
+    return (max(vals), min(vals))
+
+minmax(213)</code></pre>
+<pre class="r bg-success"><code>(312, 123)</code></pre>
+<pre class="python"><code>minmax(12345)</code></pre>
+<pre class="r bg-success"><code>(52341, 12345)</code></pre>
+<pre class="python"><code>minmax(100)</code></pre>
+<pre class="r bg-success"><code>(100, 100)</code></pre>
+<pre class="python"><code>minmax(11321)</code></pre>
+<pre class="r bg-success"><code>(31121, 11123)</code></pre>
+<p>Aside from my grumbles while writing it, the solution is still pretty clean.
+The calls to <code>list()</code> interspersed throughout might be avoidable, but the
+need to do that while developing at least slowed me down.</p></li>
+<li><p>Rust<br><img src="images/rust.png" height="40px"></p>
+<p>I almost didn’t do a Rust solution because I thought I’d done enough. It
+ended up being the most complicated, though - I’m not sure if that’s because
+of me, or Rust.</p>
+<pre class="rust"><code>use itertools::Itertools;
+
+fn swap(v: Vec&lt;u32&gt;, t1: usize, t2: usize) -&gt; Vec&lt;u32&gt; {
+    let mut vv = v;
+    let tmp1 = vv[t1];
+    let tmp2 = vv[t2];
+    vv[t1] = tmp2;
+    vv[t2] = tmp1;
+    return vv;
+}
+
+fn maxmin(num: u32) -&gt; (u32, u32) {
+    let numc = num.to_string();
+    let n = numc.len();
+    let numv: Vec&lt;u32&gt; = numc
+        .to_string()
+        .chars()
+        .map(|c| c.to_digit(10).unwrap())
+        .collect();
+    let mut opts = Vec::new();
+    for (a, b) in (0..n).tuple_combinations() {
+        opts.push((a, b));
+    }
+    let mut new: Vec&lt;Vec&lt;u32&gt;&gt; = Vec::new();
+    new.push(numv.clone());
+    for o in opts {
+        new.push(swap(numv.clone(), o.0, o.1));
+    }
+    let keeps: Vec&lt;Vec&lt;u32&gt;&gt; = new.into_iter().filter(|x| x[0] != 0).collect();
+    let mut vals = Vec::new();
+    for v in keeps {
+        let tmp: u32 = v
+            .clone()
+            .into_iter()
+            .map(|x| x.to_string())
+            .collect::&lt;String&gt;()
+            .parse()
+            .unwrap();
+        vals.push(tmp);
+    }
+    let min = *vals.iter().min().unwrap();
+    let max = *vals.iter().max().unwrap();
+    (max, min)
+}
+
+fn main() {
+    println!(&quot;{:?}&quot;, maxmin(213));
+    println!(&quot;{:?}&quot;, maxmin(12345));
+    println!(&quot;{:?}&quot;, maxmin(100));
+    println!(&quot;{:?}&quot;, maxmin(11321))
+}</code></pre>
+<pre class="r bg-success"><code>(312, 123)
+(52341, 12345)
+(100, 100)
+(31121, 11123)</code></pre>
+<p>This solution reminded me why I like working with array (or
+at least vector-supporting) languages; not needing to explicitly loop over
+every element of a vector to do something. I had to write a lot of <code>push()</code>
+loops to move data around. <code>max()</code> doesn’t work on a vector (in the sense of
+finding the maximum of n elements); it works that way on an iterator, and may
+fail, hence the longer <code>min</code> and <code>max</code> lines.</p>
+<p>Having to <code>clone()</code> various values explicitly because they can’t be re-used
+was a bit annoying, but I understand <em>why</em> it complains about those.</p>
+<p>This took longer than I would have liked, but of course I learned more by
+doing it.</p></li>
+<li><p>J<br><img src="images/j.png" height="40px"></p>
+<p>At the APL meetup we discussed one partial J solution which used a slightly
+different approach to the ‘swap’ algorithm. I’m not sure that there <em>is</em> a
+way in J that’s as elegant as the APL solution, but I’d be interested if
+there is.</p>
+<p><a href="https://www.justusperlwitz.com/">Justus Perlwitz</a> offered
+<a href="https://gist.github.com/justuswilhelm/e5b5898d12f9ddb69d5ab85c8e8ec32c">this</a>
+solution, the essence of which is</p>
+<pre class="j"><code>digits =: 10&amp;#.^:_1
+
+sd =: {{
+  amend =. (|.y)}
+  swap =. (y { ]) amend ]
+  swap &amp;.: digits x
+}}
+
+cart =: {{
+  all =. ,/ (,&quot;0)/~ y
+  uniq =. ~. /:~&quot;1 all
+  l =. 0{&quot;1 uniq
+  r =. 1{&quot;1 uniq
+  (l ~: r) # uniq
+}}
+
+swapmaxmin =: {{
+  ndigits =. [: # digits
+  combs =. cart i. ndigits y
+  constr =. ((ndigits y) &lt;: [: ndigits&quot;0 ]) # ]
+  swaps =. constr y, y sd&quot;1 combs
+  (&gt;./ , &lt;./) swaps
+}}
+
+swapmaxmin 213</code></pre>
+<pre class="r bg-success"><code>312 123</code></pre>
+<pre class="j"><code>swapmaxmin 12345</code></pre>
+<pre class="r bg-success"><code>52341 12345</code></pre>
+<pre class="j"><code>swapmaxmin 100</code></pre>
+<pre class="r bg-success"><code>100 100</code></pre>
+<pre class="j"><code>swapmaxmin 11321</code></pre>
+<pre class="r bg-success"><code>31121 11123</code></pre>
+<p>and which you can run in
+<a href="https://jsoftware.github.io/j-playground/bin/html/index.html#code=digits%20%3D%3A%2010%26%23.%5E%3A_1%0Asd%20%3D%3A%20%7B%7B%0A%20%20amend%20%3D.%20(%7C.y)%7D%0A%20%20swap%20%3D.%20(y%20%7B%20%5D)%20amend%20%5D%0A%20%20swap%20%26.%3A%20digits%20x%0A%7D%7D%0A%0Acart%20%3D%3A%20%7B%7B%0A%20%20all%20%3D.%20%2C%2F%20(%2C%220)%2F~%20y%0A%20%20uniq%20%3D.%20~.%20%2F%3A~%221%20all%0A%20%20l%20%3D.%200%7B%221%20uniq%0A%20%20r%20%3D.%201%7B%221%20uniq%0A%20%20(l%20~%3A%20r)%20%23%20uniq%0A%7D%7D%0A%0Aswapmaxmin%20%3D%3A%20%7B%7B%0A%20%20ndigits%20%3D.%20%5B%3A%20%23%20digits%0A%20%20combs%20%3D.%20cart%20i.%20ndigits%20y%0A%20%20constr%20%3D.%20((ndigits%20y)%20%3C%3A%20%5B%3A%20ndigits%220%20%5D)%20%23%20%5D%0A%20%20swaps%20%3D.%20constr%20y%2C%20y%20sd%221%20combs%0A%20%20(%3E.%2F%20%2C%20%3C.%2F)%20swaps%0A%7D%7D%0A%0Aswapmaxmin%20213%0Aswapmaxmin%2012345%0Aswapmaxmin%20100%0Aswapmaxmin%2011321">the J playground</a></p>
+<p>There’s a lot I want to learn about J, so I’ll be digging through this
+solution myself.</p></li>
+</ul>
+<div id="summary" class="section level2">
+<h2>Summary</h2>
+<p>I was most pleased with the APL solution; it does what it says on the box
+without ambiguity because it’s constructed entirely from primitives (or utility
+functions defined in terms of those). The Julia solution also feels very clean,
+while the Haskell solution, defined entirely from functions, nicely demonstrates
+the functional principle.</p>
+<p>I found it to be an interesting example of where pass-by-reference is <em>not</em> so
+helpful. For packaged Julia functions that distinction is made clear with the
+<code>!</code> suffix to denote mutating functions, and it’s common to write both a
+mutating and non-mutating version wherever possible.</p>
+<p>Writing these taught me more and more about using each of these languages, and
+I’m of the opinion that just reading solutions is no substitute for getting your
+hands dirty in some actual code.</p>
+<hr>
+<p>Comments, improvements, or your own solutions are most welcome. I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.4.1 (2024-06-14)
+##  os       macOS Sonoma 14.6
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-10-26
+##  pandoc   3.2 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.19    2024-02-01 [1] CRAN (R 4.4.0)
+##  bookdown      0.41    2024-10-16 [1] CRAN (R 4.4.1)
+##  bslib         0.8.0   2024-07-29 [1] CRAN (R 4.4.0)
+##  cachem        1.1.0   2024-05-16 [1] CRAN (R 4.4.0)
+##  cli           3.6.3   2024-06-21 [1] CRAN (R 4.4.0)
+##  devtools      2.4.5   2022-10-11 [1] CRAN (R 4.4.0)
+##  digest        0.6.37  2024-08-19 [1] CRAN (R 4.4.1)
+##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.4.0)
+##  evaluate      1.0.1   2024-10-10 [1] CRAN (R 4.4.1)
+##  fastmap       1.2.0   2024-05-15 [1] CRAN (R 4.4.0)
+##  fs            1.6.4   2024-04-25 [1] CRAN (R 4.4.0)
+##  glue          1.8.0   2024-09-30 [1] CRAN (R 4.4.1)
+##  htmltools     0.5.8.1 2024-04-04 [1] CRAN (R 4.4.0)
+##  htmlwidgets   1.6.4   2023-12-06 [1] CRAN (R 4.4.0)
+##  httpuv        1.6.15  2024-03-26 [1] CRAN (R 4.4.0)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.4.0)
+##  jsonlite      1.8.9   2024-09-20 [1] CRAN (R 4.4.1)
+##  knitr         1.48    2024-07-07 [1] CRAN (R 4.4.0)
+##  later         1.3.2   2023-12-06 [1] CRAN (R 4.4.0)
+##  lifecycle     1.0.4   2023-11-07 [1] CRAN (R 4.4.0)
+##  magrittr      2.0.3   2022-03-30 [1] CRAN (R 4.4.0)
+##  memoise       2.0.1   2021-11-26 [1] CRAN (R 4.4.0)
+##  mime          0.12    2021-09-28 [1] CRAN (R 4.4.0)
+##  miniUI        0.1.1.1 2018-05-18 [1] CRAN (R 4.4.0)
+##  pkgbuild      1.4.4   2024-03-17 [1] CRAN (R 4.4.0)
+##  pkgload       1.4.0   2024-06-28 [1] CRAN (R 4.4.0)
+##  profvis       0.4.0   2024-09-20 [1] CRAN (R 4.4.1)
+##  promises      1.3.0   2024-04-05 [1] CRAN (R 4.4.0)
+##  purrr         1.0.2   2023-08-10 [1] CRAN (R 4.4.0)
+##  R6            2.5.1   2021-08-19 [1] CRAN (R 4.4.0)
+##  Rcpp          1.0.13  2024-07-17 [1] CRAN (R 4.4.0)
+##  remotes       2.5.0   2024-03-17 [1] CRAN (R 4.4.0)
+##  rlang         1.1.4   2024-06-04 [1] CRAN (R 4.4.0)
+##  rmarkdown     2.28    2024-08-17 [1] CRAN (R 4.4.0)
+##  rstudioapi    0.17.0  2024-10-16 [1] CRAN (R 4.4.1)
+##  sass          0.4.9   2024-03-15 [1] CRAN (R 4.4.0)
+##  sessioninfo   1.2.2   2021-12-06 [1] CRAN (R 4.4.0)
+##  shiny         1.9.1   2024-08-01 [1] CRAN (R 4.4.0)
+##  urlchecker    1.0.1   2021-11-30 [1] CRAN (R 4.4.0)
+##  usethis       3.0.0   2024-07-29 [1] CRAN (R 4.4.0)
+##  vctrs         0.6.5   2023-12-01 [1] CRAN (R 4.4.0)
+##  xfun          0.48    2024-10-03 [1] CRAN (R 4.4.1)
+##  xtable        1.8-4   2019-04-21 [1] CRAN (R 4.4.0)
+##  yaml          2.3.10  2024-07-26 [1] CRAN (R 4.4.0)
+## 
+##  [1] /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
