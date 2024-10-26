@@ -65,9 +65,10 @@ This seems like fun - and I wanted to see how solutions might look across some
 of the different languages I know (including an APL, for the sake of the upcoming 
 meetup).
 
-I ended up using R, (Dyalog) APL, Julia, Haskell, Python, and Rust, and I'll add
-in any others shared with me. The site linked above collected Clojure solutions
-in [this gist](https://gist.github.com/ericnormand/4ca47720a954307739aaeb12682de98a).
+I ended up using R, (Dyalog) APL, Julia, Haskell, Python, and Rust; someone
+provided a J solution; and I'll add in any others shared with me. The site
+linked above collected Clojure solutions in 
+[this gist](https://gist.github.com/ericnormand/4ca47720a954307739aaeb12682de98a).
 
 The common approach I used in all of these cases was:
 
