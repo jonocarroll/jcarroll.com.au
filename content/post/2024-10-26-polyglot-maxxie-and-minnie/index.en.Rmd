@@ -82,7 +82,7 @@ The common approach I used in all of these cases was:
 
 Here are my solutions in each language; it's not so much for side-by-side
 comparison, but you can switch between the different ones. The full set of files
-is [here](https://github.com/jonocarroll/maxxieminnie) if you're interested.
+is [here](https://github.com/jonocarroll/MaxxieAndMinnie) if you're interested.
 
 <p></p>
 
