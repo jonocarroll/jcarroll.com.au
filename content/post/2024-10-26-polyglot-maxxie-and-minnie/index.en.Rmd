@@ -583,6 +583,63 @@ is [here](https://github.com/jonocarroll/MaxxieAndMinnie) if you're interested.
   There's a lot I want to learn about J, so I'll be digging through this 
   solution myself.
 
+* Go<br><img src="images/go.png" height="40px">
+
+  Andrew Gray in my local Functional Programming meetup offered 
+  [a Go solution](https://github.com/ayjaygee/go-swapMaxMin/blob/main/main.go) 
+  which I pared down to the following
+
+  ```go
+  package main
+  
+  import (
+  	"fmt"
+  	"slices"
+  	"strconv"
+  )
+  
+  func MaxMin(n int) (max, min int) {
+  	s := strconv.Itoa(n)
+  	digits := []rune(s)
+  	max, min = n, n
+  	for i := range digits {
+  		for j := i + 1; j < len(digits); j++ {
+  			if i == 0 && digits[j] == '0' {
+  				continue
+  			}
+  			swapped := slices.Clone(digits)
+  			swapped[i], swapped[j] = swapped[j], swapped[i]
+  			curr, _ := strconv.Atoi(string(swapped))
+  			if curr > max {
+  				max = curr
+  			}
+  			if curr < min {
+  				min = curr
+  			}
+  		}
+  	}
+  	return max, min
+  }
+  
+  func main() {
+  	fmt.Println(MaxMin(213))
+  	fmt.Println(MaxMin(12345))
+  	fmt.Println(MaxMin(100))
+  	fmt.Println(MaxMin(11321))
+  }
+  ```
+
+  ```{r, eval = FALSE, class.source = "bg-success"}
+  312 123
+  52341 12345
+  100 100
+  31121 11123
+  ```
+  
+  Go also has the handy destructuring syntax, but has a slightly different way
+  to convert between digits and strings. Go also offers a playground in which 
+  you can [run this code](https://go.dev/play/p/KtI68uMJifL).
+
 ## Summary
 
 I was most pleased with the APL solution; it does what it says on the box 

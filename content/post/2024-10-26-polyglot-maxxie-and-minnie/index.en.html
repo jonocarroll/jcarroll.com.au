@@ -382,6 +382,54 @@ swapmaxmin 213</code></pre>
 <a href="https://jsoftware.github.io/j-playground/bin/html/index.html#code=digits%20%3D%3A%2010%26%23.%5E%3A_1%0Asd%20%3D%3A%20%7B%7B%0A%20%20amend%20%3D.%20(%7C.y)%7D%0A%20%20swap%20%3D.%20(y%20%7B%20%5D)%20amend%20%5D%0A%20%20swap%20%26.%3A%20digits%20x%0A%7D%7D%0A%0Acart%20%3D%3A%20%7B%7B%0A%20%20all%20%3D.%20%2C%2F%20(%2C%220)%2F~%20y%0A%20%20uniq%20%3D.%20~.%20%2F%3A~%221%20all%0A%20%20l%20%3D.%200%7B%221%20uniq%0A%20%20r%20%3D.%201%7B%221%20uniq%0A%20%20(l%20~%3A%20r)%20%23%20uniq%0A%7D%7D%0A%0Aswapmaxmin%20%3D%3A%20%7B%7B%0A%20%20ndigits%20%3D.%20%5B%3A%20%23%20digits%0A%20%20combs%20%3D.%20cart%20i.%20ndigits%20y%0A%20%20constr%20%3D.%20((ndigits%20y)%20%3C%3A%20%5B%3A%20ndigits%220%20%5D)%20%23%20%5D%0A%20%20swaps%20%3D.%20constr%20y%2C%20y%20sd%221%20combs%0A%20%20(%3E.%2F%20%2C%20%3C.%2F)%20swaps%0A%7D%7D%0A%0Aswapmaxmin%20213%0Aswapmaxmin%2012345%0Aswapmaxmin%20100%0Aswapmaxmin%2011321">the J playground</a></p>
 <p>There’s a lot I want to learn about J, so I’ll be digging through this
 solution myself.</p></li>
+<li><p>Go<br><img src="images/go.png" height="40px"></p>
+<p>Andrew Gray in my local Functional Programming meetup offered
+<a href="https://github.com/ayjaygee/go-swapMaxMin/blob/main/main.go">a Go solution</a>
+which I pared down to the following</p>
+<pre class="go"><code>package main
+
+import (
+	&quot;fmt&quot;
+	&quot;slices&quot;
+	&quot;strconv&quot;
+)
+
+func MaxMin(n int) (max, min int) {
+	s := strconv.Itoa(n)
+	digits := []rune(s)
+	max, min = n, n
+	for i := range digits {
+		for j := i + 1; j &lt; len(digits); j++ {
+			if i == 0 &amp;&amp; digits[j] == &#39;0&#39; {
+				continue
+			}
+			swapped := slices.Clone(digits)
+			swapped[i], swapped[j] = swapped[j], swapped[i]
+			curr, _ := strconv.Atoi(string(swapped))
+			if curr &gt; max {
+				max = curr
+			}
+			if curr &lt; min {
+				min = curr
+			}
+		}
+	}
+	return max, min
+}
+
+func main() {
+	fmt.Println(MaxMin(213))
+	fmt.Println(MaxMin(12345))
+	fmt.Println(MaxMin(100))
+	fmt.Println(MaxMin(11321))
+}</code></pre>
+<pre class="r bg-success"><code>312 123
+52341 12345
+100 100
+31121 11123</code></pre>
+<p>Go also has the handy destructuring syntax, but has a slightly different way
+to convert between digits and strings. Go also offers a playground in which
+you can <a href="https://go.dev/play/p/KtI68uMJifL">run this code</a>.</p></li>
 </ul>
 <div id="summary" class="section level2">
 <h2>Summary</h2>
@@ -415,7 +463,7 @@ hands dirty in some actual code.</p>
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2024-10-26
+##  date     2024-10-29
 ##  pandoc   3.2 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
