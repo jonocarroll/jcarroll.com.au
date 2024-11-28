@@ -1,0 +1,377 @@
+---
+title: These Languages are Accumulating
+author: Jonathan Carroll
+date: '2024-11-28'
+categories:
+  - APL
+  - haskell
+  - julia
+  - python
+  - rstats
+tags:
+  - APL
+  - haskell
+  - julia
+  - python
+  - rstats
+slug: these-languages-are-accumulating
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+I keep saying that the more programming languages you know, the more you will
+understand all the others you know - I'm now at the point where I want to solve
+every problem I see in a handful of different languages. They all offer
+different functionality, and some are certainly more suited to particular
+problems than others, but there's a world of difference between two characters
+and importing from two libraries.
+
+<!--more-->
+
+I keep saying that the more programming languages you know, the more you will
+understand all the others you know - I'm now at the point where I want to solve
+every problem I see in a handful of different languages. They all offer
+different functionality, and some are certainly more suited to particular
+problems than others, but there's a world of difference between two characters
+and importing from two libraries.
+
+A newsletter I follow (and can't find online copies of) that demonstrates neat
+things in python (gotta learn it, despite not loving it) recently covered
+`accumulate`, showing that `sum` and `accumulate` were sort of related
+
+```python
+>>> my_list = [42, 73, 0, 16, 10]
+>>> sum(my_list)
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+141
+```
+
+```python
+>>> from itertools import accumulate
+>>> list(accumulate(my_list))
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+[42, 115, 115, 131, 141]
+```
+
+`sum` adds up all the elements of the list, while `accumulate` does the same but
+keeps each successive partial sum.
+
+It rounds out the demo with an alternative function being used in `accumulate`
+
+```python
+>>> from itertools import accumulate
+>>> from operator import mul  # mul(2, 3) == 6
+>>> initial_investment = 1000
+>>> rates = [1.01, 1.01, 1.02, 1.025, 1.035, 1.035, 1.06]
+>>> list(
+...     accumulate(rates, mul, initial=initial_investment)
+... )
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+[1000, 1010.0, 1020.1, 1040.502, 1066.515, 1103.843, 1142.477, 1211.026]
+```
+
+Now, firstly... `from operator import mul`??? It looks like there's no way to
+pass `*` as an argument to a function. I _could_ define a function that performs
+the same on known arguments, e.g. `lambda x, y: x * y`
+
+```python
+>>> list(accumulate(rates, lambda x, y: x*y, initial=initial_investment))
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+[1000, 1010.0, 1020.1, 1040.502, 1066.5145499999999, 1103.8425592499998, 1142.4770488237498, 1211.0256717531747]
+```
+
+but... ew. 
+
+It's possible that there's a different way to approach this. A list
+comprehension comes to mind, e.g. something like
+
+```python
+>>> [sum(my_list[0:i]) for i in range(1, len(my_list)+1)]
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+[42, 115, 115, 131, 141]
+```
+
+but that requires performing a sum for each sub-interval, so performance would 
+not scale well (admittedly, that was not a consideration here at all). I also 
+don't believe there's a built-in `prod` so one must `import math` in order to do 
+similar
+
+```python
+>>> import math
+>>> x = [initial_investment] + rates
+>>> [math.prod(x[0:i]) for i in range(1, len(x)+1)]
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
+[1000, 1010.0, 1020.1, 1040.502, 1066.5145499999999, 1103.8425592499998, 1142.4770488237498, 1211.0256717531747]
+```
+
+In R that could use the built-in `cumprod` for the cumulative product
+
+```{r}
+initial_investment <- 1000
+rates = c(1.01, 1.01, 1.02, 1.025, 1.035, 1.035, 1.06)
+
+cumprod(c(initial_investment, rates))
+```
+
+but that has the 'multiply' operation hardcoded. `cumsum` uses `+` as the
+function... hmmm. Maybe R doesn't have a generalised `accumulate`?
+
+I've been playing around with Haskell lately, so recursive functions to the
+rescue! One feature of recursive functions in R that I really like is `Recall`
+which calls the function _in which it is defined_ with a new set of arguments -
+perfect for recursion!
+
+```{r}
+accumulate_recall <- function(x, f, i=x[1]) {
+  if (!length(x)) return(NULL)
+  c(i, Recall(tail(x, -1), f, f(i, x[2])))
+}
+```
+
+It's also robust against renaming the function; the body doesn't actually call
+`accumulate_recall` by name at all.
+
+This might be inefficient, though - it's not uncommon to blow out the stack, so
+a new `Tailcall` function (which doesn't have the same elegance of being robust
+against renaming) helps with flagging this as something that can be optimised
+
+```{r}
+accumulate <- function(x, f, i=x[1]) {
+  if (!length(x)) return(NULL)
+  c(i, Tailcall(accumulate, tail(x, -1), f, f(i, x[2])))
+}
+```
+
+With this, I can emulate the `cumsum()` and `cumprod()` functions
+
+```{r}
+cumprod(1:6)
+
+accumulate(1:6, `*`)
+
+cumsum(2:6)
+
+accumulate(2:6, `+`)
+```
+
+unless I try to calculate something too big...
+
+```{r, warning = TRUE}
+cumprod(5:15)
+
+accumulate(5:15, `*`)
+```
+
+It appears that the built-in functions convert to numeric. That's easily fixed
+on input
+
+```{r}
+accumulate(as.numeric(5:15), `*`)
+```
+
+In any case, there's a generalised `accumulate` that takes the bare functions as
+arguments.
+
+But it can be so much cleaner than this!
+
+In APL you won't find any function named "sum" because it is just a reduction
+(`Reduce` in R) with the function `+`
+
+```apl
+      sum←+/
+      
+      sum ⍳6 ⍝ sum the values 1:6
+21
+
+      sum 1↓⍳6 ⍝ sum the values 2:6
+20
+```
+
+which in R is
+
+```{r}
+sum(1:6)
+
+sum(2:6)
+```
+
+Why would you write `sum` if you can just use `+/`? It's fewer
+characters to write out the implementation than the name!
+
+For `accumulate` the terminology in APL is `scan` which uses a very similar
+glyph because the operation itself is very similar; a `reduce` (`/`) is just the
+last value of a `scan` (`\`) which keeps the progressive values. In both cases,
+the operator (either slash) takes a binary function as the left argument and
+produces a modified function - in these examples, effectively `sum` and `prod` -
+which is then applied to values on the right. The `scan` version does the same
+
+```apl
+      +\⍳6
+1 3 6 10 15 21
+
+      ×\⍳6
+1 2 6 24 120 720
+```
+
+```{r}
+accumulate(1:6, `+`)
+
+accumulate(1:6, `*`)
+```
+
+As for the rates example above, we concatenate the initial value with `catenate` 
+(`,`) just like the R example, but otherwise this works fine
+
+```apl
+      rates ← 1.01 1.01 1.02 1.025 1.035 1.035 1.06
+      inv ← 1000
+      
+      ×/inv, rates
+1211.025672
+
+      ×\inv, rates
+1000 1010 1020.1 1040.502 1066.51455 1103.842559 1142.477049 1211.025672
+```
+
+So all of that recursive R code made to generalise the cumulative application of
+a function provided as an argument is boiled down to just the single glyph `\`.
+Outstanding!
+
+What's more, there are *lots* of binary functions one would use this with, all
+of which have spelled-out names in other languages
+
+```apl
+      +/ ⍝ sum (add)
+      ×/ ⍝ prod (multiply)
+      ∧/ ⍝ all (and)
+      ∨/ ⍝ any (or)
+      ⌈/ ⍝ maximum (max)
+      ⌊/ ⍝ minimum (min)
+```
+
+In summary, it seems that looking across these languages, the available options
+range from a single glyph for `scan` along with the bare binary operator, e.g.
+`×/`; a `cumprod()` function which isn't well-generalised but works out of the 
+box; and then there's whatever mess this is (once you've _installed_ these)
+
+```python
+>>> from itertools import accumulate
+>>> from operator import mul
+>>> list(accumulate(rates, mul, initial=initial_investment))
+```
+
+Where did we go so wrong?
+
+For what it's worth, Julia has a `reduce` and an `accumulate` that behave very 
+nicely; generalised for the binary function as an argument
+
+```julia
+julia> reduce(+, 1:6)
+21
+
+julia> reduce(*, 1:6)
+720
+
+julia> accumulate(+, 1:6)
+6-element Vector{Int64}:
+  1
+  3
+  6
+ 10
+ 15
+ 21
+
+julia> accumulate(*, 1:6)
+6-element Vector{Int64}:
+   1
+   2
+   6
+  24
+ 120
+ 720
+```
+
+This is extremely close to the APL approach, but with longer worded names for
+the `reduce` and `scan` operators. It also defines the more convenient `sum`,
+`prod`, `cumsum`, and `cumprod`; no shortage of ways to do this in Julia!
+
+In Haskell, `foldl` and `scanl` are the (left-associative) version of `reduce` 
+and `accumulate`, and passing an infix as an argument necessitates wrapping it 
+in parentheses
+
+```haskell
+ghci> foldl (+) 0 [1..6]
+21
+
+ghci> scanl (+) 0 [1..6]
+[0,1,3,6,10,15,21]
+
+ghci> foldl (*) 1 [1..6]
+720
+
+ghci> scanl (*) 1 [1..6]
+[1,1,2,6,24,120,720]
+```
+
+This requires an explicit starting value, unless one uses the specialised 
+versions which use the first value as an initial value
+
+```haskell
+ghci> foldl1 (+) [1..6]
+21
+
+ghci> scanl1 (+) [1..6]
+[1,3,6,10,15,21]
+
+ghci> foldl1 (*) [1..6]
+720
+
+ghci> scanl1 (*) [1..6]
+[1,2,6,24,120,720]
+```
+
+I started this post hoping to demonstrate how nice the APL syntax was for this, 
+but the detour through generalising the R function was a lot of unexpected fun 
+as well.
+
+Comments, improvements, or your own solutions are most welcome. I can be found
+on [Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+
+*Addendums*
+
+It should probably be noted that R _does_ have a function `scan` but it's for 
+reading data into a vector - if you ever spot someone using it for that... run. 
+I have war stories about that function.
+
+I'd love to hear how this is accomplished in some other languages, too - does it
+have a built-in `accumulate` that takes a binary function?
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
