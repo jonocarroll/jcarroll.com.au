@@ -133,7 +133,22 @@ cumprod(c(initial_investment, rates))
 ```
 
 but that has the 'multiply' operation hardcoded. `cumsum` uses `+` as the
-function... hmmm. Maybe R doesn't have a generalised `accumulate`?
+function... hmmm. ~~Maybe R doesn't have a generalised `accumulate`?~~
+**UPDATE** I entirely forgot that `Reduce` takes an `accumulate` argument which
+does what I need here
+
+```{r}
+Reduce(`+`, 1:6)
+
+Reduce(`+`, 1:6, accumulate = TRUE)
+
+Reduce(`*`, 1:6)
+
+Reduce(`*`, 1:6, accumulate = TRUE)
+```
+
+Nonetheless, building my own version is a worthwhile exercise, so the rest of 
+the post remains as is.
 
 I've been playing around with Haskell lately, so recursive functions to the
 rescue! One feature of recursive functions in R that I really like is `Recall`
@@ -252,9 +267,9 @@ As for the rates example above, we concatenate the initial value with `catenate`
 1000 1010 1020.1 1040.502 1066.51455 1103.842559 1142.477049 1211.025672
 ```
 
-So all of that recursive R code made to generalise the cumulative application of
-a function provided as an argument is boiled down to just the single glyph `\`.
-Outstanding!
+So all of that recursive R code I wrote to generalise the cumulative application
+of a function provided as an argument is boiled down to just the single glyph
+`\`. Outstanding!
 
 What's more, there are *lots* of binary functions one would use this with, all
 of which have spelled-out names in other languages
@@ -270,8 +285,9 @@ of which have spelled-out names in other languages
 
 In summary, it seems that looking across these languages, the available options
 range from a single glyph for `scan` along with the bare binary operator, e.g.
-`×/`; a `cumprod()` function which isn't well-generalised but works out of the 
-box; and then there's whatever mess this is (once you've _installed_ these)
+`×/`; a `cumprod()` function which isn't well-generalised but works out of the
+box; an `accumulate=TRUE` argument to `Reduce`; and then there's whatever mess
+this is (once you've _installed_ these)
 
 ```python
 >>> from itertools import accumulate
@@ -364,6 +380,20 @@ I have war stories about that function.
 
 I'd love to hear how this is accomplished in some other languages, too - does it
 have a built-in `accumulate` that takes a binary function?
+
+Many thanks to commenters on Mastodon for reminding me that `Reduce(f, x,
+accumulate=TRUE)` is the base R way to achieve the `scan`. I feel that still
+counts as points against R because of the poor discoverability of gating the
+_opposite_ behaviour behind a boolean flag.
+
+We also have
+
+```{r}
+purrr::accumulate(1:6, `*`)
+```
+
+which is probably even more ergnomic, but I feel that takes away from my
+complaints about needing to do an import in python.
 
 <br />
 <details>

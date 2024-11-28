@@ -77,7 +77,19 @@ rates = c(1.01, 1.01, 1.02, 1.025, 1.035, 1.035, 1.06)
 cumprod(c(initial_investment, rates))</code></pre>
 <pre class="bg-success"><code>## [1] 1000.000 1010.000 1020.100 1040.502 1066.515 1103.843 1142.477 1211.026</code></pre>
 <p>but that has the ‘multiply’ operation hardcoded. <code>cumsum</code> uses <code>+</code> as the
-function… hmmm. Maybe R doesn’t have a generalised <code>accumulate</code>?</p>
+function… hmmm. <del>Maybe R doesn’t have a generalised <code>accumulate</code>?</del>
+<strong>UPDATE</strong> I entirely forgot that <code>Reduce</code> takes an <code>accumulate</code> argument which
+does what I need here</p>
+<pre class="r"><code>Reduce(`+`, 1:6)</code></pre>
+<pre class="bg-success"><code>## [1] 21</code></pre>
+<pre class="r"><code>Reduce(`+`, 1:6, accumulate = TRUE)</code></pre>
+<pre class="bg-success"><code>## [1]  1  3  6 10 15 21</code></pre>
+<pre class="r"><code>Reduce(`*`, 1:6)</code></pre>
+<pre class="bg-success"><code>## [1] 720</code></pre>
+<pre class="r"><code>Reduce(`*`, 1:6, accumulate = TRUE)</code></pre>
+<pre class="bg-success"><code>## [1]   1   2   6  24 120 720</code></pre>
+<p>Nonetheless, building my own version is a worthwhile exercise, so the rest of
+the post remains as is.</p>
 <p>I’ve been playing around with Haskell lately, so recursive functions to the
 rescue! One feature of recursive functions in R that I really like is <code>Recall</code>
 which calls the function <em>in which it is defined</em> with a new set of arguments -
@@ -161,9 +173,9 @@ which is then applied to values on the right. The <code>scan</code> version does
 
       ×\inv, rates
 1000 1010 1020.1 1040.502 1066.51455 1103.842559 1142.477049 1211.025672</code></pre>
-<p>So all of that recursive R code made to generalise the cumulative application of
-a function provided as an argument is boiled down to just the single glyph <code>\</code>.
-Outstanding!</p>
+<p>So all of that recursive R code I wrote to generalise the cumulative application
+of a function provided as an argument is boiled down to just the single glyph
+<code>\</code>. Outstanding!</p>
 <p>What’s more, there are <em>lots</em> of binary functions one would use this with, all
 of which have spelled-out names in other languages</p>
 <pre class="apl"><code>      +/ ⍝ sum (add)
@@ -175,7 +187,8 @@ of which have spelled-out names in other languages</p>
 <p>In summary, it seems that looking across these languages, the available options
 range from a single glyph for <code>scan</code> along with the bare binary operator, e.g.
 <code>×/</code>; a <code>cumprod()</code> function which isn’t well-generalised but works out of the
-box; and then there’s whatever mess this is (once you’ve <em>installed</em> these)</p>
+box; an <code>accumulate=TRUE</code> argument to <code>Reduce</code>; and then there’s whatever mess
+this is (once you’ve <em>installed</em> these)</p>
 <pre class="python"><code>&gt;&gt;&gt; from itertools import accumulate
 &gt;&gt;&gt; from operator import mul
 &gt;&gt;&gt; list(accumulate(rates, mul, initial=initial_investment))</code></pre>
@@ -246,6 +259,14 @@ reading data into a vector - if you ever spot someone using it for that… run.
 I have war stories about that function.</p>
 <p>I’d love to hear how this is accomplished in some other languages, too - does it
 have a built-in <code>accumulate</code> that takes a binary function?</p>
+<p>Many thanks to commenters on Mastodon for reminding me that <code>Reduce(f, x, accumulate=TRUE)</code> is the base R way to achieve the <code>scan</code>. I feel that still
+counts as points against R because of the poor discoverability of gating the
+<em>opposite</em> behaviour behind a boolean flag.</p>
+<p>We also have</p>
+<pre class="r"><code>purrr::accumulate(1:6, `*`)</code></pre>
+<pre class="bg-success"><code>## [1]   1   2   6  24 120 720</code></pre>
+<p>which is probably even more ergnomic, but I feel that takes away from my
+complaints about needing to do an import in python.</p>
 <br />
 <details>
 <summary>
