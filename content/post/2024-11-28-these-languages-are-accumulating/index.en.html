@@ -1,0 +1,318 @@
+---
+title: These Languages are Accumulating
+author: Jonathan Carroll
+date: '2024-11-28'
+categories:
+  - APL
+  - haskell
+  - julia
+  - python
+  - rstats
+tags:
+  - APL
+  - haskell
+  - julia
+  - python
+  - rstats
+slug: these-languages-are-accumulating
+---
+
+
+
+<p>I keep saying that the more programming languages you know, the more you will
+understand all the others you know - I’m now at the point where I want to solve
+every problem I see in a handful of different languages. They all offer
+different functionality, and some are certainly more suited to particular
+problems than others, but there’s a world of difference between two characters
+and importing from two libraries.</p>
+<!--more-->
+<p>I keep saying that the more programming languages you know, the more you will
+understand all the others you know - I’m now at the point where I want to solve
+every problem I see in a handful of different languages. They all offer
+different functionality, and some are certainly more suited to particular
+problems than others, but there’s a world of difference between two characters
+and importing from two libraries.</p>
+<p>A newsletter I follow (and can’t find online copies of) that demonstrates neat
+things in python (gotta learn it, despite not loving it) recently covered
+<code>accumulate</code>, showing that <code>sum</code> and <code>accumulate</code> were sort of related</p>
+<pre class="python"><code>&gt;&gt;&gt; my_list = [42, 73, 0, 16, 10]
+&gt;&gt;&gt; sum(my_list)</code></pre>
+<pre class="r bg-success"><code>141</code></pre>
+<pre class="python"><code>&gt;&gt;&gt; from itertools import accumulate
+&gt;&gt;&gt; list(accumulate(my_list))</code></pre>
+<pre class="r bg-success"><code>[42, 115, 115, 131, 141]</code></pre>
+<p><code>sum</code> adds up all the elements of the list, while <code>accumulate</code> does the same but
+keeps each successive partial sum.</p>
+<p>It rounds out the demo with an alternative function being used in <code>accumulate</code></p>
+<pre class="python"><code>&gt;&gt;&gt; from itertools import accumulate
+&gt;&gt;&gt; from operator import mul  # mul(2, 3) == 6
+&gt;&gt;&gt; initial_investment = 1000
+&gt;&gt;&gt; rates = [1.01, 1.01, 1.02, 1.025, 1.035, 1.035, 1.06]
+&gt;&gt;&gt; list(
+...     accumulate(rates, mul, initial=initial_investment)
+... )</code></pre>
+<pre class="r bg-success"><code>[1000, 1010.0, 1020.1, 1040.502, 1066.515, 1103.843, 1142.477, 1211.026]</code></pre>
+<p>Now, firstly… <code>from operator import mul</code>??? It looks like there’s no way to
+pass <code>*</code> as an argument to a function. I <em>could</em> define a function that performs
+the same on known arguments, e.g. <code>lambda x, y: x * y</code></p>
+<pre class="python"><code>&gt;&gt;&gt; list(accumulate(rates, lambda x, y: x*y, initial=initial_investment))</code></pre>
+<pre class="r bg-success"><code>[1000, 1010.0, 1020.1, 1040.502, 1066.5145499999999, 1103.8425592499998, 1142.4770488237498, 1211.0256717531747]</code></pre>
+<p>but… ew.</p>
+<p>It’s possible that there’s a different way to approach this. A list
+comprehension comes to mind, e.g. something like</p>
+<pre class="python"><code>&gt;&gt;&gt; [sum(my_list[0:i]) for i in range(1, len(my_list)+1)]</code></pre>
+<pre class="r bg-success"><code>[42, 115, 115, 131, 141]</code></pre>
+<p>but that requires performing a sum for each sub-interval, so performance would
+not scale well (admittedly, that was not a consideration here at all). I also
+don’t believe there’s a built-in <code>prod</code> so one must <code>import math</code> in order to do
+similar</p>
+<pre class="python"><code>&gt;&gt;&gt; import math
+&gt;&gt;&gt; x = [initial_investment] + rates
+&gt;&gt;&gt; [math.prod(x[0:i]) for i in range(1, len(x)+1)]</code></pre>
+<pre class="r bg-success"><code>[1000, 1010.0, 1020.1, 1040.502, 1066.5145499999999, 1103.8425592499998, 1142.4770488237498, 1211.0256717531747]</code></pre>
+<p>In R that could use the built-in <code>cumprod</code> for the cumulative product</p>
+<pre class="r"><code>initial_investment &lt;- 1000
+rates = c(1.01, 1.01, 1.02, 1.025, 1.035, 1.035, 1.06)
+
+cumprod(c(initial_investment, rates))</code></pre>
+<pre class="bg-success"><code>## [1] 1000.000 1010.000 1020.100 1040.502 1066.515 1103.843 1142.477 1211.026</code></pre>
+<p>but that has the ‘multiply’ operation hardcoded. <code>cumsum</code> uses <code>+</code> as the
+function… hmmm. Maybe R doesn’t have a generalised <code>accumulate</code>?</p>
+<p>I’ve been playing around with Haskell lately, so recursive functions to the
+rescue! One feature of recursive functions in R that I really like is <code>Recall</code>
+which calls the function <em>in which it is defined</em> with a new set of arguments -
+perfect for recursion!</p>
+<pre class="r"><code>accumulate_recall &lt;- function(x, f, i=x[1]) {
+  if (!length(x)) return(NULL)
+  c(i, Recall(tail(x, -1), f, f(i, x[2])))
+}</code></pre>
+<p>It’s also robust against renaming the function; the body doesn’t actually call
+<code>accumulate_recall</code> by name at all.</p>
+<p>This might be inefficient, though - it’s not uncommon to blow out the stack, so
+a new <code>Tailcall</code> function (which doesn’t have the same elegance of being robust
+against renaming) helps with flagging this as something that can be optimised</p>
+<pre class="r"><code>accumulate &lt;- function(x, f, i=x[1]) {
+  if (!length(x)) return(NULL)
+  c(i, Tailcall(accumulate, tail(x, -1), f, f(i, x[2])))
+}</code></pre>
+<p>With this, I can emulate the <code>cumsum()</code> and <code>cumprod()</code> functions</p>
+<pre class="r"><code>cumprod(1:6)</code></pre>
+<pre class="bg-success"><code>## [1]   1   2   6  24 120 720</code></pre>
+<pre class="r"><code>accumulate(1:6, `*`)</code></pre>
+<pre class="bg-success"><code>## [1]   1   2   6  24 120 720</code></pre>
+<pre class="r"><code>cumsum(2:6)</code></pre>
+<pre class="bg-success"><code>## [1]  2  5  9 14 20</code></pre>
+<pre class="r"><code>accumulate(2:6, `+`)</code></pre>
+<pre class="bg-success"><code>## [1]  2  5  9 14 20</code></pre>
+<p>unless I try to calculate something too big…</p>
+<pre class="r"><code>cumprod(5:15)</code></pre>
+<pre class="bg-success"><code>##  [1]           5          30         210        1680       15120      151200
+##  [7]     1663200    19958400   259459200  3632428800 54486432000</code></pre>
+<pre class="r"><code>accumulate(5:15, `*`)</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning in f(i, x[2]): NAs produced by integer overflow</code></pre>
+<pre class="bg-success"><code>##  [1]         5        30       210      1680     15120    151200   1663200
+##  [8]  19958400 259459200        NA        NA</code></pre>
+<p>It appears that the built-in functions convert to numeric. That’s easily fixed
+on input</p>
+<pre class="r"><code>accumulate(as.numeric(5:15), `*`)</code></pre>
+<pre class="bg-success"><code>##  [1]           5          30         210        1680       15120      151200
+##  [7]     1663200    19958400   259459200  3632428800 54486432000</code></pre>
+<p>In any case, there’s a generalised <code>accumulate</code> that takes the bare functions as
+arguments.</p>
+<p>But it can be so much cleaner than this!</p>
+<p>In APL you won’t find any function named “sum” because it is just a reduction
+(<code>Reduce</code> in R) with the function <code>+</code></p>
+<pre class="apl"><code>      sum←+/
+      
+      sum ⍳6 ⍝ sum the values 1:6
+21
+
+      sum 1↓⍳6 ⍝ sum the values 2:6
+20</code></pre>
+<p>which in R is</p>
+<pre class="r"><code>sum(1:6)</code></pre>
+<pre class="bg-success"><code>## [1] 21</code></pre>
+<pre class="r"><code>sum(2:6)</code></pre>
+<pre class="bg-success"><code>## [1] 20</code></pre>
+<p>Why would you write <code>sum</code> if you can just use <code>+/</code>? It’s fewer
+characters to write out the implementation than the name!</p>
+<p>For <code>accumulate</code> the terminology in APL is <code>scan</code> which uses a very similar
+glyph because the operation itself is very similar; a <code>reduce</code> (<code>/</code>) is just the
+last value of a <code>scan</code> (<code>\</code>) which keeps the progressive values. In both cases,
+the operator (either slash) takes a binary function as the left argument and
+produces a modified function - in these examples, effectively <code>sum</code> and <code>prod</code> -
+which is then applied to values on the right. The <code>scan</code> version does the same</p>
+<pre class="apl"><code>      +\⍳6
+1 3 6 10 15 21
+
+      ×\⍳6
+1 2 6 24 120 720</code></pre>
+<pre class="r"><code>accumulate(1:6, `+`)</code></pre>
+<pre class="bg-success"><code>## [1]  1  3  6 10 15 21</code></pre>
+<pre class="r"><code>accumulate(1:6, `*`)</code></pre>
+<pre class="bg-success"><code>## [1]   1   2   6  24 120 720</code></pre>
+<p>As for the rates example above, we concatenate the initial value with <code>catenate</code>
+(<code>,</code>) just like the R example, but otherwise this works fine</p>
+<pre class="apl"><code>      rates ← 1.01 1.01 1.02 1.025 1.035 1.035 1.06
+      inv ← 1000
+      
+      ×/inv, rates
+1211.025672
+
+      ×\inv, rates
+1000 1010 1020.1 1040.502 1066.51455 1103.842559 1142.477049 1211.025672</code></pre>
+<p>So all of that recursive R code made to generalise the cumulative application of
+a function provided as an argument is boiled down to just the single glyph <code>\</code>.
+Outstanding!</p>
+<p>What’s more, there are <em>lots</em> of binary functions one would use this with, all
+of which have spelled-out names in other languages</p>
+<pre class="apl"><code>      +/ ⍝ sum (add)
+      ×/ ⍝ prod (multiply)
+      ∧/ ⍝ all (and)
+      ∨/ ⍝ any (or)
+      ⌈/ ⍝ maximum (max)
+      ⌊/ ⍝ minimum (min)</code></pre>
+<p>In summary, it seems that looking across these languages, the available options
+range from a single glyph for <code>scan</code> along with the bare binary operator, e.g.
+<code>×/</code>; a <code>cumprod()</code> function which isn’t well-generalised but works out of the
+box; and then there’s whatever mess this is (once you’ve <em>installed</em> these)</p>
+<pre class="python"><code>&gt;&gt;&gt; from itertools import accumulate
+&gt;&gt;&gt; from operator import mul
+&gt;&gt;&gt; list(accumulate(rates, mul, initial=initial_investment))</code></pre>
+<p>Where did we go so wrong?</p>
+<p>For what it’s worth, Julia has a <code>reduce</code> and an <code>accumulate</code> that behave very
+nicely; generalised for the binary function as an argument</p>
+<pre class="julia"><code>julia&gt; reduce(+, 1:6)
+21
+
+julia&gt; reduce(*, 1:6)
+720
+
+julia&gt; accumulate(+, 1:6)
+6-element Vector{Int64}:
+  1
+  3
+  6
+ 10
+ 15
+ 21
+
+julia&gt; accumulate(*, 1:6)
+6-element Vector{Int64}:
+   1
+   2
+   6
+  24
+ 120
+ 720</code></pre>
+<p>This is extremely close to the APL approach, but with longer worded names for
+the <code>reduce</code> and <code>scan</code> operators. It also defines the more convenient <code>sum</code>,
+<code>prod</code>, <code>cumsum</code>, and <code>cumprod</code>; no shortage of ways to do this in Julia!</p>
+<p>In Haskell, <code>foldl</code> and <code>scanl</code> are the (left-associative) version of <code>reduce</code>
+and <code>accumulate</code>, and passing an infix as an argument necessitates wrapping it
+in parentheses</p>
+<pre class="haskell"><code>ghci&gt; foldl (+) 0 [1..6]
+21
+
+ghci&gt; scanl (+) 0 [1..6]
+[0,1,3,6,10,15,21]
+
+ghci&gt; foldl (*) 1 [1..6]
+720
+
+ghci&gt; scanl (*) 1 [1..6]
+[1,1,2,6,24,120,720]</code></pre>
+<p>This requires an explicit starting value, unless one uses the specialised
+versions which use the first value as an initial value</p>
+<pre class="haskell"><code>ghci&gt; foldl1 (+) [1..6]
+21
+
+ghci&gt; scanl1 (+) [1..6]
+[1,3,6,10,15,21]
+
+ghci&gt; foldl1 (*) [1..6]
+720
+
+ghci&gt; scanl1 (*) [1..6]
+[1,2,6,24,120,720]</code></pre>
+<p>I started this post hoping to demonstrate how nice the APL syntax was for this,
+but the detour through generalising the R function was a lot of unexpected fun
+as well.</p>
+<p>Comments, improvements, or your own solutions are most welcome. I can be found
+on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<p><em>Addendums</em></p>
+<p>It should probably be noted that R <em>does</em> have a function <code>scan</code> but it’s for
+reading data into a vector - if you ever spot someone using it for that… run.
+I have war stories about that function.</p>
+<p>I’d love to hear how this is accomplished in some other languages, too - does it
+have a built-in <code>accumulate</code> that takes a binary function?</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.4.1 (2024-06-14)
+##  os       macOS Sonoma 14.6
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2024-11-28
+##  pandoc   3.5 @ /opt/homebrew/bin/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version    date (UTC) lib source
+##  blogdown      1.19       2024-02-01 [1] CRAN (R 4.4.0)
+##  bookdown      0.41       2024-10-16 [1] CRAN (R 4.4.1)
+##  bslib         0.8.0      2024-07-29 [1] CRAN (R 4.4.0)
+##  cachem        1.1.0      2024-05-16 [1] CRAN (R 4.4.0)
+##  cli           3.6.3      2024-06-21 [1] CRAN (R 4.4.0)
+##  devtools      2.4.5      2022-10-11 [1] CRAN (R 4.4.0)
+##  digest        0.6.37     2024-08-19 [1] CRAN (R 4.4.1)
+##  ellipsis      0.3.2      2021-04-29 [1] CRAN (R 4.4.0)
+##  evaluate      1.0.1      2024-10-10 [1] CRAN (R 4.4.1)
+##  fastmap       1.2.0      2024-05-15 [1] CRAN (R 4.4.0)
+##  fs            1.6.5      2024-10-30 [1] CRAN (R 4.4.1)
+##  glue          1.8.0      2024-09-30 [1] CRAN (R 4.4.1)
+##  htmltools     0.5.8.1    2024-04-04 [1] CRAN (R 4.4.0)
+##  htmlwidgets   1.6.4      2023-12-06 [1] CRAN (R 4.4.0)
+##  httpuv        1.6.15     2024-03-26 [1] CRAN (R 4.4.0)
+##  jquerylib     0.1.4      2021-04-26 [1] CRAN (R 4.4.0)
+##  jsonlite      1.8.9      2024-09-20 [1] CRAN (R 4.4.1)
+##  knitr         1.48       2024-07-07 [1] CRAN (R 4.4.0)
+##  later         1.3.2      2023-12-06 [1] CRAN (R 4.4.0)
+##  lifecycle     1.0.4      2023-11-07 [1] CRAN (R 4.4.0)
+##  magrittr      2.0.3      2022-03-30 [1] CRAN (R 4.4.0)
+##  memoise       2.0.1      2021-11-26 [1] CRAN (R 4.4.0)
+##  mime          0.12       2021-09-28 [1] CRAN (R 4.4.0)
+##  miniUI        0.1.1.1    2018-05-18 [1] CRAN (R 4.4.0)
+##  pkgbuild      1.4.5      2024-10-28 [1] CRAN (R 4.4.1)
+##  pkgload       1.4.0      2024-06-28 [1] CRAN (R 4.4.0)
+##  profvis       0.4.0      2024-09-20 [1] CRAN (R 4.4.1)
+##  promises      1.3.0      2024-04-05 [1] CRAN (R 4.4.0)
+##  purrr         1.0.2      2023-08-10 [1] CRAN (R 4.4.0)
+##  R6            2.5.1      2021-08-19 [1] CRAN (R 4.4.0)
+##  Rcpp          1.0.13-1   2024-11-02 [1] CRAN (R 4.4.1)
+##  remotes       2.5.0.9000 2024-11-03 [1] Github (r-lib/remotes@5b7eb08)
+##  rlang         1.1.4      2024-06-04 [1] CRAN (R 4.4.0)
+##  rmarkdown     2.28       2024-08-17 [1] CRAN (R 4.4.0)
+##  rstudioapi    0.17.1     2024-10-22 [1] CRAN (R 4.4.1)
+##  sass          0.4.9      2024-03-15 [1] CRAN (R 4.4.0)
+##  sessioninfo   1.2.2      2021-12-06 [1] CRAN (R 4.4.0)
+##  shiny         1.9.1      2024-08-01 [1] CRAN (R 4.4.0)
+##  urlchecker    1.0.1      2021-11-30 [1] CRAN (R 4.4.0)
+##  usethis       3.0.0      2024-07-29 [1] CRAN (R 4.4.0)
+##  vctrs         0.6.5      2023-12-01 [1] CRAN (R 4.4.0)
+##  xfun          0.49       2024-10-31 [1] CRAN (R 4.4.1)
+##  xtable        1.8-4      2019-04-21 [1] CRAN (R 4.4.0)
+##  yaml          2.3.10     2024-07-26 [1] CRAN (R 4.4.0)
+## 
+##  [1] /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
