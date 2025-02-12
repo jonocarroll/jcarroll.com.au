@@ -160,8 +160,8 @@ x</code></pre>
 me a while to get used to, but I see the value of it. One of my big regrets about
 R is that strings are <em>not</em> vectors of characters; something I worked around by
 making <a href="https://github.com/jonocarroll/charcuterie">my own “character vector” class</a>.</p>
-<p>What really blew my mind was the behaviour around joining two <code>Series</code> with overlapping
-indexes; the join is explicitly based on the index, so <code>'a'</code> matches to <code>'a'</code> and
+<p>What really blew my mind was the behaviour around adding two <code>Series</code> with overlapping
+indexes; the comparison is explicitly based on the index, so <code>'a'</code> matches to <code>'a'</code> and
 <code>'d'</code> matches to <code>'d'</code> regardless of where they appear in the <code>Series</code></p>
 <pre class="python"><code>s1 = pd.Series([10, 20, 30, 40], index=list(&#39;abcd&#39;))
 s1</code></pre>
@@ -211,9 +211,10 @@ book itself, which isn’t ideal. There is a hyperlink in the PDF version</p>
 <blockquote>
 <p>The data is in the file <a href="https://github.com/reuven/pandas-workout">taxi-passenger-count.csv</a>, available along with the other data files used in this course.</p>
 </blockquote>
-<p>but that points to a repository of the <em>exercises</em>, not the data. These sort of
+<p>but that points to a repository of the <em>exercises</em>, not the data. I presume the
+print version lacks a way for the reader to find this data. These sort of
 mistakes happen - I noted some of them on <a href="https://livebook.manning.com/forum?product=lerner2&amp;p=1&amp;page=1">Manning’s discussion forum</a> but did not
-hear back from the author about any of them.</p>
+hear back from the author about any of them yet.</p>
 <p>It’s worth mentioning that while the data is from the real world and has genuine
 ‘problems’ that one would experience when performing an analysis, the data is a
 single zip file comprising a whopping 852MB download, which might be a bit much

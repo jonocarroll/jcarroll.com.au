@@ -204,8 +204,8 @@ me a while to get used to, but I see the value of it. One of my big regrets abou
 R is that strings are _not_ vectors of characters; something I worked around by 
 making [my own "character vector" class](https://github.com/jonocarroll/charcuterie).
 
-What really blew my mind was the behaviour around joining two `Series` with overlapping 
-indexes; the join is explicitly based on the index, so `'a'` matches to `'a'` and 
+What really blew my mind was the behaviour around adding two `Series` with overlapping 
+indexes; the comparison is explicitly based on the index, so `'a'` matches to `'a'` and 
 `'d'` matches to `'d'` regardless of where they appear in the `Series`
 
 ```{python}
@@ -242,9 +242,10 @@ book itself, which isn't ideal. There is a hyperlink in the PDF version
 
 > The data is in the file [taxi-passenger-count.csv](https://github.com/reuven/pandas-workout), available along with the other data files used in this course.
 
-but that points to a repository of the _exercises_, not the data. These sort of 
+but that points to a repository of the _exercises_, not the data. I presume the 
+print version lacks a way for the reader to find this data. These sort of 
 mistakes happen - I noted some of them on [Manning's discussion forum](https://livebook.manning.com/forum?product=lerner2&p=1&page=1) but did not 
-hear back from the author about any of them.
+hear back from the author about any of them yet.
 
 It's worth mentioning that while the data is from the real world and has genuine 
 'problems' that one would experience when performing an analysis, the data is a 
