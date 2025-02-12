@@ -1,0 +1,591 @@
+---
+title: 'Book Review - Pandas Workout'
+author: Jonathan Carroll
+date: '2025-02-13'
+slug: book-review-pandas-workout
+categories:
+  - python
+  - rstats
+tags:
+  - python
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+
+reticulate::use_virtualenv("r-reticulate")
+```
+
+![](https://jcarroll.com.au/2025/02/13/book-review-pandas-workout/images/snakes.jpg){width=600px}
+Python seems to be everywhere these days, and I'm really into learning languages, 
+so it should come as no surprise that I'm learning a lot of Python. This post 
+serves as a review of Pandas Workout as well as a 'first impression' review of 
+the Pandas approach to data.
+
+<!--more-->
+
+![](images/snakes.jpg){width=600px}
+
+Python seems to be everywhere these days, and I'm really into learning languages, 
+so it should come as no surprise that I'm learning a lot of Python. This post 
+serves as a review of [Pandas Workout](https://mng.bz/0GVW) as well as a 
+'first impression' review of the Pandas approach to data.
+
+I am not entirely unfamiliar with Python, but I haven't really had to do anything 
+serious with a lot of data in the way that I do with R. {dplyr} and friends make 
+working with rectangular data so clean and simple; why would I want anything else?
+
+I recently needed to work with an API that would return some tabular data - it 
+enables programmatic communication with a system containing a lot of data, and the 
+only wrapper I could find for it was in Python (and not all that well documented). 
+I've built [a wrapper](https://github.com/HIBio/benchlingapi) for a very similar 
+system myself using {httr} in R but I didn't necessarily want to go through all 
+of that again. "Fine, I'll use Python" I said, and promptly realised that I wasn't 
+familiar with how to rectangle the resulting data.
+
+Around the same time as the API needed wrapping I was fortunate enough to be asked 
+to review the book [Pandas Workout](https://mng.bz/0GVW) written by 
+Reuven Lerner, from Manning Publications. I really enjoy books from Manning - I 
+published my own book 
+[Beyond Spreadsheets with R](https://www.manning.com/books/beyond-spreadsheets-with-r) 
+with them and I'm grateful for their DRM-free offerings across a wide range of 
+tech topics. What a perfect opportunity! I will note that apart from receiving a
+digital copy of the book to review, I was not otherwise paid or compensated for 
+this review. If I'm reviewing a book, it's an honest review.
+
+As I'm entirely unfamiliar with Pandas but know enough Python to keep my head above 
+water, this seemed like a good chance to review both at the same time; how well 
+does this book provide an introduction to Pandas for a newcomer?
+
+The subtitle of the book is "200 Exercises to Strengthen Your Data Analysis Skills" 
+and it delivers on the 'exercises' part, providing real-world data import/cleaning
+tasks that go well beyond a `mtcars` dataset.
+
+I'm halfway through the book, and I'm actually following the exercises by typing out 
+my own solutions in a python file and/or the REPL - "you learn with your hands, not 
+your eyes". 
+
+The first problem, since this is python, is getting Pandas to work with a script, 
+which means dealing with environments, since [`pip` now tries](https://jvns.ca/til/pip-install---user-can-override-system-libraries/) 
+to prevent us from [messing up our global package availability](https://gist.github.com/jvns/3f3da9a557bfff478f6f0145f1b6b52f).
+
+I figured this was a good time to try out [`uv` as an alternative to `pip`](https://docs.astral.sh/uv/) and as far as I can tell, this worked well. I 
+don't have expectations that Pandas Workout should have guided me through any of 
+the "get Python environments working" parts as it does assume Python knowledge, 
+but the author mentions using `pip install pandas` which doesn't really cut it 
+(though plausibly did at the time of writing, April 2024). 
+Apart from that, it's just a matter of 
+
+```{python}
+import pandas as pd
+```
+
+(and all of the Python code in this post is generated from the code blocks thanks 
+to {reticulate} and its virtualenv support).
+
+There's a joke to be made here about my home city Adelaide and the fact that we
+have once again [imported some pandas](https://www.adelaidezoo.com.au/giant-panda-debut/).
+
+![import pandas](images/pandas.jpg){width=600px}
+
+Chapter 1 walks through using the `Series` data type, which for an R user is most 
+similar to a regular vector, except that there isn't a strict restriction on the 
+'singular' type of the elements; if you provide a mixture of types the resulting 
+`Series` will have `dtype: object`. This is, I suspect, a necessity, given that 
+Python doesn't have the 'classed NA' values that R uses - all of the elements of
+
+```{r}
+x <- c(1L, NA, 3L)
+```
+
+are the same class ('type'); integer, including the missing value
+
+```{r}
+x[2]
+class(x[2])
+```
+
+which is actually `NA_integer_`. `pd.Series([1, pd.NA, 3])` still produces 
+`dtype: object`, and can't be converted to `np.int8`.
+
+The first real annoyance comes when describing how indexing works in Pandas vs 
+regular Python; the endpoint of the `s.loc[]` syntax is "up to and including" 
+whereas Python would usually use "up to and **not** including". There's reasons, 
+but things like this are good to keep in the back of one's mind whenever someone 
+complains that "R is confusing/inconsistent". With that said, it's called out in 
+Pandas Workout with some concrete examples, so it shouldn't be a gotcha.
+
+Where an inconsistency isn't so well handled is when mentioning rounding of values; 
+Pandas Workout suggests 
+
+> "Be sure to read the documentation for the round method (http://mng.bz/8rzg) 
+to understand its arguments and how it handles numbers like 15 and 75.
+
+which points to the 
+[documentation for `pd.Series.round`](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.round.html)
+but that makes no mention of how these halfway values are handled - I dug up the 
+[answer myself](https://note.nkmk.me/en/python-pandas-round-decimal/) and Pandas 
+does "banker's rounding" taking half-values to evens. Trying this out myself 
+also demonstrates this
+
+```{python}
+pd.Series([0.2, 0.5, 1.5, 2.5, 3.5]).round()
+```
+
+Incidentally, this is the same for R
+
+```{r}
+round(c(0.2, 0.5, 1.5, 2.5, 3.5))
+```
+
+Some additional `Series` gotchas are detailed, including the fact that while this 
+monstrosity works in Python
+
+```{python}
+'1' + '2' + '3' + '4'
+```
+
+and this does not
+
+```{python, eval = FALSE}
+sum(['1', '2', '3', '4'])
+```
+
+```{r, eval = FALSE, class.source = "bg-danger"}
+## TypeError: unsupported operand type(s) for +: 'int' and 'str'
+```
+
+this one does in fact work
+
+```{python}
+pd.Series(['1', '2', '3', '4']).sum()
+```
+
+The similarities between R's (named) vectors and Pandas' `Series` help me to grasp 
+what I might want to do with these, but there are some distinct differences in 
+how the 'index'/'name' part is handled; In R the names _can_ be repeated, although 
+that makes it very difficult to extract elements based on names
+
+```{r}
+x <- c(a = 1, b = 2, a = 3, d = 4)
+x
+names(x)
+x["a"]
+```
+
+whereas in Pandas the index can be repeated and extracting with a repeated value
+actually returns all the relevant values
+
+```{python}
+x = pd.Series([1, 2, 3, 4], index=list('abad'))
+x
+x.loc['a']
+```
+
+which means that `x.loc[z]` is essentially `x[names(x) == z]`
+
+```{r}
+x[names(x) == "a"]
+```
+
+As a sidenote, that "use a list as a series of characters" bit is going to take 
+me a while to get used to, but I see the value of it. One of my big regrets about 
+R is that strings are _not_ vectors of characters; something I worked around by 
+making [my own "character vector" class](https://github.com/jonocarroll/charcuterie).
+
+What really blew my mind was the behaviour around adding two `Series` with overlapping 
+indexes; the comparison is explicitly based on the index, so `'a'` matches to `'a'` and 
+`'d'` matches to `'d'` regardless of where they appear in the `Series`
+
+```{python}
+s1 = pd.Series([10, 20, 30, 40], index=list('abcd'))
+s1
+s2 = pd.Series([100, 200, 300, 400], index=list('dcba'))
+s2
+s1+s2
+```
+
+This seems like such an obvious choice - I had to double check what happens in R 
+and a worried look started to creep across my face
+
+```{r}
+s1 = c(a = 10, b = 20, c = 30, d = 40)
+s1
+s2 = c(d = 100, c = 200, b = 300, a = 400)
+s2
+s1 + s2
+```
+
+![oh no!](images/ohno.jpg){width=300px}
+
+R just ignores the names entirely. If I _wanted_ the same behaviour, I'd need to 
+do the aligning myself
+
+```{r}
+s1[order(names(s1))] + s2[order(names(s2))]
+```
+
+Closing out the chapter is a set of exercises using some real data. There is a 
+link to that data on the book website, but that location is not mentioned in the 
+book itself, which isn't ideal. There is a hyperlink in the PDF version 
+
+> The data is in the file [taxi-passenger-count.csv](https://github.com/reuven/pandas-workout), available along with the other data files used in this course.
+
+but that points to a repository of the _exercises_, not the data. I presume the 
+print version lacks a way for the reader to find this data. These sort of 
+mistakes happen - I noted some of them on [Manning's discussion forum](https://livebook.manning.com/forum?product=lerner2&p=1&page=1) but did not 
+hear back from the author about any of them yet.
+
+It's worth mentioning that while the data is from the real world and has genuine 
+'problems' that one would experience when performing an analysis, the data is a 
+single zip file comprising a whopping 852MB download, which might be a bit much 
+for some people. 
+
+Chapter 2 naturally moves on to `DataFrame`s; rectangular structures constructed 
+as a combination of multiple `Series` (though the only mention along those lines 
+seems to be a throwaway comment to that effect). 
+
+The humble 'Data Frame' (`data.frame`) in R is a core data type. I'm not entirely 
+clear on the history, but they were present in R's predecessor language [S in 1992](https://archive.org/details/statisticalmodel00john/page/n13/mode/2up) and 
+likely even earlier. Nowadays, lots of Data Frame implementations exist for the 
+purpose of rectangling - and slicing thereof - including [Polars in Rust](https://docs.rs/polars/latest/polars/), [Tidier.jl in Julia](https://tidierorg.github.io/TidierData.jl/latest/), [dataframe in Haskell](https://github.com/mchav/dataframe), [data-frame in Racket](https://github.com/alex-hhh/data-frame), and I'm sure many others. This 
+structure resembles a database table and operations on these tend to mimic SQL 
+syntax - think filter, select, join, etc...
+
+In R, I know that `data.frame` is _explicitly_ a "list of vectors all of the
+same length" but that seems to be glossed over here in favor of "you know about
+tables - this is similar". The constructor examples show either a list of lists
+or a list of dicts, and that's perhaps because a list of `Series` objects doesn't
+do what I expect
+
+```{python}
+a = pd.Series([1, 2, 3])
+b = pd.Series([4, 5, 6])
+pd.DataFrame([a, b])
+```
+
+The resulting `DataFrame` is created row-wise, which is enough of a headache in R, 
+let alone the differences here depending on how the object is created.
+
+There are apparently a handful of ways one _can_ do this, but they're not 
+mentioned in the book
+
+```{python}
+a = pd.Series([1, 2, 3])
+b = pd.Series([4, 5, 6])
+
+pd.DataFrame({'a':a, 'b':b})
+pd.DataFrame(dict(a=a, b=b))
+pd.concat([a, b], axis=1, keys=list('ab'))
+```
+
+I was also curious about what happens if they _aren't_ the same length
+
+```{python}
+a = pd.Series([1, 2, 3])
+b = pd.Series([4, 5, 6, 7])
+
+pd.DataFrame({'a':a, 'b':b})
+```
+
+The inserted `NaN` is perhaps potentially surprising; R bails out of trying to 
+construct such an object
+
+```{r, error = TRUE}
+a <- c(1, 2, 3)
+b <- c(4, 5, 6, 7)
+
+data.frame(a, b)
+```
+
+except when it tries to be clever by recycling some values, with often 
+surprising results...
+
+```{r}
+a <- 1:3
+b <- 4:9
+
+data.frame(a, b)
+```
+
+The various methods for subsetting rows and columns mostly makes sense coming from 
+R, although it will still take me some time to get used to seeing things like
+
+```python
+df[list('bcd')]
+```
+
+to extract the columns labelled `'b'`, `'c'`, and `'d'`. One thing I noticed here 
+was that there was only one axis specified for extraction here (column) and while 
+the same thing works in R, e.g.
+
+```{r}
+m <- head(mtcars)
+m[c("cyl", "mpg", "wt")]
+```
+
+the absence of a note about it was probably an oversight. In R, if the vector 
+specifying the selection contains any missing values (NA) then an error is 
+triggered 
+
+```{r, error=TRUE}
+m[c("cyl", NA, "wt")]
+```
+
+This is confusing, for sure. R is fine with us selecting missing rows
+
+```{r}
+m[c(1, NA, 3), ]
+```
+
+but not missing columns
+
+```{r, error=TRUE}
+m[1:3, c(1, NA, 3)]
+```
+
+So, what about Pandas? The fact that `x[cols]` works to select columns, but 
+selecting rows requires `x.loc[rows, cols]` is a bit ugly, in my opinion, and 
+there are parallels here with the mess of R's `drop=TRUE` argument which results in 
+a vector rather than a `data.frame` when only a single dimension is selected.
+
+```{python, error=TRUE}
+x = pd.DataFrame({'a':a, 'b':b})
+x
+
+x['a']
+x.loc[:, 'a']
+x.loc[1:2, ['a', 'b']]
+x.loc[1:2, ['a', pd.NA]]
+```
+
+One powerful but dangerous feature of {dplyr} (and some parts of base R) is 
+Non-Standard Evaluation (NSE) which enables a 'shortcut' in writing out expressions
+for filtering or selecting data in a `data.frame`. Essentially, the user can 
+use column names as variables and they are translated as such within the function, 
+so rather than writing out 
+
+```r
+filter(mydataframe, mydataframe$a > 300 & mydataframe$w %% 2 == 1)
+```
+
+one can use the column names 'a' and 'w' as if they were defined as variables
+
+```r
+filter(mydataframe, a > 300 & w %% 2 == 1)
+```
+
+This is handy, but of course has some sharp edges. I have mixed feelings about 
+finding the equivalent in Pandas in the form of `df.query`. This takes an SQL-like
+statement and similarly treats columns as variables, but in this case the entire 
+thing is provided as a string
+
+```python
+df.query('v > 300 & w % 2 == 1')
+```
+
+I imagine this is incompatible with any language-server features, though the 
+metaprogramming-enjoying part of me does wonder if it makes building up these 
+expressions programatically a little easier.
+
+Another gotcha mentioned in this section is the fact that Pandas makes internal 
+copies of data, and produces an interesting warning
+
+```{python, eval = FALSE}
+df = pd.DataFrame(
+    {'a': [10, 50, 90],
+     'b': [20, 60, 100],
+     'c': [30, 70, 110],
+     'd': [40, 80, 120]},
+     index = list('xyz'))
+df[df['b'] > 30]['b'] = 0
+df
+```
+
+```{r, eval = FALSE, class.source = "bg-warning"}
+## <string>:1: SettingWithCopyWarning: 
+## A value is trying to be set on a copy of a slice from a DataFrame.
+## Try using .loc[row_indexer,col_indexer] = value instead
+## 
+## See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
+```
+
+(with the value not being set to 0).
+
+This is reminiscent of SQL 'views' into data - and not being able to modify 
+those - and that seems like a useful feature, but it again makes me wonder what 
+happens in R...
+
+```{r}
+df <- data.frame(a = c(10, 50, 90),
+                 b = c(20, 60, 100),
+                 c = c(30, 70, 110), 
+                 d = c(40, 80, 120), 
+                 row.names = c("x", "y", "z"))
+dfo <- df
+df
+```
+
+The following updates all of the `b` column because as we saw above, just 
+specifying a single selector restricts the columns, so since `df$b > 30` is 
+`c(FALSE, TRUE, TRUE)` the intermediate subset is just the second and third 
+columns ("b" and "c") after which we select the "b" column and assign the value 
+of `0` to all elements. No actual filtering of rows has occurred here, and the 
+entire column in the full data is updated
+
+```{r}
+df[df$b > 30]["b"] <- 0 
+df
+```
+
+Equivalently, `[][["b"]]` or `[]$b`.
+
+In order to select rows for which `b > 30` this needs to `df[df$b > 30, ]` (with 
+a comma), and this updates just the relevant slice (again in the full data)
+
+```{r}
+df <- dfo
+df[df$b > 30, ]$b <- 0 
+df
+```
+
+and this works just fine in R, despite the fact that we have explicitly subset 
+the data prior to selecting a column, and assigned a value to that subset.
+
+Maybe that warning isn't a bad thing at all - such subsets are done regularly in 
+R, and there's no memory issues with doing so (it's well-defined in terms of `[.<-`)
+but I can see why it's confusing.
+
+Chapter 3 details importing and exporting data, and it's here that I start to see 
+how much has been rolled into Pandas - things that are spread across several R 
+packages.
+
+I'm familiar with scraping HTML tables from websites in R - there are many base 
+packages which can read from a URL, and several ways to convert the resulting 
+data into a rectangle such as a `data.frame`, but Pandas surprises me with 
+`pd.read_html(url)` which returns a list of `DataFrame`s, one for each table on a
+webpage. Trying this out, it works quite nicely
+
+```{python}
+url = 'https://en.wikipedia.org/wiki/R_(programming_language)#Version_names'
+tabs = pd.read_html(url)[1]
+x=tabs.loc[:,['Version', 'Name', 'Release date']]
+x
+```
+
+I'm all too familiar with issues of nested tables and data that doesn't rectangle 
+so easily, but for this simple example it worked well, I think.
+
+Chapter 4 covers indexes and again the idea of repeated values comes into play. The 
+long-standing issue that the {tibble} team have with rownames comes to mind - I 
+like being able to name both axes of the data and hate that {tibble} is opposed 
+to them - so it's extra surprising to have a Data Frame where the 'row' labels 
+can repeat. What's more, the index can be hierarchical as a multi-index. With the
+example from above, splitting the version into a multi-index is interesting
+
+```{python}
+v=x.Version.str.split('.', expand=True)
+v.columns=['major', 'minor', 'patch']
+xv=pd.concat([x, v], axis=1)
+xv=xv.set_index(['major','minor','patch'])
+xv.head(25)
+```
+
+This does mean that I can extract all of the 4.3.x series releases
+
+```{python}
+xv.loc[('4', '3')]
+```
+
+Getting the x.x.0 releases is a little messier, requiring `slice(None)`
+
+```{python}
+xv.loc[(slice(None), slice(None), '0')] 
+```
+
+and while this was interesting to achieve, a filter would probably be better
+
+```{python}
+xv=pd.concat([x, v], axis=1)
+xv.query('patch == "0"')
+```
+
+I believe _that_ is the {tibble} team's argument - that a filter is more suitable, 
+but I stand by the fact that selecting rows with names which don't need to be 
+_in_ the data itself is a useful approach.
+
+This chapter also introduces pivot tables in the form of 
+
+```python
+df.pivot_table(index, columns, values, aggfunc)
+```
+
+the equivalent of which in {dplyr} is `dplyr::summarise()` or `dplyr::count()`. 
+Way back when I started learning R I recall finding it odd that the (often useful) 
+name "pivot table" rarely came up in R documentation, which is a bit of a shame.
+I used them _all the time_ in Excel.
+
+```{python}
+xv.pivot_table(index='major', 
+               columns='minor', 
+               values='patch', 
+               aggfunc='count', 
+               fill_value=0)
+```
+
+My major complaint here is that the function is passed as a string - Y U NO use 
+first class functions???
+
+My notes for Chapter 5 (Cleaning Data) only involve the fact that `pd.isna` and 
+`pd.isnull` are apparently the exact same thing, which is vastly different from R. 
+
+For Chapter 6 (Grouping, joining, and sorting) I have a rekindled annoyance at the 
+mixing of methods and attributes driven by the fact that `df.transpose()` (a method) 
+has an alias `df.T`. I have enough of a hard time trying to remember whether 
+it's `x.len` or `x.len()` or `length(x)` or whatever.
+
+---
+
+I will continue to make my way through the rest of the book, but figured this
+was a good point to take stock of how I feel about it and how much I've learned.
+I'm already able to work with the API I was trying to and can rectangle the
+results into something useful, including being able to save those as a CSV or
+even Excel sheet(s).
+
+Pandas Workout is, in my opinion, a good resource for learning Pandas providing 
+you already know your way around Python and perhaps data analysis in another 
+language as well. The minor issues of typos and omissions happen in any book and 
+I wouldn't say any of them are dealbreakers. The book covers a lot of the questions 
+I had as I was working through problems - one of the hardest things when trying 
+to follow along is having a 'simple' question that's hard to answer yourself. I've 
+abandoned learning other languages (or at least using specific resources) when I've 
+hit that point.
+
+Pandas itself seems like it makes some good choices in terms of `Series` and `DataFrame` 
+structures, and when I'm using Python I'll be sure to load this library and make 
+use of them.
+
+Comments, improvements, or sharing your experiences are most welcome. I can be found
+on [Mastodon](https://fosstodon.org/@jonocarroll) or use the comments below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

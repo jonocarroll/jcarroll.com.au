@@ -1,0 +1,715 @@
+---
+title: 'Book Review - Pandas Workout'
+author: Jonathan Carroll
+date: '2025-02-13'
+slug: book-review-pandas-workout
+categories:
+  - python
+  - rstats
+tags:
+  - python
+  - rstats
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p><img src="https://jcarroll.com.au/2025/02/13/book-review-pandas-workout/images/snakes.jpg" width="600" />
+Python seems to be everywhere these days, and I’m really into learning languages,
+so it should come as no surprise that I’m learning a lot of Python. This post
+serves as a review of Pandas Workout as well as a ‘first impression’ review of
+the Pandas approach to data.</p>
+<!--more-->
+<p><img src="images/snakes.jpg" width="600" /></p>
+<p>Python seems to be everywhere these days, and I’m really into learning languages,
+so it should come as no surprise that I’m learning a lot of Python. This post
+serves as a review of <a href="https://mng.bz/0GVW">Pandas Workout</a> as well as a
+‘first impression’ review of the Pandas approach to data.</p>
+<p>I am not entirely unfamiliar with Python, but I haven’t really had to do anything
+serious with a lot of data in the way that I do with R. {dplyr} and friends make
+working with rectangular data so clean and simple; why would I want anything else?</p>
+<p>I recently needed to work with an API that would return some tabular data - it
+enables programmatic communication with a system containing a lot of data, and the
+only wrapper I could find for it was in Python (and not all that well documented).
+I’ve built <a href="https://github.com/HIBio/benchlingapi">a wrapper</a> for a very similar
+system myself using {httr} in R but I didn’t necessarily want to go through all
+of that again. “Fine, I’ll use Python” I said, and promptly realised that I wasn’t
+familiar with how to rectangle the resulting data.</p>
+<p>Around the same time as the API needed wrapping I was fortunate enough to be asked
+to review the book <a href="https://mng.bz/0GVW">Pandas Workout</a> written by
+Reuven Lerner, from Manning Publications. I really enjoy books from Manning - I
+published my own book
+<a href="https://www.manning.com/books/beyond-spreadsheets-with-r">Beyond Spreadsheets with R</a>
+with them and I’m grateful for their DRM-free offerings across a wide range of
+tech topics. What a perfect opportunity! I will note that apart from receiving a
+digital copy of the book to review, I was not otherwise paid or compensated for
+this review. If I’m reviewing a book, it’s an honest review.</p>
+<p>As I’m entirely unfamiliar with Pandas but know enough Python to keep my head above
+water, this seemed like a good chance to review both at the same time; how well
+does this book provide an introduction to Pandas for a newcomer?</p>
+<p>The subtitle of the book is “200 Exercises to Strengthen Your Data Analysis Skills”
+and it delivers on the ‘exercises’ part, providing real-world data import/cleaning
+tasks that go well beyond a <code>mtcars</code> dataset.</p>
+<p>I’m halfway through the book, and I’m actually following the exercises by typing out
+my own solutions in a python file and/or the REPL - “you learn with your hands, not
+your eyes”.</p>
+<p>The first problem, since this is python, is getting Pandas to work with a script,
+which means dealing with environments, since <a href="https://jvns.ca/til/pip-install---user-can-override-system-libraries/"><code>pip</code> now tries</a>
+to prevent us from <a href="https://gist.github.com/jvns/3f3da9a557bfff478f6f0145f1b6b52f">messing up our global package availability</a>.</p>
+<p>I figured this was a good time to try out <a href="https://docs.astral.sh/uv/"><code>uv</code> as an alternative to <code>pip</code></a> and as far as I can tell, this worked well. I
+don’t have expectations that Pandas Workout should have guided me through any of
+the “get Python environments working” parts as it does assume Python knowledge,
+but the author mentions using <code>pip install pandas</code> which doesn’t really cut it
+(though plausibly did at the time of writing, April 2024).
+Apart from that, it’s just a matter of</p>
+<pre class="python"><code>import pandas as pd</code></pre>
+<p>(and all of the Python code in this post is generated from the code blocks thanks
+to {reticulate} and its virtualenv support).</p>
+<p>There’s a joke to be made here about my home city Adelaide and the fact that we
+have once again <a href="https://www.adelaidezoo.com.au/giant-panda-debut/">imported some pandas</a>.</p>
+<div class="float">
+<img src="images/pandas.jpg" width="600" alt="import pandas" />
+<div class="figcaption">import pandas</div>
+</div>
+<p>Chapter 1 walks through using the <code>Series</code> data type, which for an R user is most
+similar to a regular vector, except that there isn’t a strict restriction on the
+‘singular’ type of the elements; if you provide a mixture of types the resulting
+<code>Series</code> will have <code>dtype: object</code>. This is, I suspect, a necessity, given that
+Python doesn’t have the ‘classed NA’ values that R uses - all of the elements of</p>
+<pre class="r"><code>x &lt;- c(1L, NA, 3L)</code></pre>
+<p>are the same class (‘type’); integer, including the missing value</p>
+<pre class="r"><code>x[2]</code></pre>
+<pre class="bg-success"><code>## [1] NA</code></pre>
+<pre class="r"><code>class(x[2])</code></pre>
+<pre class="bg-success"><code>## [1] &quot;integer&quot;</code></pre>
+<p>which is actually <code>NA_integer_</code>. <code>pd.Series([1, pd.NA, 3])</code> still produces
+<code>dtype: object</code>, and can’t be converted to <code>np.int8</code>.</p>
+<p>The first real annoyance comes when describing how indexing works in Pandas vs
+regular Python; the endpoint of the <code>s.loc[]</code> syntax is “up to and including”
+whereas Python would usually use “up to and <strong>not</strong> including”. There’s reasons,
+but things like this are good to keep in the back of one’s mind whenever someone
+complains that “R is confusing/inconsistent”. With that said, it’s called out in
+Pandas Workout with some concrete examples, so it shouldn’t be a gotcha.</p>
+<p>Where an inconsistency isn’t so well handled is when mentioning rounding of values;
+Pandas Workout suggests</p>
+<blockquote>
+<p>“Be sure to read the documentation for the round method (<a href="http://mng.bz/8rzg" class="uri">http://mng.bz/8rzg</a>)
+to understand its arguments and how it handles numbers like 15 and 75.</p>
+</blockquote>
+<p>which points to the
+<a href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.Series.round.html">documentation for <code>pd.Series.round</code></a>
+but that makes no mention of how these halfway values are handled - I dug up the
+<a href="https://note.nkmk.me/en/python-pandas-round-decimal/">answer myself</a> and Pandas
+does “banker’s rounding” taking half-values to evens. Trying this out myself
+also demonstrates this</p>
+<pre class="python"><code>pd.Series([0.2, 0.5, 1.5, 2.5, 3.5]).round()</code></pre>
+<pre class="bg-success"><code>## 0    0.0
+## 1    0.0
+## 2    2.0
+## 3    2.0
+## 4    4.0
+## dtype: float64</code></pre>
+<p>Incidentally, this is the same for R</p>
+<pre class="r"><code>round(c(0.2, 0.5, 1.5, 2.5, 3.5))</code></pre>
+<pre class="bg-success"><code>## [1] 0 0 2 2 4</code></pre>
+<p>Some additional <code>Series</code> gotchas are detailed, including the fact that while this
+monstrosity works in Python</p>
+<pre class="python"><code>&#39;1&#39; + &#39;2&#39; + &#39;3&#39; + &#39;4&#39;</code></pre>
+<pre class="bg-success"><code>## &#39;1234&#39;</code></pre>
+<p>and this does not</p>
+<pre class="python"><code>sum([&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;])</code></pre>
+<pre class="r bg-danger"><code>## TypeError: unsupported operand type(s) for +: &#39;int&#39; and &#39;str&#39;</code></pre>
+<p>this one does in fact work</p>
+<pre class="python"><code>pd.Series([&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;]).sum()</code></pre>
+<pre class="bg-success"><code>## &#39;1234&#39;</code></pre>
+<p>The similarities between R’s (named) vectors and Pandas’ <code>Series</code> help me to grasp
+what I might want to do with these, but there are some distinct differences in
+how the ‘index’/‘name’ part is handled; In R the names <em>can</em> be repeated, although
+that makes it very difficult to extract elements based on names</p>
+<pre class="r"><code>x &lt;- c(a = 1, b = 2, a = 3, d = 4)
+x</code></pre>
+<pre class="bg-success"><code>## a b a d 
+## 1 2 3 4</code></pre>
+<pre class="r"><code>names(x)</code></pre>
+<pre class="bg-success"><code>## [1] &quot;a&quot; &quot;b&quot; &quot;a&quot; &quot;d&quot;</code></pre>
+<pre class="r"><code>x[&quot;a&quot;]</code></pre>
+<pre class="bg-success"><code>## a 
+## 1</code></pre>
+<p>whereas in Pandas the index can be repeated and extracting with a repeated value
+actually returns all the relevant values</p>
+<pre class="python"><code>x = pd.Series([1, 2, 3, 4], index=list(&#39;abad&#39;))
+x</code></pre>
+<pre class="bg-success"><code>## a    1
+## b    2
+## a    3
+## d    4
+## dtype: int64</code></pre>
+<pre class="python"><code>x.loc[&#39;a&#39;]</code></pre>
+<pre class="bg-success"><code>## a    1
+## a    3
+## dtype: int64</code></pre>
+<p>which means that <code>x.loc[z]</code> is essentially <code>x[names(x) == z]</code></p>
+<pre class="r"><code>x[names(x) == &quot;a&quot;]</code></pre>
+<pre class="bg-success"><code>## a a 
+## 1 3</code></pre>
+<p>As a sidenote, that “use a list as a series of characters” bit is going to take
+me a while to get used to, but I see the value of it. One of my big regrets about
+R is that strings are <em>not</em> vectors of characters; something I worked around by
+making <a href="https://github.com/jonocarroll/charcuterie">my own “character vector” class</a>.</p>
+<p>What really blew my mind was the behaviour around adding two <code>Series</code> with overlapping
+indexes; the comparison is explicitly based on the index, so <code>'a'</code> matches to <code>'a'</code> and
+<code>'d'</code> matches to <code>'d'</code> regardless of where they appear in the <code>Series</code></p>
+<pre class="python"><code>s1 = pd.Series([10, 20, 30, 40], index=list(&#39;abcd&#39;))
+s1</code></pre>
+<pre class="bg-success"><code>## a    10
+## b    20
+## c    30
+## d    40
+## dtype: int64</code></pre>
+<pre class="python"><code>s2 = pd.Series([100, 200, 300, 400], index=list(&#39;dcba&#39;))
+s2</code></pre>
+<pre class="bg-success"><code>## d    100
+## c    200
+## b    300
+## a    400
+## dtype: int64</code></pre>
+<pre class="python"><code>s1+s2</code></pre>
+<pre class="bg-success"><code>## a    410
+## b    320
+## c    230
+## d    140
+## dtype: int64</code></pre>
+<p>This seems like such an obvious choice - I had to double check what happens in R
+and a worried look started to creep across my face</p>
+<pre class="r"><code>s1 = c(a = 10, b = 20, c = 30, d = 40)
+s1</code></pre>
+<pre class="bg-success"><code>##  a  b  c  d 
+## 10 20 30 40</code></pre>
+<pre class="r"><code>s2 = c(d = 100, c = 200, b = 300, a = 400)
+s2</code></pre>
+<pre class="bg-success"><code>##   d   c   b   a 
+## 100 200 300 400</code></pre>
+<pre class="r"><code>s1 + s2</code></pre>
+<pre class="bg-success"><code>##   a   b   c   d 
+## 110 220 330 440</code></pre>
+<div class="float">
+<img src="images/ohno.jpg" width="300" alt="oh no!" />
+<div class="figcaption">oh no!</div>
+</div>
+<p>R just ignores the names entirely. If I <em>wanted</em> the same behaviour, I’d need to
+do the aligning myself</p>
+<pre class="r"><code>s1[order(names(s1))] + s2[order(names(s2))]</code></pre>
+<pre class="bg-success"><code>##   a   b   c   d 
+## 410 320 230 140</code></pre>
+<p>Closing out the chapter is a set of exercises using some real data. There is a
+link to that data on the book website, but that location is not mentioned in the
+book itself, which isn’t ideal. There is a hyperlink in the PDF version</p>
+<blockquote>
+<p>The data is in the file <a href="https://github.com/reuven/pandas-workout">taxi-passenger-count.csv</a>, available along with the other data files used in this course.</p>
+</blockquote>
+<p>but that points to a repository of the <em>exercises</em>, not the data. I presume the
+print version lacks a way for the reader to find this data. These sort of
+mistakes happen - I noted some of them on <a href="https://livebook.manning.com/forum?product=lerner2&amp;p=1&amp;page=1">Manning’s discussion forum</a> but did not
+hear back from the author about any of them yet.</p>
+<p>It’s worth mentioning that while the data is from the real world and has genuine
+‘problems’ that one would experience when performing an analysis, the data is a
+single zip file comprising a whopping 852MB download, which might be a bit much
+for some people.</p>
+<p>Chapter 2 naturally moves on to <code>DataFrame</code>s; rectangular structures constructed
+as a combination of multiple <code>Series</code> (though the only mention along those lines
+seems to be a throwaway comment to that effect).</p>
+<p>The humble ‘Data Frame’ (<code>data.frame</code>) in R is a core data type. I’m not entirely
+clear on the history, but they were present in R’s predecessor language <a href="https://archive.org/details/statisticalmodel00john/page/n13/mode/2up">S in 1992</a> and
+likely even earlier. Nowadays, lots of Data Frame implementations exist for the
+purpose of rectangling - and slicing thereof - including <a href="https://docs.rs/polars/latest/polars/">Polars in Rust</a>, <a href="https://tidierorg.github.io/TidierData.jl/latest/">Tidier.jl in Julia</a>, <a href="https://github.com/mchav/dataframe">dataframe in Haskell</a>, <a href="https://github.com/alex-hhh/data-frame">data-frame in Racket</a>, and I’m sure many others. This
+structure resembles a database table and operations on these tend to mimic SQL
+syntax - think filter, select, join, etc…</p>
+<p>In R, I know that <code>data.frame</code> is <em>explicitly</em> a “list of vectors all of the
+same length” but that seems to be glossed over here in favor of “you know about
+tables - this is similar”. The constructor examples show either a list of lists
+or a list of dicts, and that’s perhaps because a list of <code>Series</code> objects doesn’t
+do what I expect</p>
+<pre class="python"><code>a = pd.Series([1, 2, 3])
+b = pd.Series([4, 5, 6])
+pd.DataFrame([a, b])</code></pre>
+<pre class="bg-success"><code>##    0  1  2
+## 0  1  2  3
+## 1  4  5  6</code></pre>
+<p>The resulting <code>DataFrame</code> is created row-wise, which is enough of a headache in R,
+let alone the differences here depending on how the object is created.</p>
+<p>There are apparently a handful of ways one <em>can</em> do this, but they’re not
+mentioned in the book</p>
+<pre class="python"><code>a = pd.Series([1, 2, 3])
+b = pd.Series([4, 5, 6])
+
+pd.DataFrame({&#39;a&#39;:a, &#39;b&#39;:b})</code></pre>
+<pre class="bg-success"><code>##    a  b
+## 0  1  4
+## 1  2  5
+## 2  3  6</code></pre>
+<pre class="python"><code>pd.DataFrame(dict(a=a, b=b))</code></pre>
+<pre class="bg-success"><code>##    a  b
+## 0  1  4
+## 1  2  5
+## 2  3  6</code></pre>
+<pre class="python"><code>pd.concat([a, b], axis=1, keys=list(&#39;ab&#39;))</code></pre>
+<pre class="bg-success"><code>##    a  b
+## 0  1  4
+## 1  2  5
+## 2  3  6</code></pre>
+<p>I was also curious about what happens if they <em>aren’t</em> the same length</p>
+<pre class="python"><code>a = pd.Series([1, 2, 3])
+b = pd.Series([4, 5, 6, 7])
+
+pd.DataFrame({&#39;a&#39;:a, &#39;b&#39;:b})</code></pre>
+<pre class="bg-success"><code>##      a  b
+## 0  1.0  4
+## 1  2.0  5
+## 2  3.0  6
+## 3  NaN  7</code></pre>
+<p>The inserted <code>NaN</code> is perhaps potentially surprising; R bails out of trying to
+construct such an object</p>
+<pre class="r"><code>a &lt;- c(1, 2, 3)
+b &lt;- c(4, 5, 6, 7)
+
+data.frame(a, b)</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in data.frame(a, b): arguments imply differing number of rows: 3, 4</code></pre>
+<p>except when it tries to be clever by recycling some values, with often
+surprising results…</p>
+<pre class="r"><code>a &lt;- 1:3
+b &lt;- 4:9
+
+data.frame(a, b)</code></pre>
+<pre class="bg-success"><code>##   a b
+## 1 1 4
+## 2 2 5
+## 3 3 6
+## 4 1 7
+## 5 2 8
+## 6 3 9</code></pre>
+<p>The various methods for subsetting rows and columns mostly makes sense coming from
+R, although it will still take me some time to get used to seeing things like</p>
+<pre class="python"><code>df[list(&#39;bcd&#39;)]</code></pre>
+<p>to extract the columns labelled <code>'b'</code>, <code>'c'</code>, and <code>'d'</code>. One thing I noticed here
+was that there was only one axis specified for extraction here (column) and while
+the same thing works in R, e.g.</p>
+<pre class="r"><code>m &lt;- head(mtcars)
+m[c(&quot;cyl&quot;, &quot;mpg&quot;, &quot;wt&quot;)]</code></pre>
+<pre class="bg-success"><code>##                   cyl  mpg    wt
+## Mazda RX4           6 21.0 2.620
+## Mazda RX4 Wag       6 21.0 2.875
+## Datsun 710          4 22.8 2.320
+## Hornet 4 Drive      6 21.4 3.215
+## Hornet Sportabout   8 18.7 3.440
+## Valiant             6 18.1 3.460</code></pre>
+<p>the absence of a note about it was probably an oversight. In R, if the vector
+specifying the selection contains any missing values (NA) then an error is
+triggered</p>
+<pre class="r"><code>m[c(&quot;cyl&quot;, NA, &quot;wt&quot;)]</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in `[.data.frame`(m, c(&quot;cyl&quot;, NA, &quot;wt&quot;)): undefined columns selected</code></pre>
+<p>This is confusing, for sure. R is fine with us selecting missing rows</p>
+<pre class="r"><code>m[c(1, NA, 3), ]</code></pre>
+<pre class="bg-success"><code>##             mpg cyl disp  hp drat   wt  qsec vs am gear carb
+## Mazda RX4  21.0   6  160 110 3.90 2.62 16.46  0  1    4    4
+## NA           NA  NA   NA  NA   NA   NA    NA NA NA   NA   NA
+## Datsun 710 22.8   4  108  93 3.85 2.32 18.61  1  1    4    1</code></pre>
+<p>but not missing columns</p>
+<pre class="r"><code>m[1:3, c(1, NA, 3)]</code></pre>
+<pre class="bg-danger text-danger"><code>## Error in `[.data.frame`(m, 1:3, c(1, NA, 3)): undefined columns selected</code></pre>
+<p>So, what about Pandas? The fact that <code>x[cols]</code> works to select columns, but
+selecting rows requires <code>x.loc[rows, cols]</code> is a bit ugly, in my opinion, and
+there are parallels here with the mess of R’s <code>drop=TRUE</code> argument which results in
+a vector rather than a <code>data.frame</code> when only a single dimension is selected.</p>
+<pre class="python"><code>x = pd.DataFrame({&#39;a&#39;:a, &#39;b&#39;:b})
+x</code></pre>
+<pre class="bg-success"><code>##      a  b
+## 0  1.0  4
+## 1  2.0  5
+## 2  3.0  6
+## 3  NaN  7</code></pre>
+<pre class="python"><code>x[&#39;a&#39;]</code></pre>
+<pre class="bg-success"><code>## 0    1.0
+## 1    2.0
+## 2    3.0
+## 3    NaN
+## Name: a, dtype: float64</code></pre>
+<pre class="python"><code>x.loc[:, &#39;a&#39;]</code></pre>
+<pre class="bg-success"><code>## 0    1.0
+## 1    2.0
+## 2    3.0
+## 3    NaN
+## Name: a, dtype: float64</code></pre>
+<pre class="python"><code>x.loc[1:2, [&#39;a&#39;, &#39;b&#39;]]</code></pre>
+<pre class="bg-success"><code>##      a  b
+## 1  2.0  5
+## 2  3.0  6</code></pre>
+<pre class="python"><code>x.loc[1:2, [&#39;a&#39;, pd.NA]]</code></pre>
+<pre class="bg-success"><code>## KeyError: &#39;[&lt;NA&gt;] not in index&#39;</code></pre>
+<p>One powerful but dangerous feature of {dplyr} (and some parts of base R) is
+Non-Standard Evaluation (NSE) which enables a ‘shortcut’ in writing out expressions
+for filtering or selecting data in a <code>data.frame</code>. Essentially, the user can
+use column names as variables and they are translated as such within the function,
+so rather than writing out</p>
+<pre class="r"><code>filter(mydataframe, mydataframe$a &gt; 300 &amp; mydataframe$w %% 2 == 1)</code></pre>
+<p>one can use the column names ‘a’ and ‘w’ as if they were defined as variables</p>
+<pre class="r"><code>filter(mydataframe, a &gt; 300 &amp; w %% 2 == 1)</code></pre>
+<p>This is handy, but of course has some sharp edges. I have mixed feelings about
+finding the equivalent in Pandas in the form of <code>df.query</code>. This takes an SQL-like
+statement and similarly treats columns as variables, but in this case the entire
+thing is provided as a string</p>
+<pre class="python"><code>df.query(&#39;v &gt; 300 &amp; w % 2 == 1&#39;)</code></pre>
+<p>I imagine this is incompatible with any language-server features, though the
+metaprogramming-enjoying part of me does wonder if it makes building up these
+expressions programatically a little easier.</p>
+<p>Another gotcha mentioned in this section is the fact that Pandas makes internal
+copies of data, and produces an interesting warning</p>
+<pre class="python"><code>df = pd.DataFrame(
+    {&#39;a&#39;: [10, 50, 90],
+     &#39;b&#39;: [20, 60, 100],
+     &#39;c&#39;: [30, 70, 110],
+     &#39;d&#39;: [40, 80, 120]},
+     index = list(&#39;xyz&#39;))
+df[df[&#39;b&#39;] &gt; 30][&#39;b&#39;] = 0
+df</code></pre>
+<pre class="r bg-warning"><code>## &lt;string&gt;:1: SettingWithCopyWarning: 
+## A value is trying to be set on a copy of a slice from a DataFrame.
+## Try using .loc[row_indexer,col_indexer] = value instead
+## 
+## See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy</code></pre>
+<p>(with the value not being set to 0).</p>
+<p>This is reminiscent of SQL ‘views’ into data - and not being able to modify
+those - and that seems like a useful feature, but it again makes me wonder what
+happens in R…</p>
+<pre class="r"><code>df &lt;- data.frame(a = c(10, 50, 90),
+                 b = c(20, 60, 100),
+                 c = c(30, 70, 110), 
+                 d = c(40, 80, 120), 
+                 row.names = c(&quot;x&quot;, &quot;y&quot;, &quot;z&quot;))
+dfo &lt;- df
+df</code></pre>
+<pre class="bg-success"><code>##    a   b   c   d
+## x 10  20  30  40
+## y 50  60  70  80
+## z 90 100 110 120</code></pre>
+<p>The following updates all of the <code>b</code> column because as we saw above, just
+specifying a single selector restricts the columns, so since <code>df$b &gt; 30</code> is
+<code>c(FALSE, TRUE, TRUE)</code> the intermediate subset is just the second and third
+columns (“b” and “c”) after which we select the “b” column and assign the value
+of <code>0</code> to all elements. No actual filtering of rows has occurred here, and the
+entire column in the full data is updated</p>
+<pre class="r"><code>df[df$b &gt; 30][&quot;b&quot;] &lt;- 0 
+df</code></pre>
+<pre class="bg-success"><code>##    a b   c   d
+## x 10 0  30  40
+## y 50 0  70  80
+## z 90 0 110 120</code></pre>
+<p>Equivalently, <code>[][["b"]]</code> or <code>[]$b</code>.</p>
+<p>In order to select rows for which <code>b &gt; 30</code> this needs to <code>df[df$b &gt; 30, ]</code> (with
+a comma), and this updates just the relevant slice (again in the full data)</p>
+<pre class="r"><code>df &lt;- dfo
+df[df$b &gt; 30, ]$b &lt;- 0 
+df</code></pre>
+<pre class="bg-success"><code>##    a  b   c   d
+## x 10 20  30  40
+## y 50  0  70  80
+## z 90  0 110 120</code></pre>
+<p>and this works just fine in R, despite the fact that we have explicitly subset
+the data prior to selecting a column, and assigned a value to that subset.</p>
+<p>Maybe that warning isn’t a bad thing at all - such subsets are done regularly in
+R, and there’s no memory issues with doing so (it’s well-defined in terms of <code>[.&lt;-</code>)
+but I can see why it’s confusing.</p>
+<p>Chapter 3 details importing and exporting data, and it’s here that I start to see
+how much has been rolled into Pandas - things that are spread across several R
+packages.</p>
+<p>I’m familiar with scraping HTML tables from websites in R - there are many base
+packages which can read from a URL, and several ways to convert the resulting
+data into a rectangle such as a <code>data.frame</code>, but Pandas surprises me with
+<code>pd.read_html(url)</code> which returns a list of <code>DataFrame</code>s, one for each table on a
+webpage. Trying this out, it works quite nicely</p>
+<pre class="python"><code>url = &#39;https://en.wikipedia.org/wiki/R_(programming_language)#Version_names&#39;
+tabs = pd.read_html(url)[1]
+x=tabs.loc[:,[&#39;Version&#39;, &#39;Name&#39;, &#39;Release date&#39;]]
+x</code></pre>
+<pre class="bg-success"><code>##     Version                      Name Release date
+## 0     4.4.2            Pile of Leaves   2024-10-31
+## 1     4.4.1        Race for Your Life   2024-06-14
+## 2     4.4.0                 Puppy Cup   2024-04-24
+## 3     4.3.3           Angel Food Cake   2024-02-29
+## 4     4.3.2                 Eye Holes   2023-10-31
+## 5     4.3.1             Beagle Scouts   2023-06-16
+## 6     4.3.0          Already Tomorrow   2023-04-21
+## 7     4.2.3          Shortstop Beagle   2023-03-15
+## 8     4.2.2     Innocent and Trusting   2022-10-31
+## 9     4.2.1         Funny-Looking Kid   2022-06-23
+## 10    4.2.0     Vigorous Calisthenics   2022-04-22
+## 11    4.1.3               One Push-Up   2022-03-10
+## 12    4.1.2               Bird Hippie   2021-11-01
+## 13    4.1.1               Kick Things   2021-08-10
+## 14    4.1.0           Camp Pontanezen   2021-05-18
+## 15    4.0.5           Shake and Throw   2021-03-31
+## 16    4.0.4         Lost Library Book   2021-02-15
+## 17    4.0.3   Bunny-Wunnies Freak Out   2020-10-10
+## 18    4.0.2          Taking Off Again   2020-06-22
+## 19    4.0.1            See Things Now   2020-06-06
+## 20    4.0.0                 Arbor Day   2020-04-24
+## 21    3.6.3      Holding the Windsock   2020-02-29
+## 22    3.6.2     Dark and Stormy Night   2019-12-12
+## 23    3.6.1        Action of the Toes   2019-07-05
+## 24    3.6.0        Planting of a Tree   2019-04-26
+## 25    3.5.3               Great Truth   2019-03-11
+## 26    3.5.2           Eggshell Igloos   2018-12-20
+## 27    3.5.1             Feather Spray   2018-07-02
+## 28    3.5.0            Joy in Playing   2018-04-23
+## 29    3.4.4        Someone to Lean On   2018-03-15
+## 30    3.4.3          Kite-Eating Tree   2017-11-30
+## 31    3.4.2              Short Summer   2017-09-28
+## 32    3.4.1             Single Candle   2017-06-30
+## 33    3.4.0       You Stupid Darkness   2017-04-21
+## 34    3.3.3             Another Canoe   2017-03-06
+## 35    3.3.2     Sincere Pumpkin Patch   2016-10-31
+## 36    3.3.1          Bug in Your Hair   2016-06-21
+## 37    3.3.0    Supposedly Educational   2016-05-03
+## 38    3.2.5  Very, Very Secure Dishes   2016-04-11
+## 39    3.2.4        Very Secure Dishes   2016-03-11
+## 40    3.2.3     Wooden Christmas-Tree   2015-12-10
+## 41    3.2.2               Fire Safety   2015-08-14
+## 42    3.2.1    World-Famous Astronaut   2015-06-18
+## 43    3.2.0       Full of Ingredients   2015-04-16
+## 44    3.1.3           Smooth Sidewalk   2015-03-09
+## 45    3.1.2            Pumpkin Helmet   2014-10-31
+## 46    3.1.1             Sock it to Me   2014-07-10
+## 47    3.1.0              Spring Dance   2014-04-10
+## 48    3.0.3                Warm Puppy   2014-03-06
+## 49    3.0.2           Frisbee Sailing   2013-09-25
+## 50    3.0.1                Good Sport   2013-05-16
+## 51    3.0.0             Masked Marvel   2013-04-03
+## 52   2.15.3          Security Blanket   2013-03-01
+## 53   2.15.2            Trick or Treat   2012-10-26
+## 54   2.15.1      Roasted Marshmallows   2012-06-22
+## 55   2.15.0             Easter Beagle   2012-03-30
+## 56   2.14.2       Gift-Getting Season   2012-02-29
+## 57   2.14.1       December Snowflakes   2011-12-22
+## 58   2.14.0             Great Pumpkin   2011-10-31
+## 59  r-devel   Unsuffered Consequences          NaN</code></pre>
+<p>I’m all too familiar with issues of nested tables and data that doesn’t rectangle
+so easily, but for this simple example it worked well, I think.</p>
+<p>Chapter 4 covers indexes and again the idea of repeated values comes into play. The
+long-standing issue that the {tibble} team have with rownames comes to mind - I
+like being able to name both axes of the data and hate that {tibble} is opposed
+to them - so it’s extra surprising to have a Data Frame where the ‘row’ labels
+can repeat. What’s more, the index can be hierarchical as a multi-index. With the
+example from above, splitting the version into a multi-index is interesting</p>
+<pre class="python"><code>v=x.Version.str.split(&#39;.&#39;, expand=True)
+v.columns=[&#39;major&#39;, &#39;minor&#39;, &#39;patch&#39;]
+xv=pd.concat([x, v], axis=1)
+xv=xv.set_index([&#39;major&#39;,&#39;minor&#39;,&#39;patch&#39;])
+xv.head(25)</code></pre>
+<pre class="bg-success"><code>##                   Version                     Name Release date
+## major minor patch                                              
+## 4     4     2       4.4.2           Pile of Leaves   2024-10-31
+##             1       4.4.1       Race for Your Life   2024-06-14
+##             0       4.4.0                Puppy Cup   2024-04-24
+##       3     3       4.3.3          Angel Food Cake   2024-02-29
+##             2       4.3.2                Eye Holes   2023-10-31
+##             1       4.3.1            Beagle Scouts   2023-06-16
+##             0       4.3.0         Already Tomorrow   2023-04-21
+##       2     3       4.2.3         Shortstop Beagle   2023-03-15
+##             2       4.2.2    Innocent and Trusting   2022-10-31
+##             1       4.2.1        Funny-Looking Kid   2022-06-23
+##             0       4.2.0    Vigorous Calisthenics   2022-04-22
+##       1     3       4.1.3              One Push-Up   2022-03-10
+##             2       4.1.2              Bird Hippie   2021-11-01
+##             1       4.1.1              Kick Things   2021-08-10
+##             0       4.1.0          Camp Pontanezen   2021-05-18
+##       0     5       4.0.5          Shake and Throw   2021-03-31
+##             4       4.0.4        Lost Library Book   2021-02-15
+##             3       4.0.3  Bunny-Wunnies Freak Out   2020-10-10
+##             2       4.0.2         Taking Off Again   2020-06-22
+##             1       4.0.1           See Things Now   2020-06-06
+##             0       4.0.0                Arbor Day   2020-04-24
+## 3     6     3       3.6.3     Holding the Windsock   2020-02-29
+##             2       3.6.2    Dark and Stormy Night   2019-12-12
+##             1       3.6.1       Action of the Toes   2019-07-05
+##             0       3.6.0       Planting of a Tree   2019-04-26</code></pre>
+<p>This does mean that I can extract all of the 4.3.x series releases</p>
+<pre class="python"><code>xv.loc[(&#39;4&#39;, &#39;3&#39;)]</code></pre>
+<pre class="bg-success"><code>## &lt;string&gt;:1: PerformanceWarning: indexing past lexsort depth may impact performance.
+##       Version              Name Release date
+## patch                                       
+## 3       4.3.3   Angel Food Cake   2024-02-29
+## 2       4.3.2         Eye Holes   2023-10-31
+## 1       4.3.1     Beagle Scouts   2023-06-16
+## 0       4.3.0  Already Tomorrow   2023-04-21</code></pre>
+<p>Getting the x.x.0 releases is a little messier, requiring <code>slice(None)</code></p>
+<pre class="python"><code>xv.loc[(slice(None), slice(None), &#39;0&#39;)] </code></pre>
+<pre class="bg-success"><code>##             Version                    Name Release date
+## major minor                                             
+## 4     4       4.4.0               Puppy Cup   2024-04-24
+##       3       4.3.0        Already Tomorrow   2023-04-21
+##       2       4.2.0   Vigorous Calisthenics   2022-04-22
+##       1       4.1.0         Camp Pontanezen   2021-05-18
+##       0       4.0.0               Arbor Day   2020-04-24
+## 3     6       3.6.0      Planting of a Tree   2019-04-26
+##       5       3.5.0          Joy in Playing   2018-04-23
+##       4       3.4.0     You Stupid Darkness   2017-04-21
+##       3       3.3.0  Supposedly Educational   2016-05-03
+##       2       3.2.0     Full of Ingredients   2015-04-16
+##       1       3.1.0            Spring Dance   2014-04-10
+##       0       3.0.0           Masked Marvel   2013-04-03
+## 2     15     2.15.0           Easter Beagle   2012-03-30
+##       14     2.14.0           Great Pumpkin   2011-10-31</code></pre>
+<p>and while this was interesting to achieve, a filter would probably be better</p>
+<pre class="python"><code>xv=pd.concat([x, v], axis=1)
+xv.query(&#39;patch == &quot;0&quot;&#39;)</code></pre>
+<pre class="bg-success"><code>##    Version                    Name Release date major minor patch
+## 2    4.4.0               Puppy Cup   2024-04-24     4     4     0
+## 6    4.3.0        Already Tomorrow   2023-04-21     4     3     0
+## 10   4.2.0   Vigorous Calisthenics   2022-04-22     4     2     0
+## 14   4.1.0         Camp Pontanezen   2021-05-18     4     1     0
+## 20   4.0.0               Arbor Day   2020-04-24     4     0     0
+## 24   3.6.0      Planting of a Tree   2019-04-26     3     6     0
+## 28   3.5.0          Joy in Playing   2018-04-23     3     5     0
+## 33   3.4.0     You Stupid Darkness   2017-04-21     3     4     0
+## 37   3.3.0  Supposedly Educational   2016-05-03     3     3     0
+## 43   3.2.0     Full of Ingredients   2015-04-16     3     2     0
+## 47   3.1.0            Spring Dance   2014-04-10     3     1     0
+## 51   3.0.0           Masked Marvel   2013-04-03     3     0     0
+## 55  2.15.0           Easter Beagle   2012-03-30     2    15     0
+## 58  2.14.0           Great Pumpkin   2011-10-31     2    14     0</code></pre>
+<p>I believe <em>that</em> is the {tibble} team’s argument - that a filter is more suitable,
+but I stand by the fact that selecting rows with names which don’t need to be
+<em>in</em> the data itself is a useful approach.</p>
+<p>This chapter also introduces pivot tables in the form of</p>
+<pre class="python"><code>df.pivot_table(index, columns, values, aggfunc)</code></pre>
+<p>the equivalent of which in {dplyr} is <code>dplyr::summarise()</code> or <code>dplyr::count()</code>.
+Way back when I started learning R I recall finding it odd that the (often useful)
+name “pivot table” rarely came up in R documentation, which is a bit of a shame.
+I used them <em>all the time</em> in Excel.</p>
+<pre class="python"><code>xv.pivot_table(index=&#39;major&#39;, 
+               columns=&#39;minor&#39;, 
+               values=&#39;patch&#39;, 
+               aggfunc=&#39;count&#39;, 
+               fill_value=0)</code></pre>
+<pre class="bg-success"><code>## minor  0  1  14  15  2  3  4  5  6
+## major                             
+## 2      0  0   3   4  0  0  0  0  0
+## 3      4  4   0   0  6  4  5  4  4
+## 4      6  4   0   0  4  4  3  0  0</code></pre>
+<p>My major complaint here is that the function is passed as a string - Y U NO use
+first class functions???</p>
+<p>My notes for Chapter 5 (Cleaning Data) only involve the fact that <code>pd.isna</code> and
+<code>pd.isnull</code> are apparently the exact same thing, which is vastly different from R.</p>
+<p>For Chapter 6 (Grouping, joining, and sorting) I have a rekindled annoyance at the
+mixing of methods and attributes driven by the fact that <code>df.transpose()</code> (a method)
+has an alias <code>df.T</code>. I have enough of a hard time trying to remember whether
+it’s <code>x.len</code> or <code>x.len()</code> or <code>length(x)</code> or whatever.</p>
+<hr />
+<p>I will continue to make my way through the rest of the book, but figured this
+was a good point to take stock of how I feel about it and how much I’ve learned.
+I’m already able to work with the API I was trying to and can rectangle the
+results into something useful, including being able to save those as a CSV or
+even Excel sheet(s).</p>
+<p>Pandas Workout is, in my opinion, a good resource for learning Pandas providing
+you already know your way around Python and perhaps data analysis in another
+language as well. The minor issues of typos and omissions happen in any book and
+I wouldn’t say any of them are dealbreakers. The book covers a lot of the questions
+I had as I was working through problems - one of the hardest things when trying
+to follow along is having a ‘simple’ question that’s hard to answer yourself. I’ve
+abandoned learning other languages (or at least using specific resources) when I’ve
+hit that point.</p>
+<p>Pandas itself seems like it makes some good choices in terms of <code>Series</code> and <code>DataFrame</code>
+structures, and when I’m using Python I’ll be sure to load this library and make
+use of them.</p>
+<p>Comments, improvements, or sharing your experiences are most welcome. I can be found
+on <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> or use the comments below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.4.1 (2024-06-14)
+##  os       macOS Sonoma 14.6
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2025-02-13
+##  pandoc   3.2 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version    date (UTC) lib source
+##  blogdown      1.19       2024-02-01 [1] CRAN (R 4.4.0)
+##  bookdown      0.41       2024-10-16 [1] CRAN (R 4.4.1)
+##  bslib         0.8.0      2024-07-29 [1] CRAN (R 4.4.0)
+##  cachem        1.1.0      2024-05-16 [1] CRAN (R 4.4.0)
+##  cli           3.6.3      2024-06-21 [1] CRAN (R 4.4.0)
+##  devtools      2.4.5      2022-10-11 [1] CRAN (R 4.4.0)
+##  digest        0.6.37     2024-08-19 [1] CRAN (R 4.4.1)
+##  ellipsis      0.3.2      2021-04-29 [1] CRAN (R 4.4.0)
+##  evaluate      1.0.1      2024-10-10 [1] CRAN (R 4.4.1)
+##  fansi         1.0.6      2023-12-08 [1] CRAN (R 4.4.0)
+##  fastmap       1.2.0      2024-05-15 [1] CRAN (R 4.4.0)
+##  fs            1.6.5      2024-10-30 [1] CRAN (R 4.4.1)
+##  glue          1.8.0      2024-09-30 [1] CRAN (R 4.4.1)
+##  htmltools     0.5.8.1    2024-04-04 [1] CRAN (R 4.4.0)
+##  htmlwidgets   1.6.4      2023-12-06 [1] CRAN (R 4.4.0)
+##  httpuv        1.6.15     2024-03-26 [1] CRAN (R 4.4.0)
+##  jquerylib     0.1.4      2021-04-26 [1] CRAN (R 4.4.0)
+##  jsonlite      1.8.9      2024-09-20 [1] CRAN (R 4.4.1)
+##  knitr         1.48       2024-07-07 [1] CRAN (R 4.4.0)
+##  later         1.4.1      2024-11-27 [1] CRAN (R 4.4.1)
+##  lattice       0.22-6     2024-03-20 [1] CRAN (R 4.4.1)
+##  lifecycle     1.0.4      2023-11-07 [1] CRAN (R 4.4.0)
+##  magrittr      2.0.3      2022-03-30 [1] CRAN (R 4.4.0)
+##  Matrix        1.7-1      2024-10-18 [1] CRAN (R 4.4.1)
+##  memoise       2.0.1      2021-11-26 [1] CRAN (R 4.4.0)
+##  mime          0.12       2021-09-28 [1] CRAN (R 4.4.0)
+##  miniUI        0.1.1.1    2018-05-18 [1] CRAN (R 4.4.0)
+##  pillar        1.9.0      2023-03-22 [1] CRAN (R 4.4.0)
+##  pkgbuild      1.4.5      2024-10-28 [1] CRAN (R 4.4.1)
+##  pkgload       1.4.0      2024-06-28 [1] CRAN (R 4.4.0)
+##  png           0.1-8      2022-11-29 [1] CRAN (R 4.4.0)
+##  profvis       0.4.0      2024-09-20 [1] CRAN (R 4.4.1)
+##  promises      1.3.2      2024-11-28 [1] CRAN (R 4.4.1)
+##  purrr         1.0.2      2023-08-10 [1] CRAN (R 4.4.0)
+##  R6            2.5.1      2021-08-19 [1] CRAN (R 4.4.0)
+##  Rcpp          1.0.13-1   2024-11-02 [1] CRAN (R 4.4.1)
+##  remotes       2.5.0.9000 2024-11-03 [1] Github (r-lib/remotes@5b7eb08)
+##  reticulate    1.40.0     2024-11-15 [1] CRAN (R 4.4.1)
+##  rlang         1.1.4      2024-06-04 [1] CRAN (R 4.4.0)
+##  rmarkdown     2.28       2024-08-17 [1] CRAN (R 4.4.0)
+##  rstudioapi    0.17.1     2024-10-22 [1] CRAN (R 4.4.1)
+##  sass          0.4.9      2024-03-15 [1] CRAN (R 4.4.0)
+##  sessioninfo   1.2.2      2021-12-06 [1] CRAN (R 4.4.0)
+##  shiny         1.9.1      2024-08-01 [1] CRAN (R 4.4.0)
+##  urlchecker    1.0.1      2021-11-30 [1] CRAN (R 4.4.0)
+##  usethis       3.0.0      2024-07-29 [1] CRAN (R 4.4.0)
+##  utf8          1.2.4      2023-10-22 [1] CRAN (R 4.4.0)
+##  vctrs         0.6.5      2023-12-01 [1] CRAN (R 4.4.0)
+##  xfun          0.50.5     2025-01-23 [1] Github (yihui/xfun@116d689)
+##  xtable        1.8-4      2019-04-21 [1] CRAN (R 4.4.0)
+##  yaml          2.3.10     2024-07-26 [1] CRAN (R 4.4.0)
+## 
+##  [1] /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library
+## 
+## ─ Python configuration ───────────────────────────────────────────────────────
+##  python:         /Users/jono/.virtualenvs/r-reticulate/bin/python
+##  libpython:      /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/config-3.9-darwin/libpython3.9.dylib
+##  pythonhome:     /Users/jono/.virtualenvs/r-reticulate:/Users/jono/.virtualenvs/r-reticulate
+##  version:        3.9.6 (default, Oct  4 2024, 08:01:31)  [Clang 16.0.0 (clang-1600.0.26.4)]
+##  numpy:          /Users/jono/.virtualenvs/r-reticulate/lib/python3.9/site-packages/numpy
+##  numpy_version:  2.0.2
+##  
+##  NOTE: Python version was forced by use_python() function
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
