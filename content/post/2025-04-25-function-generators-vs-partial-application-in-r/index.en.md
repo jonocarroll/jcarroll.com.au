@@ -42,20 +42,28 @@ Here, `label_glue` is a function that takes a {glue} string as an argument and
 returns a 'labelling" function'. _That_ function is then passed the vector of
 penguin species, which is used in the {glue} string to produce the output.
 
-(aside) for those coming to this post from a python background, {glue} is R's
-answer to f-strings, and is used in almost the exact same way for simple cases:
+<div class="notice">
+    <p class="notice-title">
+        <span class="icon-notice baseline">
+            📝
+        </span>
+        Note 
+    </p>
+    <p>For those coming to this post from a python background, {glue} is R's
+answer to f-strings, and is used in almost the exact same way for simple cases:</p>
 
-```r
-name <- "Jonathan"
-glue::glue("My name is {name}")
-# My name is Jonathan
-```
+  <pre>
+  ## R:
+  name <- "Jonathan"
+  glue::glue("My name is {name}")
+  # My name is Jonathan
 
-```python
->>> name = 'Jonathan'
->>> f"My name is {name}"
-# 'My name is Jonathan'
-```
+  ## Python:
+  >>> name = 'Jonathan'
+  >>> f"My name is {name}"
+  # 'My name is Jonathan'
+  </pre>
+</div>
 
 There's nothing magic going on with the `label_glue()()` call - functions are
 being applied to arguments - but it's always useful to interrogate surprise when
