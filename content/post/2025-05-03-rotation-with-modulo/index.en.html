@@ -81,7 +81,7 @@ function which takes the number and how many places to move it, I get</p>
 }
 rot(12345, 3)</code></pre>
 <pre class="bg-success"><code>## [1] 45123</code></pre>
-<p>You can see that the values are ‘rotated’ cyclically by 3 places.</p>
+<p>You can see that the values are ‘rotated’ cyclically by 3 places (to the left).</p>
 <p>R doesn’t have a built-in way to achieve this even for a vector of values
 (rotating ‘digits’ of an integer is a toy problem that is unlikely to actually
 come up in real situations). One solution is my
@@ -210,7 +210,7 @@ to work with a value to be rotated <em>and</em> how many places to rotate it; th
 meant I learned a <em>lot</em> about figuring out which value from the stack I want.</p>
 <p>Entering operators into Uiua is greatly eased by having translation and
 auto-complete; you don’t have to figure out how to type <code>◿</code> you can start typing
-<code>"mod"</code> and as long as it’s a unique completion, Uiua will convert it to the
+<code>mod</code> and as long as it’s a unique completion, Uiua will convert it to the
 appropriate glyph. Additionally, there are some formatting tricks such as taking
 a double-underscore suffix to a function to make a combined glyph with a preset
 value; <code>log__10</code> translates to <code>ₙ₁₀</code>.</p>

@@ -99,7 +99,7 @@ rot <- function(n, k) {
 rot(12345, 3)
 ```
 
-You can see that the values are 'rotated' cyclically by 3 places. 
+You can see that the values are 'rotated' cyclically by 3 places (to the left).
 
 R doesn't have a built-in way to achieve this even for a vector of values
 (rotating 'digits' of an integer is a toy problem that is unlikely to actually
@@ -257,7 +257,7 @@ meant I learned a *lot* about figuring out which value from the stack I want.
 
 Entering operators into Uiua is greatly eased by having translation and 
 auto-complete; you don't have to figure out how to type `◿` you can start typing 
-`"mod"` and as long as it's a unique completion, Uiua will convert it to the 
+`mod` and as long as it's a unique completion, Uiua will convert it to the 
 appropriate glyph. Additionally, there are some formatting tricks such as taking 
 a double-underscore suffix to a function to make a combined glyph with a preset 
 value; `log__10` translates to `ₙ₁₀`.
