@@ -1,0 +1,354 @@
+---
+title: Rotation with Modulo
+author: Jonathan Carroll
+date: '2025-05-03'
+categories:
+  - APL
+  - julia
+  - rstats
+  - uiua
+tags:
+  - APL
+  - julia
+  - rstats
+  - uiua
+slug: rotation-with-modulo
+editor_options:
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+JuliaCall::julia_setup(path.expand(file.path("~", ".juliaup/bin/")))
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+```
+
+How well do you know your fundamental operators in different languages? 'Easy' 
+examples help to fortify that knowledge, and comparing across languages makes 
+for some neat implementation detail discoveries.
+
+<!--more-->
+
+How well do you know your fundamental operators in different languages? 'Easy' 
+examples help to fortify that knowledge, and comparing across languages makes 
+for some neat implementation detail discoveries.
+
+I saw [this toot from `@gregeganSF`](https://mathstodon.xyz/@gregeganSF/114429919995214762) on Mastodon 
+
+<blockquote class="mastodon-embed" data-embed-url="https://mathstodon.xyz/@gregeganSF/114429919995214762/embed" style="background: #FCF8FF; border-radius: 8px; border: 1px solid #C9C4DA; margin: 0; max-width: 540px; min-width: 270px; overflow: hidden; padding: 0;"> <a href="https://mathstodon.xyz/@gregeganSF/114429919995214762" target="_blank" style="align-items: center; color: #1C1A25; display: flex; flex-direction: column; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Roboto, sans-serif; font-size: 14px; justify-content: center; letter-spacing: 0.25px; line-height: 20px; padding: 24px; text-decoration: none;"> <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 79 75"><path d="M74.7135 16.6043C73.6199 8.54587 66.5351 2.19527 58.1366 0.964691C56.7196 0.756754 51.351 0 38.9148 0H38.822C26.3824 0 23.7135 0.756754 22.2966 0.964691C14.1319 2.16118 6.67571 7.86752 4.86669 16.0214C3.99657 20.0369 3.90371 24.4888 4.06535 28.5726C4.29578 34.4289 4.34049 40.275 4.877 46.1075C5.24791 49.9817 5.89495 53.8251 6.81328 57.6088C8.53288 64.5968 15.4938 70.4122 22.3138 72.7848C29.6155 75.259 37.468 75.6697 44.9919 73.971C45.8196 73.7801 46.6381 73.5586 47.4475 73.3063C49.2737 72.7302 51.4164 72.086 52.9915 70.9542C53.0131 70.9384 53.0308 70.9178 53.0433 70.8942C53.0558 70.8706 53.0628 70.8445 53.0637 70.8179V65.1661C53.0634 65.1412 53.0574 65.1167 53.0462 65.0944C53.035 65.0721 53.0189 65.0525 52.9992 65.0371C52.9794 65.0218 52.9564 65.011 52.9318 65.0056C52.9073 65.0002 52.8819 65.0003 52.8574 65.0059C48.0369 66.1472 43.0971 66.7193 38.141 66.7103C29.6118 66.7103 27.3178 62.6981 26.6609 61.0278C26.1329 59.5842 25.7976 58.0784 25.6636 56.5486C25.6622 56.5229 25.667 56.4973 25.6775 56.4738C25.688 56.4502 25.7039 56.4295 25.724 56.4132C25.7441 56.397 25.7678 56.3856 25.7931 56.3801C25.8185 56.3746 25.8448 56.3751 25.8699 56.3816C30.6101 57.5151 35.4693 58.0873 40.3455 58.086C41.5183 58.086 42.6876 58.086 43.8604 58.0553C48.7647 57.919 53.9339 57.6701 58.7591 56.7361C58.8794 56.7123 58.9998 56.6918 59.103 56.6611C66.7139 55.2124 73.9569 50.665 74.6929 39.1501C74.7204 38.6967 74.7892 34.4016 74.7892 33.9312C74.7926 32.3325 75.3085 22.5901 74.7135 16.6043ZM62.9996 45.3371H54.9966V25.9069C54.9966 21.8163 53.277 19.7302 49.7793 19.7302C45.9343 19.7302 44.0083 22.1981 44.0083 27.0727V37.7082H36.0534V27.0727C36.0534 22.1981 34.124 19.7302 30.279 19.7302C26.8019 19.7302 25.0651 21.8163 25.0617 25.9069V45.3371H17.0656V25.3172C17.0656 21.2266 18.1191 17.9769 20.2262 15.568C22.3998 13.1648 25.2509 11.9308 28.7898 11.9308C32.8859 11.9308 35.9812 13.492 38.0447 16.6111L40.036 19.9245L42.0308 16.6111C44.0943 13.492 47.1896 11.9308 51.2788 11.9308C54.8143 11.9308 57.6654 13.1648 59.8459 15.568C61.9529 17.9746 63.0065 21.2243 63.0065 25.3172L62.9996 45.3371Z" fill="currentColor"/></svg> <div style="color: #787588; margin-top: 16px;">Post by @gregeganSF@mathstodon.xyz</div> <div style="font-weight: 500;">View on Mastodon</div> </a> </blockquote> <script data-allowed-prefixes="https://mathstodon.xyz/" async src="https://mathstodon.xyz/embed.js"></script>
+
+which says
+
+> To rotate a j-digit number n by k digits, if n≠10^j-1 there is a simple formula:
+>
+> rot(n,j,k) = (n*10^k) mod (10^j-1)
+>
+> e.g. 1234 * 100 mod 9999 = 3412
+>
+> Why? The mod subtracts (10^j-1) times the leftmost k digits of n*10^k, removing them from the left and adding them on the right.
+
+and my first thought was "ooh, that's cool", but my second thought was "I'm 
+going to implement this in a bunch of languages!". Sure, it's a very small bit 
+of math to implement without any particular sharp edges of iteration/recursion, 
+but that means I'll be working with some basic functionality and I believe it's 
+very important to have that locked in comfortably. Let's see how it goes!
+
+I'm not aware of a "name" for this as such. Writing it out a little more styled
+
+$$
+rot(n, j, k) = (n\times10^k)\ \%\ (10^j-1)
+$$
+
+it looks like I'll just need a 'power' and a 'modulo'. The $j$ there is the 
+number of digits in $n$ and sure, we could count that ourselves and pass it as 
+an argument, but even better might be to calculate it as well. That means 
+figuring out how many digits are in a number. 
+
+As always, my go-to is R, so let's start there.
+
+## R
+
+In R the power operator is `^`. Also `**`, but that's almost never used - 
+there's even a note about that in the documentation
+
+> `**` is translated in the parser to `^`, but this was undocumented for many years.
+
+Modulo is `%%` which I can _never_ remember because it's similar to integer 
+division which is `%/%`.
+
+To get the number of digits we can use the fact that `nchar()` will first convert
+its input into a character vector, so `12345` becomes `"12345"` and thus the 
+number of characters of that is the number of digits. If that wasn't the case 
+I could still do 
+
+```{r}
+ceiling(log10(314159))
+```
+
+but the `nchar()` approach seems fine. Putting those pieces together into a 
+function which takes the number and how many places to move it, I get
+
+```{r}
+rot <- function(n, k) {
+  (n*10^k) %% (10^nchar(n)-1)
+}
+rot(12345, 3)
+```
+
+You can see that the values are 'rotated' cyclically by 3 places. 
+
+R doesn't have a built-in way to achieve this even for a vector of values
+(rotating 'digits' of an integer is a toy problem that is unlikely to actually
+come up in real situations). One solution is my
+[{vec}](https://github.com/jonocarroll/vec) package which does implement a
+ring-buffer sort of effect for vectors
+
+```{r}
+# remotes::install_github("jonocarroll/vec")
+library(vec)
+v <- as_vec(1:5)
+rotate(v, 3)
+```
+
+Under the hood this uses modulo on the _indices_
+
+```{r}
+x <- 1:5; n <- 3
+x[(((n - 1 + seq_along(x)) %% length(x))) + 1]
+```
+
+One extra feature of this is it also takes negative values to shift the other way 
+
+```{r}
+rotate(v, -3)
+```
+
+whereas the `rot()` implementation above can't.
+
+## Julia
+
+As is almost always the case, the Julia functionality looks closer to what one 
+might "expect" from translating maths or stats; the power operator remains `^`, 
+but the modulo operator is a more familiar `%`. There is an actual `ndigits()` 
+function to get the number of digits which, as far as I can tell from the source,
+doesn't first convert to character. The examples for that function do highlight 
+a failing of the R approach - if a value is negative then `as.character()` will 
+produce the wrong number of digits. In R:
+
+```{r}
+as.character(-1234)
+nchar(-1234)
+```
+
+while in Julia
+
+```{julia}
+ndigits(-1234)
+```
+
+We're not dealing with negatives here, but that's certainly a gotcha.
+
+Implementing the Julia function can be done in a single line so no need for a 
+`function` keyword
+
+```{julia}
+rot(n,k) = (n*10^k) % (10^ndigits(n)-1)
+rot(12345, 3)
+```
+
+If we _were_ working with vectors, Julia also has a built-in way to do the 
+cyclic rotation, though it seems to shift in the opposite direction
+
+```{julia}
+x = [1, 2, 3, 4, 5]
+circshift(x, -3)
+circshift(x, 3)
+```
+
+Here ends the Algol-language portion of the post, and I'll move on to some 
+languages where these operations are even more fundamental...
+
+## APL
+
+When I see 'straightforward' math operations on numbers I now think APL because 
+that's what it was originally built for and it works so very well; each math 
+operation you could perform on an array of values has a 'glyph' representing it 
+so should be a better 'translation' of the math on a blackboard directly to code.
+
+One thing R users will immediately recognise is the assignment glyph `←`; yes 
+that's a single glyph, not R's `<-`, but it works the same as in R.
+
+You're probably familiar with the multiplication glyph `×` and addition `+`. 
+The power/exponentiation glyph is `*`. Nothing too surprising there, I hope.
+
+Because `-` is the 'subtract' operation, there's a distinct glyph for 'negative' 
+`¯` (a raised hyphen) so it isn't confused with subtraction. Modulo takes some 
+more inspiration from math and is `|`. The only other potentially confusing 
+glyphs are length `≢` and format `⍕` which, when combined, do something very 
+similar to R's "how many characters does this use?". Again the 'negative number' 
+problem is here, but we're not worried about that in this case.
+
+Putting those pieces together requires knowing that APL evaluates right-to-left, 
+with the argument to the right of an operator in a "function" being denoted by 
+omega (`⍵`) and the one to the left being alpha (`⍺`). The function I came up 
+with looks like this
+
+```apl
+    rot←{(¯1+10*≢⍕⍵)|⍵×10*⍺}
+```
+
+It's entirely possible that it can be shortened or improved; I have a tendency 
+to overlook where parentheses are really required and opportunities for 
+simplification. Nonetheless, if you read from right-to-left it spells out the 
+calculation we want. Applying it to some value means placing it between its two 
+arguments
+
+```apl
+    3 rot 12345
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+45123
+```
+
+[Try it out yourself!](https://tryapl.org/?clear&q=rot%E2%86%90%7B(%C2%AF1%2B10*%E2%89%A2%E2%8D%95%E2%8D%B5)%7C%E2%8D%B5%C3%9710*%E2%8D%BA%7D%0A%20%20%20%20%20%203%20rot%2012345&run)
+
+Most of the difficulty I faced when building this was dealing with order-of-operations 
+which need to be right-to-left. There are ways to 'swap' the order of arguments 
+to a function (such as modulo) to make it read more similarly to the hand-written
+expression, but I both couldn't get that to produce the right answer and didn't 
+feel it was necessary.
+
+In terms of working with vectors, that's where APL shines. There is a rotate 
+glyph `⌽` which when given just one argument reverses a vector, but with a second 
+argument does exactly what we want; rotates by that many places
+
+```apl
+    x←1 2 3 4 5
+    3 ⌽ x
+4 5 1 2 3
+```
+
+If you don't look too closely at the _type_ of the data, we can use this to rotate
+a string made of character digits by again using format `⍕` to make a vector of 
+characters from the number
+
+```apl
+    3 ⌽ ⍕12345
+45123
+```
+
+(the whitespace here is purely for demonstration; `3⌽⍕12345` works just the same).
+
+# Uiua
+
+Uiua is a much newer language that has a lot of support for operating on data, 
+but it behaves differently to all of the above; it's a stack-based language so 
+you work with data on a stack, not as variables. I've played around with it and 
+really enjoy working with it - there's even an 
+[Exercism track](https://exercism.org/tracks/uiua/) now - but in trying 
+to write this solution I realised that I'd only ever worked with one 'thing' on 
+the stack, even if that was an entire vector of values. This problem invites us 
+to work with a value to be rotated _and_ how many places to rotate it; that 
+meant I learned a *lot* about figuring out which value from the stack I want.
+
+Entering operators into Uiua is greatly eased by having translation and 
+auto-complete; you don't have to figure out how to type `◿` you can start typing 
+`"mod"` and as long as it's a unique completion, Uiua will convert it to the 
+appropriate glyph. Additionally, there are some formatting tricks such as taking 
+a double-underscore suffix to a function to make a combined glyph with a preset 
+value; `log__10` translates to `ₙ₁₀`.
+
+The operators I need here are modulo `◿`, multiply `×`, power `ⁿ`, log10 `ₙ₁₀`, 
+ceiling `⌈`, and subtract `-`, with the additional dip `⊙` to use the second 
+value on the stack, and backward `˜` to swap the arguments of modulo. I couldn't
+immediately think of a way to cleanly get the number of digits of a value (I did 
+later, which I'll come back to) so I went the `log10` route and my solution is 
+(again, right-to-left)
+
+```uiua
+3 12345
+˜◿⊙(-1˜ⁿ10⌈ₙ₁₀)⊸×˜ⁿ10
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+45123
+```
+
+[Try it out yourself!](https://uiua.org/pad?src=0_16_0-dev_2__MyAxMjM0NQrLnOKXv-KKmSgtMcuc4oG_MTDijIjigpnigoHigoAp4oq4w5fLnOKBvzEwCg==)
+
+Working with vectors is much cleaner here, too, and there's a simple rotate `↻` 
+that does the same as APL
+
+```uiua
+↻ 3 [1 2 3 4 5]
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+[4 5 1 2 3]
+```
+
+Reading this, the vector is placed on the stack, then the value 3 is put on the
+top of the stack, then rotate takes two values from the stack and performs that
+operation, leaving one value (the result) on the stack.
+
+Uiua also has a really cool feature of "undoing" an operation, where the inverse
+can be calculated. If I wanted to turn a string into a number I would use parse
+`⋕` and I can do the opposite by prefixing it with un `°` to make "unparse"
+which converts a number to a string. Since a string is just a vector of
+characters (in this case digits) the rotate works naturally, albeit returning a
+string
+
+```uiua
+↻ 3 °⋕ 12345
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+"45123"
+```
+
+Uiua goes one step further with an under `⍜` which takes some value, performs 
+some transformation, applies a function, then _undoes_ that transformation. In my 
+case, I want to "unparse then re-parse" which seems like a great fit for this
+
+```uiua
+⍜°⋕(↻ 3) 12345
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+45123
+```
+
+and returns a number again, because under applies the back-transformation of parse.
+
+The unparse `°⋕` is recognised as a compound and is passed as the first argument 
+to under, while I need the rotate and 3 to go together with parentheses. If I 
+always wanted to shift by 3 places I could use the double underscore to 'attach' 
+the `3` to the rotate producing `rotate__3` `↻₃` but what I have above allows for 
+changing that number.
+
+Looking into it this way, it's more obvious that I could get the number of digits 
+with `lengthunparse` as `⧻°⋕`, but exploring how to go the long way around was 
+entirely worthwhile, and not necessarily longer with `ceilinglog__10` as `⌈ₙ₁₀`.
+
+---
+
+I knew I'd find lots of interesting things when I saw this and I was right - just 
+spending the time going through the documentation of these 'basic' functions 
+reminded me of things I've forgotten and some new things I don't think I knew 
+before.
+
+I'd love to hear what people think about these comparisons - are there points I've
+overlooked? Better ways to do it? Different functions in some other languages? 
+Considerations I've missed? As always, I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
