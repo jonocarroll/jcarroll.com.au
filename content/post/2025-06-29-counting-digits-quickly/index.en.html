@@ -91,7 +91,7 @@ run the example code, then tried adapting it to the <code>ndigits()</code> probl
 <h2>R</h2>
 <p>The R code I started with was</p>
 <pre class="r"><code>nd_R &lt;- function(x) {
-  out &lt;- double(length(x))
+  out &lt;- integer(length(x))
   x &lt;- abs(x / 10)
   for (v in seq_along(x)) {
     d &lt;- 1
@@ -105,7 +105,7 @@ run the example code, then tried adapting it to the <code>ndigits()</code> probl
   out
 }
 
-nd_R(c(123456, 234, -72))</code></pre>
+nd_R(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <p>and while this looks like a moderate amount of code, in essence it’s taking the
 absolute value of the input (since we want to ignore negatives, and which is
@@ -132,24 +132,28 @@ the function to decide what to do with it. Fortran is a bit stricter, and
 requires types to be annotated, so I need to add a <code>declare(type())</code> to the code.</p>
 <pre class="r"><code>nd2f &lt;- function(x) {
   declare(
-    type(x = double(NA))
+    type(x = integer(NA))
   )
-  out &lt;- double(length(x))
-  x &lt;- abs(x / 10)
-  for (v in seq_along(x)) {
-    d &lt;- 1
-    m &lt;- 1
+  out &lt;- integer(length(x))
+  x &lt;- abs(x / 10L)
+  for (v in seq_along(out)) {
+    d &lt;- 1L
+    m &lt;- 1L
     while (m &lt;= x[v]) {
-      m &lt;- m * 10
-      d &lt;- d + 1
+      m &lt;- m * 10L
+      d &lt;- d + 1L
     }
     out[v] &lt;- d
   }
   out
 }</code></pre>
+<p>NOTE: the original version of this post used <code>double()</code> values but as
+<a href="https://mastodon.social/@toddixd"><span class="citation">@toddixd</span></a> noted, there’s an additional
+performance improvement to be made if we restrict to integers, which the values
+will actually be.</p>
 <p>Note that this is still very much R code at this point - I can even run it
 in R and get the same answers as before</p>
-<pre class="r"><code>nd2f(c(123456, 234, -72))</code></pre>
+<pre class="r"><code>nd2f(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <p>What surprised me here is that <code>declare()</code> is a base R function (not from
 {quickr}) intended for “specifying information about R code for use by the
@@ -206,7 +210,7 @@ to - it’s interesting to see what the Fortran code looks like</p>
 enlightening. Doing the same for the <code>ndigits</code> code</p>
 <pre class="r"><code>quickr:::r2f(nd2f)</code></pre>
 <pre class="bg-success"><code>## subroutine nd2f(x, out, x__len_) bind(c)
-##   use iso_c_binding, only: c_double, c_int, c_ptrdiff_t
+##   use iso_c_binding, only: c_int, c_ptrdiff_t
 ##   implicit none
 ## 
 ##   ! manifest start
@@ -214,24 +218,24 @@ enlightening. Doing the same for the <code>ndigits</code> code</p>
 ##   integer(c_ptrdiff_t), intent(in), value :: x__len_
 ## 
 ##   ! args
-##   real(c_double), intent(in out) :: x(x__len_)
-##   real(c_double), intent(out) :: out(x__len_)
+##   integer(c_int), intent(in out) :: x(x__len_)
+##   integer(c_int), intent(out) :: out(x__len_)
 ## 
 ##   ! locals
 ##   integer(c_int) :: v
-##   real(c_double) :: d
-##   real(c_double) :: m
+##   integer(c_int) :: d
+##   integer(c_int) :: m
 ##   ! manifest end
 ## 
 ## 
 ##   out = 0
-##   x = abs((x / 10.0_c_double))
-##   do v = 1, size(x)
-##     d = 1.0_c_double
-##     m = 1.0_c_double
+##   x = abs((x / 10_c_int))
+##   do v = 1, size(out)
+##     d = 1_c_int
+##     m = 1_c_int
 ##     do while ((m &lt;= x(v)))
-##       m = (m * 10.0_c_double)
-##       d = (d + 1.0_c_double)
+##       m = (m * 10_c_int)
+##       d = (d + 1_c_int)
 ##     end do
 ##     out(v) = d
 ##   end do
@@ -239,15 +243,15 @@ enlightening. Doing the same for the <code>ndigits</code> code</p>
 ## 
 ## @r: function (x)
 ##   {
-##       declare(type(x = double(NA)))
-##       out &lt;- double(length(x))
-##       x &lt;- abs(x/10)
-##       for (v in seq_along(x)) {
-##           d &lt;- 1
-##           m &lt;- 1
+##       declare(type(x = integer(NA)))
+##       out &lt;- integer(length(x))
+##       x &lt;- abs(x/10L)
+##       for (v in seq_along(out)) {
+##           d &lt;- 1L
+##           m &lt;- 1L
 ##           while (m &lt;= x[v]) {
-##               m &lt;- m * 10
-##               d &lt;- d + 1
+##               m &lt;- m * 10L
+##               d &lt;- d + 1L
 ##           }
 ##           out[v] &lt;- d
 ##       }
@@ -255,15 +259,15 @@ enlightening. Doing the same for the <code>ndigits</code> code</p>
 ##   }
 ## @closure: function (x)
 ##   {
-##       declare(type(x = double(NA)))
-##       out &lt;- double(length(x))
-##       x &lt;- abs(x/10)
-##       for (v in seq_along(x)) {
-##           d &lt;- 1
-##           m &lt;- 1
+##       declare(type(x = integer(NA)))
+##       out &lt;- integer(length(x))
+##       x &lt;- abs(x/10L)
+##       for (v in seq_along(out)) {
+##           d &lt;- 1L
+##           m &lt;- 1L
 ##           while (m &lt;= x[v]) {
-##               m &lt;- m * 10
-##               d &lt;- d + 1
+##               m &lt;- m * 10L
+##               d &lt;- d + 1L
 ##           }
 ##           out[v] &lt;- d
 ##       }
@@ -288,15 +292,15 @@ end program test_abs</code></pre>
 <pre class="r"><code>nd_F &lt;- quickr::quick(nd2f)
 nd_F</code></pre>
 <pre class="bg-success"><code>## function (x) 
-## .External(&lt;pointer: 0x11fddd73c&gt;, x)</code></pre>
+## .External(&lt;pointer: 0x156f21750&gt;, x)</code></pre>
 <p>and we see that it’s referencing some external code. This can be called</p>
-<pre class="r"><code>nd_F(c(123456, 234, -72))</code></pre>
+<pre class="r"><code>nd_F(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <p>with the big benefit that now it’s a LOT faster!</p>
 <p>Generating a million random values and excluding any zero values, we can see the
-40x performance increase (!!!)</p>
+50x performance increase (!!!)</p>
 <pre class="r"><code>set.seed(1)
-nums &lt;- round(runif(1e6, -1, 1) * 1e6)
+nums &lt;- as.integer(runif(1e6, -1, 1) * 1e6)
 nums &lt;- nums[nums != 0]
 
 b0 &lt;- bench::mark(
@@ -309,8 +313,8 @@ dplyr::arrange(b0[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 2 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 Fortran      3.56ms   3.88ms    255.      15.3MB    266. 
-## 2 R          154.27ms 154.42ms      6.48    15.3MB     25.9</code></pre>
+## 1 Fortran      2.62ms   2.85ms    353.      7.63MB    117. 
+## 2 R             156ms    156ms      6.41   19.07MB     57.7</code></pre>
 <pre class="r"><code>plot(b0)</code></pre>
 <p><img src="unnamed-chunk-12-1.png" width="672" /></p>
 <p>For those not familiar, this benchmark plot shows the individual times taken for
@@ -335,7 +339,7 @@ not-as-impressive-but-still-very-impressive 15x performance boost.</p>
 <code>compiler::cmpfun()</code>?</p>
 <pre class="r"><code>nd_comp = compiler::cmpfun(nd_R)
 
-nd_comp(c(123456, 234, -72))</code></pre>
+nd_comp(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <pre class="r"><code>b1 &lt;- bench::mark(
   compiled = nd_comp(nums),
@@ -348,9 +352,9 @@ dplyr::arrange(b1[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 3 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 Fortran      3.58ms   3.93ms    253.      15.3MB   123.  
-## 2 compiled   147.86ms    149ms      6.66    15.3MB     6.66
-## 3 R          154.69ms 155.25ms      6.30    15.3MB     2.70</code></pre>
+## 1 Fortran      2.68ms      3ms    334.      7.63MB    86.5 
+## 2 compiled   157.78ms    158ms      6.33   19.07MB    14.8 
+## 3 R          157.06ms    158ms      6.33   19.07MB     9.50</code></pre>
 <pre class="r"><code>plot(b1)</code></pre>
 <p><img src="unnamed-chunk-13-1.png" width="672" /></p>
 <p>That doesn’t help; by the time the benchmark was running the <code>nd_R</code> function had
@@ -372,13 +376,13 @@ the world’s greatest C code, but it compiles and runs…</p>
 #include &lt;math.h&gt;
 
 SEXP nd_C(SEXP vec) {
-  double *vec_ptr = REAL(vec);
-  SEXP res = PROTECT(allocVector(REALSXP, length(vec)));
-  double *res_ptr = REAL(res);
+  int *vec_ptr = INTEGER(vec);
+  SEXP res = PROTECT(allocVector(INTSXP, length(vec)));
+  int *res_ptr = INTEGER(res);
   for (int i = 0; i &lt; length(vec); i++) {
-    double abs_x = fabs(vec_ptr[i] / 10.0);
+    int abs_x = abs(vec_ptr[i] / 10.0);
         int d = 1;
-        double m = 1.0;
+        int m = 1.0;
         while (m &lt;= abs_x) {
             m *= 10.0;
             d++;
@@ -392,7 +396,7 @@ SEXP nd_C(SEXP vec) {
 &quot;
 )
 
-nd_C(c(123456, 234, -72))</code></pre>
+nd_C(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <p>So, how does it compare?</p>
 <pre class="r"><code>b2 &lt;- bench::mark(
@@ -406,9 +410,9 @@ dplyr::arrange(b2[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 3 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 Fortran       3.3ms   3.58ms    277.     15.26MB   107.  
-## 2 C            3.92ms   4.14ms    240.      7.63MB    50.6 
-## 3 R          147.99ms 149.25ms      6.71   15.26MB     4.47</code></pre>
+## 1 Fortran      2.74ms   3.02ms    330.      7.63MB    67.7 
+## 2 C             4.3ms   4.39ms    228.      3.81MB    27.9 
+## 3 R          161.01ms 161.35ms      6.06   19.07MB     6.06</code></pre>
 <pre class="r"><code>plot(b2)</code></pre>
 <p><img src="unnamed-chunk-15-1.png" width="672" /></p>
 <p>Whoa - automatically transpiled Fortran runs faster than (my) C… That’s fast.</p>
@@ -422,14 +426,15 @@ dplyr::arrange(b2[, 1:8], median)</code></pre>
 <p>What about C++ via {Rcpp}? Dealing with vectors is made easier by {Rcpp} having
 pre-built types compatible with R, and this otherwise looks very similar to the
 R code</p>
-<pre class="r"><code>nd_Rcpp &lt;- Rcpp::cppFunction(
+<pre class="r"><code>Sys.setenv(&quot;PKG_CXXFLAGS&quot; = &quot;-O3&quot;)
+nd_Rcpp &lt;- Rcpp::cppFunction(
   &quot;
-IntegerVector nd(NumericVector x) {
+IntegerVector nd(const IntegerVector&amp; x) {
     int n = x.size();
     IntegerVector out(n);
 
     for (int v = 0; v &lt; n; v++) {
-        double abs_x = std::abs(x[v] / 10.0);
+        int abs_x = std::abs(x[v] / 10);
         int d = 1;
         int m = 1;
         while (m &lt;= abs_x) {
@@ -444,7 +449,7 @@ IntegerVector nd(NumericVector x) {
 &quot;
 )
 
-nd_Rcpp(c(123456, 234, -72))</code></pre>
+nd_Rcpp(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <pre class="r"><code>b3 &lt;- bench::mark(
   `C++` = nd_Rcpp(nums),
@@ -458,10 +463,10 @@ dplyr::arrange(b3[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 4 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 C++          3.02ms   3.12ms    320.      3.82MB    16.6 
-## 2 Fortran      3.29ms   3.58ms    279.     15.26MB    92.9 
-## 3 C            3.75ms   3.93ms    255.      7.63MB    24.9 
-## 4 R          148.52ms 148.85ms      6.71   15.26MB     1.68</code></pre>
+## 1 C++          2.71ms   2.84ms    352.      3.82MB    36.8 
+## 2 Fortran      2.69ms   2.91ms    344.      7.63MB    57.7 
+## 3 C            4.24ms   4.36ms    229.      3.81MB    22.5 
+## 4 R          157.52ms  160.9ms      6.04   19.07MB     4.03</code></pre>
 <pre class="r"><code>plot(b3)</code></pre>
 <p><img src="unnamed-chunk-16-1.png" width="672" /></p>
 <p>This one seems to wander around a bit; on different runs I’ve seen performance
@@ -480,7 +485,7 @@ I’ve borrowed for all of the examples, so we <em>are</em> dealing with the sam
 algorithm in each case) is in fact compiled, but available as <code>ndigits()</code>. As
 long as I make the vector available in a Julia session (as integers; the
 function is only defined for integers) I can run this</p>
-<pre class="r"><code>JuliaCall::julia_assign(&quot;nums&quot;, as.integer(nums))
+<pre class="r"><code>JuliaCall::julia_assign(&quot;nums&quot;, nums)
 
 b4 &lt;- bench::mark(
   Julia = JuliaCall::julia_eval(&quot;ndigits.(nums)&quot;),
@@ -495,11 +500,11 @@ dplyr::arrange(b4[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 5 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 C++          3.02ms   3.06ms    324.      3.81MB    26.6 
-## 2 Julia         3.1ms   3.32ms    266.      3.81MB    22.0 
-## 3 Fortran      3.29ms    3.6ms    270.     15.26MB    84.2 
-## 4 C            3.74ms   3.94ms    251.      7.63MB    50.7 
-## 5 R          157.75ms 157.91ms      6.33   15.26MB     2.71</code></pre>
+## 1 C++           2.7ms   2.82ms    353.      3.81MB    26.9 
+## 2 Fortran       2.7ms   2.93ms    339.      7.63MB    48.5 
+## 3 Julia        3.23ms   3.77ms    232.      3.81MB    22.6 
+## 4 C            4.13ms   4.19ms    231.      3.81MB    10.7 
+## 5 R          158.75ms 159.51ms      6.27   19.07MB     2.69</code></pre>
 <pre class="r"><code>plot(b4)</code></pre>
 <p><img src="unnamed-chunk-18-1.png" width="672" /></p>
 <p>Ten points to Julia - remember, this is an interpreted language.</p>
@@ -516,14 +521,14 @@ of a few dozen milliseconds for even a Hello, World example.</p>
 making sure to target the release profile for maximum performance</p>
 <pre class="r"><code>rextendr::rust_function(
   r&quot;(
-  fn nd_Rust(x: &amp;[f64]) -&gt; Vec&lt;i32&gt; {
+  fn nd_Rust(x: &amp;[i32]) -&gt; Vec&lt;i32&gt; {
     let mut out = vec![0; x.len()];
     for v in 0..x.len() {
-        let abs_x = (x[v].abs() / 10.0);
+        let abs_x = (x[v].abs() / 10);
         let mut d = 1;
-        let mut m = 1.0;
+        let mut m = 1;
         while m &lt;= abs_x {
-            m *= 10.0;
+            m *= 10;
             d += 1;
         }
         out[v] = d;
@@ -533,9 +538,9 @@ making sure to target the release profile for maximum performance</p>
 )&quot;,
   profile = &quot;release&quot;
 )</code></pre>
-<pre class="bg-info text-info"><code>## ℹ build directory: &#39;/private/var/folders/1h/k6c5hb4d2qx07m8kfqb54f9c0000gn/T/RtmppiKq7x/file8b2f28646e2&#39;</code></pre>
-<pre class="bg-info text-info"><code>## ✔ Writing &#39;/private/var/folders/1h/k6c5hb4d2qx07m8kfqb54f9c0000gn/T/RtmppiKq7x/file8b2f28646e2/target/extendr_wrappers.R&#39;</code></pre>
-<pre class="r"><code>nd_Rust(c(123456, 234, -72))</code></pre>
+<pre class="bg-info text-info"><code>## ℹ build directory: &#39;/private/var/folders/1h/k6c5hb4d2qx07m8kfqb54f9c0000gn/T/RtmpLMk1G9/filec1e53eb70acb&#39;</code></pre>
+<pre class="bg-info text-info"><code>## ✔ Writing &#39;/private/var/folders/1h/k6c5hb4d2qx07m8kfqb54f9c0000gn/T/RtmpLMk1G9/filec1e53eb70acb/target/extendr_wrappers.R&#39;</code></pre>
+<pre class="r"><code>nd_Rust(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <pre class="r"><code>b5 &lt;- bench::mark(
   Rust = nd_Rust(nums),
@@ -551,12 +556,12 @@ dplyr::arrange(b5[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 6 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 Rust         2.87ms   3.07ms    322.      3.82MB   24.9  
-## 2 C++          3.03ms   3.13ms    318.      3.81MB   22.1  
-## 3 Fortran      3.28ms   3.56ms    283.     15.26MB   65.5  
-## 4 Julia        3.24ms   3.66ms    265.      3.81MB   17.8  
-## 5 C            3.75ms   3.94ms    255.      7.63MB   22.5  
-## 6 R          150.69ms 151.09ms      6.61   15.26MB    0.734</code></pre>
+## 1 C++          2.71ms   2.82ms    353.      3.81MB    27.0 
+## 2 Fortran      2.65ms   2.89ms    344.      7.63MB    42.6 
+## 3 Rust         2.69ms   2.99ms    323.      3.82MB    25.1 
+## 4 Julia        3.25ms   3.54ms    283.      3.81MB    22.4 
+## 5 C            4.09ms   4.28ms    231.      3.81MB    17.9 
+## 6 R          160.23ms 160.72ms      6.22   19.07MB     4.15</code></pre>
 <pre class="r"><code>plot(b5)</code></pre>
 <p><img src="unnamed-chunk-19-1.png" width="672" /></p>
 <div class="float">
@@ -567,6 +572,9 @@ dplyr::arrange(b5[, 1:8], median)</code></pre>
 languages we can call directly from R, but several languages which run faster than
 even (at least my implementation of) C and count number of digits of
 a million values in under 4ms.</p>
+<p>After enforcing integers in the R code which was transpiled to Fortran, we’ve
+somehow managed to achieve Rust speeds with nearly 0 additional effort. I’m
+very impressed!</p>
 </div>
 <div id="python" class="section level2">
 <h2>Python</h2>
@@ -581,7 +589,7 @@ def nd_python(x):
     out = np.zeros(len(x), dtype=int)
 
     for v in range(len(x)):
-        abs_x = abs(x[v] / 10.0)
+        abs_x = abs(x[v] / 10)
         d = 1
         m = 1
         while m &lt;= abs_x:
@@ -592,7 +600,7 @@ def nd_python(x):
     return out.tolist()
 &#39;)
 
-py$nd_python(c(123456, 234, -72))</code></pre>
+py$nd_python(c(123456L, 234L, -72L))</code></pre>
 <pre class="bg-success"><code>## [1] 6 3 2</code></pre>
 <pre class="r"><code>b6 &lt;- bench::mark(
   Python = py$nd_python(nums),
@@ -609,13 +617,13 @@ dplyr::arrange(b6[, 1:8], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 7 × 6
 ##   expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##   &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 Rust         2.87ms   3.08ms    322.      3.81MB   13.0  
-## 2 C++          3.02ms   3.13ms    321.      3.81MB    6.21 
-## 3 Fortran      3.27ms   3.44ms    285.     15.26MB   32.7  
-## 4 Julia        3.33ms   3.53ms    280.      3.81MB    7.49 
-## 5 C            3.74ms   3.94ms    255.      7.63MB   10.6  
-## 6 R           157.9ms 158.51ms      6.31   15.26MB    0.701
-## 7 Python     269.08ms 271.27ms      3.64    3.81MB    0</code></pre>
+## 1 C++          2.71ms   2.81ms    354.      3.81MB    15.1 
+## 2 Fortran      2.65ms   2.81ms    355.      7.63MB    35.2 
+## 3 Rust         2.69ms   2.85ms    336.      3.81MB    17.9 
+## 4 Julia        3.48ms   3.71ms    274.      3.81MB    10.8 
+## 5 C            4.06ms   4.17ms    240.      3.81MB     8.43
+## 6 R          161.01ms 161.26ms      6.20   19.07MB     2.66
+## 7 Python      272.1ms 272.73ms      3.63    3.81MB     0</code></pre>
 <pre class="r"><code>plot(b6)</code></pre>
 <p><img src="unnamed-chunk-20-1.png" width="672" /></p>
 <p>In fairness, there’s overhead here involved with calling it from R, but I think
@@ -630,9 +638,9 @@ between these extremes? Running the benchmarks at various scales should show thi
 <pre class="r"><code>n_vals &lt;- 10^(1:7)
 scales &lt;- purrr::map_df(n_vals, ~{
   set.seed(1)
-  nums &lt;- round(runif(.x, -1, 1) * .x)
+  nums &lt;- as.integer(runif(.x, -1, 1) * .x)
   nums &lt;- nums[nums != 0]
-  JuliaCall::julia_assign(&quot;nums&quot;, as.integer(nums))
+  JuliaCall::julia_assign(&quot;nums&quot;, nums)
   b &lt;- bench::mark(
     Python = py$nd_python(nums),
     Rust = nd_Rust(nums),
@@ -645,9 +653,10 @@ scales &lt;- purrr::map_df(n_vals, ~{
     check = TRUE
   )
   dplyr::bind_cols(vec_len = .x, b[, 1:8])
-})
-
-library(ggplot2)
+})</code></pre>
+<pre class="bg-warning text-warning"><code>## Warning: Some expressions had a GC in every iteration; so filtering is
+## disabled.</code></pre>
+<pre class="r"><code>library(ggplot2)
 ggplot(scales,
        aes(x = vec_len,
            y = 1e6*as.numeric(median),
@@ -678,13 +687,13 @@ off at the lowest lengths</p>
 <pre class="bg-success"><code>## # A tibble: 7 × 7
 ##   vec_len expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##     &lt;dbl&gt; &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1      10 Fortran     122.9ns 205.12ns  4081331.        0B     0   
-## 2      10 C++         287.1ns 369.04ns  2585126.        0B     0   
-## 3      10 C             410ns 491.97ns  1914470.        0B     0   
-## 4      10 Rust        532.9ns  697.1ns  1367702.        0B     0   
-## 5      10 R             943ns   1.11µs   878760.        0B     0   
-## 6      10 Python       20.7µs  22.92µs    43281.        0B     4.33
-## 7      10 Julia        69.8µs  71.59µs    13636.        0B     2.03</code></pre>
+## 1      10 Fortran     163.9ns 205.12ns  4369885.        0B     0   
+## 2      10 C++         286.8ns 369.04ns  2505953.        0B     0   
+## 3      10 C             410ns 451.23ns  1955486.        0B     0   
+## 4      10 Rust        532.9ns 696.86ns  1391547.        0B     0   
+## 5      10 R           984.2ns   1.11µs   822195.        0B    82.2 
+## 6      10 Python       20.5µs  21.89µs    44487.        0B     8.90
+## 7      10 Julia        69.3µs  71.67µs    13612.        0B     0</code></pre>
 <p>but we’re looking at sub microsecond differences - what <em>will</em> you do with all
 that free time?</p>
 <p>By the time we’re looking at 1000 values, the compiled languages are all about
@@ -693,26 +702,26 @@ the same</p>
 <pre class="bg-success"><code>## # A tibble: 7 × 7
 ##   vec_len expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##     &lt;dbl&gt; &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1    1000 C++          1.68µs   1.84µs   487745.    3.95KB     0   
-## 2    1000 Rust         2.13µs   2.46µs   397120.    3.95KB     0   
-## 3    1000 Fortran      1.97µs   2.79µs   347513.   15.72KB    34.8 
-## 4    1000 C            2.79µs   3.08µs   299955.    7.86KB    30.0 
-## 5    1000 Julia       73.06µs  77.49µs    12381.    3.95KB     0   
-## 6    1000 R           77.53µs  81.22µs    12306.   15.72KB     0   
-## 7    1000 Python      213.9µs 232.35µs     4282.    3.95KB     2.06</code></pre>
+## 1    1000 C++          1.48µs   1.76µs   533778.    3.95KB     0   
+## 2    1000 Rust         1.56µs    1.8µs   487209.    3.95KB     0   
+## 3    1000 Fortran      1.15µs   1.84µs   558984.    7.91KB     0   
+## 4    1000 C            3.08µs    3.4µs   281578.    3.95KB     0   
+## 5    1000 Julia       72.73µs  79.05µs    12351.    3.95KB     2.05
+## 6    1000 R           78.23µs   85.2µs    11640.   19.66KB     2.03
+## 7    1000 Python     198.32µs 216.73µs     4565.    3.95KB     0</code></pre>
 <p>At ten million values it’s a complete wash the compiled languages with maybe a
 slight drop for C</p>
 <pre class="r"><code>dplyr::arrange(scales[scales$vec_len == 1e7, ], median)</code></pre>
 <pre class="bg-success"><code>## # A tibble: 7 × 7
 ##    vec_len expression      min   median `itr/sec` mem_alloc `gc/sec`
 ##      &lt;dbl&gt; &lt;bch:expr&gt; &lt;bch:tm&gt; &lt;bch:tm&gt;     &lt;dbl&gt; &lt;bch:byt&gt;    &lt;dbl&gt;
-## 1 10000000 Rust        33.78ms  34.58ms    28.9      38.1MB   2.07  
-## 2 10000000 C++         35.05ms  35.38ms    28.3      38.1MB   2.02  
-## 3 10000000 Julia       37.63ms  38.56ms    18.1      38.1MB   2.01  
-## 4 10000000 Fortran     39.29ms   41.9ms    23.8     152.6MB  17.0   
-## 5 10000000 C           43.99ms  44.19ms    22.5      76.3MB   2.05  
-## 6 10000000 R              1.8s    1.81s     0.550   152.6MB   0.236 
-## 7 10000000 Python        3.06s     3.1s     0.322    38.1MB   0.0357</code></pre>
+## 1 10000000 C++         30.98ms   31.1ms    31.1      38.1MB   7.77  
+## 2 10000000 Rust        32.54ms  32.77ms    29.5      38.1MB   5.91  
+## 3 10000000 Fortran     32.32ms   34.8ms    23.8      76.3MB  11.9   
+## 4 10000000 Julia        36.4ms  39.59ms    18.2      38.1MB   3.64  
+## 5 10000000 C           44.91ms  45.25ms    21.7      38.1MB   3.95  
+## 6 10000000 R             1.84s    1.86s     0.536   190.7MB   0.536 
+## 7 10000000 Python        3.02s    3.06s     0.327    38.1MB   0.0654</code></pre>
 <p>All very interesting!</p>
 <p>It would probably be worthwhile digging into the memory usage of all of these
 since there’s a big difference that likely indicates something different is
