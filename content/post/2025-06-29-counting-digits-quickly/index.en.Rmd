@@ -1,0 +1,691 @@
+---
+title: Counting Digits Quickly
+author: Jonathan Carroll
+date: '2025-06-29'
+slug: counting-digits-quickly
+categories:
+  - rstats
+  - c
+  - c++
+  - fortran
+  - rust
+  - julia
+  - python
+tags:
+  - rstats
+  - c
+  - c++
+  - fortran
+  - rust
+  - julia
+  - python
+type: ''
+subtitle: ''
+image: ''
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+knitr::opts_chunk$set(fig.path = "")
+
+JuliaCall::julia_setup(file.path(path.expand("~"), ".juliaup/bin/"))
+```
+
+When things run slower than we'd like in R we tend to reach for another, usually
+compiled, language, and move our code there. What if it "just happened"? What
+started out as a silly exploration of how to count digits ended up with a race
+to see which language does it fastest. Maybe some surprises here for some, maybe
+some bad implementations on my part - let's find out.
+
+<!--more-->
+
+When things run slower than we'd like in R we tend to reach for another, usually
+compiled, language, and move our code there. What if it "just happened"? What
+started out as a silly exploration of how to count digits ended up with a race
+to see which language does it fastest. Maybe some surprises here for some, maybe
+some bad implementations on my part - let's find out.
+
+I saw some recent activity on [{quickr}](https://github.com/t-kalinowski/quickr); 
+Tomasz Kalinowski's R to Fortran transpiler - I had starred the repo a long time 
+ago (and in haste, accidentally unstarred it, then re-starred it) but never 
+really played with it. I'm familiar with slightly older Fortran; nowadays it's 
+called "modern Fortran", but I did my PhD using Fortran95 in the late 2000's. 
+I've even pushed some of my [postdoc code to GitHub](https://github.com/jonocarroll/Dirac) 
+after getting it working again for a recent student.
+
+I figured now was a great chance to have a proper play with the package. 
+
+{quickr} "transpiles" R code which means it takes R code converts the syntax
+into Fortran syntax using the same variables and equivalent functions where
+available. The idea being that when R isn't working fast enough for you, instead
+of re-writing your function in something like C++ (via {Rcpp}) it can
+automatically write a Fortran version of your code and compile that into a
+highly performant function which can be called with the same arguments. Faster
+running code with no additional effort - sounds great!
+
+The README for {quickr} has some examples highlighting how it can improve the 
+performance of some functions beyond what {Rcpp} can offer, in some cases 
+approaching C speeds. That's not surprising to those who know Fortran - it's 
+still very much used in theoretical physics partly because of the performance, 
+partly due to the existing support in that field, but also partly because despite 
+being an 'old' language, it's actually pretty nice to use. 
+
+One of the big advantages of Fortran I found when learning other languages
+_after_ learning Fortran was that there's no manual memory management. If you
+want a vector or an array/tensor with many dimensions, you just ask for it
+(specifying a size along each dimension or dynamically sizing, but never
+manually freeing memory). R is known for its statistics chops, but under the
+hood of some of these functions still [call out to Fortran code](https://github.com/search?q=repo%3Awch%2Fr-source+%22.Fortran%28%22+path%3A*.R&type=code).
+
+I wanted some example code to try out myself and see if I even recognise the 
+Fortran it produces. I didn't just want to use the example code from the package, 
+so what could I use? 
+
+In [this post](https://jcarroll.com.au/2025/05/03/rotation-with-modulo/) I 
+celebrated the fact that Julia has a `ndigits()` function, while in R I cheated 
+and used `nchar()` which works fine provided you're dealing with non-negative 
+integers up to 99999, outside of which it doesn't do what you want
+
+```{r}
+nchar(99)       # 99    = 2 characters
+nchar(99999)    # 99999 = 5 characters
+nchar(99999+1)  # 1e+05 = 5 characters
+nchar(-99)      # -99   = 3 characters
+```
+
+I had some interesting [discussions on Mastodon](https://fosstodon.org/@jonocarroll/114441466559717402) 
+about different ways to implement `ndigits()` properly for R and in the end, 
+re-implementing the Julia solution seemed to work great for all edge cases. I 
+decided to use this for my Fortran testing with {quickr}.
+
+I got the package installed and the compiler hooked up correctly so that I could 
+run the example code, then tried adapting it to the `ndigits()` problem.
+
+## R
+
+The R code I started with was
+
+```{r}
+nd_R <- function(x) {
+  out <- double(length(x))
+  x <- abs(x / 10)
+  for (v in seq_along(x)) {
+    d <- 1
+    m <- 1
+    while (m <= x[v]) {
+      m <- m * 10
+      d <- d + 1
+    }
+    out[v] <- d
+  }
+  out
+}
+
+nd_R(c(123456, 234, -72))
+```
+
+and while this looks like a moderate amount of code, in essence it's taking the
+absolute value of the input (since we want to ignore negatives, and which is
+nicely vectorised in R), dividing by 10, checking if we've exceeded the input
+yet, and if not, stepping through successive multiples of 10 until we do, which
+finds the first power of 10 that is greater than our value, indicating the
+number of digits. For what it's worth, this is why in that post I noted an
+alternative route to achieving this; `ceil(log10(x))`.
+
+## Fortran
+
+Hoping to immediately transpile this to Fortran, ~~I immediately hit my first
+snag; {quickr} hasn't yet implemented `while()` so I can't transpile this
+exactly as I have it. There's no early `return()` or `break` either, so I can't
+just exit an oversized loop early. Without an alternative, I'm going to cheat a
+bit and just run a loop 12 times - this puts an upper limit on the input to a 12
+digit number, but I can live with that.~~
+
+Update _while writing the post_: I suppose good things come to those who wait - 
+on digging through some source code for this post I saw that `while` has been 
+implemented in the last week, so I'm going to pretend that was always the case.
+
+The other piece this transpiler needs is a type declaration for the input; R 
+is fully dynamic in that a function can take any type of object and it's up to 
+the function to decide what to do with it. Fortran is a bit stricter, and 
+requires types to be annotated, so I need to add a `declare(type())` to the code.
+
+```{r}
+nd2f <- function(x) {
+  declare(
+    type(x = double(NA))
+  )
+  out <- double(length(x))
+  x <- abs(x / 10)
+  for (v in seq_along(x)) {
+    d <- 1
+    m <- 1
+    while (m <= x[v]) {
+      m <- m * 10
+      d <- d + 1
+    }
+    out[v] <- d
+  }
+  out
+}
+```
+
+Note that this is still very much R code at this point - I can even run it
+in R and get the same answers as before
+
+```{r}
+nd2f(c(123456, 234, -72))
+```
+
+What surprised me here is that `declare()` is a base R function (not from
+{quickr}) intended for "specifying information about R code for use by the
+interpreter, compiler, and code analysis tools". I was originally thinking it 
+would be neat to be able to leverage that for some type-checking on the R side 
+as well as being informative to the Fortran code, but it "ignores the arguments
+and returns `NULL` invisibly", so no go on this throwing an error from R
+
+```{r}
+int_id <- function(x) {
+  declare(type(x = integer(NA)))
+  x
+}
+
+int_id(3L)
+int_id(1.5)
+```
+
+The magic happens when we ask {quickr} to do the transpilation. 
+
+The type information is used in the Fortran code, so compiling the `id()` example 
+produces something that is more restrictive on types
+
+```{r, error = TRUE}
+int_id_F <- quickr::quick(int_id)
+int_id_F(3L)
+int_id_F(1.5)
+```
+
+I can inspect the generated code with `r2f()`, though one wouldn't normally need
+to - it's interesting to see what the Fortran code looks like
+
+```{r}
+quickr:::r2f(int_id)
+```
+
+But of course, this just returns the value and that's not particularly
+enlightening. Doing the same for the `ndigits` code
+
+```{r}
+quickr:::r2f(nd2f)
+```
+
+The subroutine itself looks a lot like the R code; sure, some type annotations
+are sprinkled around, `do v = 1, size(x)` replaces `for v in seq_along(x)` and
+`do while` replaces `while`, but I don't think it's entirely alien.
+
+What might surprise some is the line
+
+```fortran
+x = abs((x / 10.0_c_double))
+```
+
+Notice there's no loop around this? Fortran is an array language...
+Rank-polymorphism, baby! I covered this in 
+[another post of mine](https://jcarroll.com.au/2023/08/29/now-you-re-thinking-with-arrays/) 
+but thanks to this, `abs()` is vectorised wherever needed
+
+```
+program test_abs
+  implicit none
+  integer, dimension(5) :: i = [-1, 2, -3, 4, -5]
+  write(*,*) abs(i)
+end program test_abs
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+#           1           2           3           4           5
+```
+
+Generating the compiled Fortran code from `nd2f` is as easy as
+
+```{r}
+nd_F <- quickr::quick(nd2f)
+nd_F
+```
+
+and we see that it's referencing some external code. This can be called
+
+```{r}
+nd_F(c(123456, 234, -72))
+```
+
+with the big benefit that now it's a LOT faster! 
+
+Generating a million random values and excluding any zero values, we can see the
+40x performance increase (!!!)
+
+```{r}
+set.seed(1)
+nums <- round(runif(1e6, -1, 1) * 1e6)
+nums <- nums[nums != 0]
+
+b0 <- bench::mark(
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b0[, 1:8], median)
+plot(b0)
+```
+
+For those not familiar, this benchmark plot shows the individual times taken for 
+repeated executions of the code in each 'expression', grouped vertically by the 
+'expression' itself (annotated as the language here) with some random scatter to show 
+the spread of execution times. Points to the left are faster. It's also worth 
+noting that `bench::mark()` defaults to `check = TRUE` so we can rest assured that 
+the results from each of the different languages we're about to explore are 
+consistent and it's not some artifact of one language doing less work.
+
+If you run these yourself you'll get slightly different results. I'm running them 
+on a newish M3 Macbook Pro.
+
+All that performance increase from just adding one line to the R code and
+wrapping it with one other function (resulting in an entirely different program
+being written and compiled, producing the correct results).
+
+I should note that in the first iteration of this post (in which `while` was not yet
+supported) I used an excessive `for` loop which resulted in a
+not-as-impressive-but-still-very-impressive 15x performance boost. 
+
+## R (compiled)
+
+If compiled code is so great, what about just compiling the R code with, e.g.
+`compiler::cmpfun()`?
+
+```{r}
+nd_comp = compiler::cmpfun(nd_R)
+
+nd_comp(c(123456, 234, -72))
+
+b1 <- bench::mark(
+  compiled = nd_comp(nums),
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b1[, 1:8], median)
+plot(b1)
+```
+
+That doesn't help; by the time the benchmark was running the `nd_R` function had
+been called enough times for it to be JIT compiled, anyway.
+
+This did get me thinking, though - what about other compiled alternatives?
+
+## C
+
+Since I'm going through Harvard's [CS50 'Introduction to Computer Science' course](https://cs50.harvard.edu/x/2025/)
+with [R Contributors](https://contributor.r-project.org/events/c-study-group-2025/)
+to learn a bit more structured C I figured I'd add that via coolbutuseless'
+[{callme}](https://github.com/coolbutuseless/callme) package. This surely isn't
+the world's greatest C code, but it compiles and runs...
+
+```{r}
+callme::compile(
+  "
+#include <R.h>
+#include <Rinternals.h>
+#include <stdlib.h>
+#include <math.h>
+
+SEXP nd_C(SEXP vec) {
+  double *vec_ptr = REAL(vec);
+  SEXP res = PROTECT(allocVector(REALSXP, length(vec)));
+  double *res_ptr = REAL(res);
+  for (int i = 0; i < length(vec); i++) {
+    double abs_x = fabs(vec_ptr[i] / 10.0);
+        int d = 1;
+        double m = 1.0;
+        while (m <= abs_x) {
+            m *= 10.0;
+            d++;
+        }
+        res_ptr[i] = d;
+  }
+
+  UNPROTECT(1);
+  return res;
+}
+"
+)
+
+nd_C(c(123456, 234, -72))
+```
+
+So, how does it compare?
+
+```{r}
+b2 <- bench::mark(
+  C = nd_C(nums),
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b2[, 1:8], median)
+plot(b2)
+```
+
+Whoa - automatically transpiled Fortran runs faster than (my) C... That's fast.
+
+![Impressively fast](images/vince1.jpg){width=400px}
+
+## C++
+
+What about C++ via {Rcpp}? Dealing with vectors is made easier by {Rcpp} having 
+pre-built types compatible with R, and this otherwise looks very similar to the 
+R code
+
+```{r}
+nd_Rcpp <- Rcpp::cppFunction(
+  "
+IntegerVector nd(NumericVector x) {
+    int n = x.size();
+    IntegerVector out(n);
+
+    for (int v = 0; v < n; v++) {
+        double abs_x = std::abs(x[v] / 10.0);
+        int d = 1;
+        int m = 1;
+        while (m <= abs_x) {
+            m *= 10;
+            d++;
+        }
+        out[v] = d;
+    }
+
+    return out;
+}
+"
+)
+
+nd_Rcpp(c(123456, 234, -72))
+
+b3 <- bench::mark(
+  `C++` = nd_Rcpp(nums),
+  C = nd_C(nums),
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b3[, 1:8], median)
+plot(b3)
+```
+
+This one seems to wander around a bit; on different runs I've seen performance
+equal or better to the C code and on others, about 3x as long, but generally
+pretty fast.
+
+## Julia
+
+After all of this, I remembered that I was comparing the Julia implementation -
+how does _that_ perform? Julia is a JIT/AOT compiled language, so maybe it's not
+too bad... I can still call that directly from R
+
+```{r}
+JuliaCall::julia_eval("ndigits.([123456, 234, -72])")
+```
+
+keeping in mind that the Julia function `ndigits` ([the implementation for which](https://github.com/JuliaLang/julia/blob/760b2e5b7396f9cc0da5efce0cadd5d1974c4069/base/intfuncs.jl#L633)
+I've borrowed for all of the examples, so we _are_ dealing with the same
+algorithm in each case) is in fact compiled, but available as `ndigits()`. As
+long as I make the vector available in a Julia session (as integers; the
+function is only defined for integers) I can run this
+
+```{r}
+JuliaCall::julia_assign("nums", as.integer(nums))
+
+b4 <- bench::mark(
+  Julia = JuliaCall::julia_eval("ndigits.(nums)"),
+  `C++` = nd_Rcpp(nums),
+  C = nd_C(nums),
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b4[, 1:8], median)
+plot(b4)
+```
+
+Ten points to Julia - remember, this is an interpreted language.
+
+![That's really fast!](images/vince2.jpg){width=400px}
+
+I should note there's work being done towards [making Julia binaries out of scripts](https://jbytecode.github.io/juliac/), but this still has a startup time 
+of a few dozen milliseconds for even a Hello, World example.
+
+## Rust
+
+One more? What about Rust? We can use {rextendr} to call Rust code inline,
+making sure to target the release profile for maximum performance
+
+```{r}
+rextendr::rust_function(
+  r"(
+  fn nd_Rust(x: &[f64]) -> Vec<i32> {
+    let mut out = vec![0; x.len()];
+    for v in 0..x.len() {
+        let abs_x = (x[v].abs() / 10.0);
+        let mut d = 1;
+        let mut m = 1.0;
+        while m <= abs_x {
+            m *= 10.0;
+            d += 1;
+        }
+        out[v] = d;
+    }
+    out
+  }
+)",
+  profile = "release"
+)
+
+nd_Rust(c(123456, 234, -72))
+
+b5 <- bench::mark(
+  Rust = nd_Rust(nums),
+  Julia = JuliaCall::julia_eval("ndigits.(nums)"),
+  `C++` = nd_Rcpp(nums),
+  C = nd_C(nums),
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b5[, 1:8], median)
+plot(b5)
+```
+
+![Ridiculous speeds!](images/vince3.jpg){width=400px}
+
+We are truly spoiled for choice these days - not only do we have a plethora of
+languages we can call directly from R, but several languages which run faster than
+even (at least my implementation of) C and count number of digits of
+a million values in under 4ms.
+
+## Python
+
+Just for funsies, what about Python? It's not a compiled language, but maybe if
+I use numpy it will be fast ... ? It's at least another language I can call from
+R that is generally considered 'faster'. Is it?
+
+```{r}
+library(reticulate)
+reticulate::py_run_string('
+import numpy as np
+def nd_python(x):
+    x = np.asarray(x)
+    out = np.zeros(len(x), dtype=int)
+
+    for v in range(len(x)):
+        abs_x = abs(x[v] / 10.0)
+        d = 1
+        m = 1
+        while m <= abs_x:
+            m *= 10
+            d += 1
+        out[v] = d
+
+    return out.tolist()
+')
+
+py$nd_python(c(123456, 234, -72))
+
+b6 <- bench::mark(
+  Python = py$nd_python(nums),
+  Rust = nd_Rust(nums),
+  Julia = JuliaCall::julia_eval("ndigits.(nums)"),
+  `C++` = nd_Rcpp(nums),
+  C = nd_C(nums),
+  R = nd_R(nums),
+  Fortran = nd_F(nums),
+  min_iterations = 10
+)
+
+dplyr::arrange(b6[, 1:8], median)
+plot(b6)
+```
+
+In fairness, there's overhead here involved with calling it from R, but I think
+that's apples-to-apples considering I'm doing the same with all the compiled
+languages.
+
+## Does it scale?
+
+I've been running these benchmarks for a million numbers, but how do the results
+scale with that size? What if it's just a handful of numbers? What about in
+between these extremes? Running the benchmarks at various scales should show this.
+
+```{r}
+n_vals <- 10^(1:7)
+scales <- purrr::map_df(n_vals, ~{
+  set.seed(1)
+  nums <- round(runif(.x, -1, 1) * .x)
+  nums <- nums[nums != 0]
+  JuliaCall::julia_assign("nums", as.integer(nums))
+  b <- bench::mark(
+    Python = py$nd_python(nums),
+    Rust = nd_Rust(nums),
+    Julia = JuliaCall::julia_eval("ndigits.(nums)"),
+    `C++` = nd_Rcpp(nums),
+    C = nd_C(nums),
+    R = nd_R(nums),
+    Fortran = nd_F(nums),
+    min_iterations = 10,
+    check = TRUE
+  )
+  dplyr::bind_cols(vec_len = .x, b[, 1:8])
+})
+
+library(ggplot2)
+ggplot(scales,
+       aes(x = vec_len,
+           y = 1e6*as.numeric(median),
+           col = as.character(expression)
+       )) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  scale_x_log10() +
+  scale_y_log10() +
+  scale_color_discrete(palette = "Set2") +
+  labs(
+    title = "Scaling of Counting ndigits Benchmarks",
+    x = "Vector Length",
+    y = "Microseconds",
+    color = "Language"
+  ) +
+  theme_bw()
+```
+
+What a nice, log-log linear result with that one exception - Julia is pretty
+constant up until 1000, after which it starts to follow the same trajectory as
+the other languages - presumably that's just the overhead of starting up the
+Julia runtime, which is a known bottleneck.
+
+There's definitely a clear divide between the interpreted languages (R and Python)
+and the compiled ones.
+
+At lower vector lengths there's a little bit of a spread with Fortran really showing
+off at the lowest lengths
+
+```{r}
+dplyr::arrange(scales[scales$vec_len == 10, ], median)
+```
+
+but we're looking at sub microsecond differences - what _will_ you do with all
+that free time?
+
+By the time we're looking at 1000 values, the compiled languages are all about
+the same
+
+```{r}
+dplyr::arrange(scales[scales$vec_len == 1000, ], median)
+```
+
+At ten million values it's a complete wash the compiled languages with maybe a 
+slight drop for C
+
+```{r}
+dplyr::arrange(scales[scales$vec_len == 1e7, ], median)
+```
+
+All very interesting!
+
+It would probably be worthwhile digging into the memory usage of all of these
+since there's a big difference that likely indicates something different is
+happening, but that's beyond my understanding - feel free to let me know!
+
+So, what might be the reason for Rust and Julia to be so fast, even compared to
+C? These are newer languages with a lot of focus on their compilers, and it's
+entirely possible that they're able to make some better optimisations compared
+to a very general C compiler, but more likely that's the upper limit of what a
+computer can do in that much time and my C code is non-optimal.
+
+## Conclusions
+
+Back to the original point, though - the transpilation does an amazing job
+of improving the code _without having to write more code in a different
+language_. Sure, Julia solves this 'two language problem' by just being
+ridiculously fast to begin with, but if I _am_ writing R code, it's fantastic to
+see there's an option for just "making it go brrr" without actually doing
+anything extra.
+
+Not all of R has been translated to Fortran so there's a lot of code that won't
+transpile just yet, but it's a truly inspiring project that I'll surely be
+keeping a close eye on.
+
+I'd love to hear what people think about these comparisons - are there points I've
+overlooked? Better ways to do it? Improvements to my implementations which change
+the results? Other considerations I've missed? As always, I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
