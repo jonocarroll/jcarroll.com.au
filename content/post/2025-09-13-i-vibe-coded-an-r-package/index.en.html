@@ -16,15 +16,15 @@ image: ''
 
 <p>Learning Japanese means memorizing thousands of characters, some of which look
 nearly identical. I wanted a way to visualize which kanji are similar to each
-other, and for once there’s no R package for this, so I built one using Claude
-Code for $20 and an afternoon’s work. I got a fully-documented package with
-mocked tests, complete API coverage, caching, and graph visualizations.</p>
+other, and for once there wasn’t an R package for this, so I built one using
+Claude Code for $20 and an afternoon’s work. I got a fully-documented package
+with mocked tests, complete API coverage, caching, and graph visualizations.</p>
 <!--more-->
 <p>Learning Japanese means memorizing thousands of characters, some of which look
 nearly identical. I wanted a way to visualize which kanji are similar to each
-other, and for once there’s no R package for this, so I built one using Claude
-Code for $20 and an afternoon’s work. I got a fully-documented package with
-mocked tests, complete API coverage, caching, and graph visualizations.</p>
+other, and for once there wasn’t an R package for this, so I built one using
+Claude Code for $20 and an afternoon’s work. I got a fully-documented package
+with mocked tests, complete API coverage, caching, and graph visualizations.</p>
 <p>I won’t keep you in suspense - here’s the result:</p>
 <div class="float">
 <img src="images/network.png" width="800" alt="Network diagram of kanji similar to 年 (year)" />
@@ -49,7 +49,7 @@ this.</p>
 <img src="images/duolingo2.png" width="400" alt="My Duolingo progress" />
 <div class="figcaption">My Duolingo progress</div>
 </div>
-<p>so I’m a lot of the way through the course, but it doesn’t really <em>teach</em> me
+<p>So I’m a lot of the way through the course, but it doesn’t really <em>teach</em> me
 anything; it’s purely by example, which I suppose is how children learn their
 native language, but it is pretty slow going for remembering what things mean. I
 bought some grammar books which are enlightening and I frequently say “Oh,
@@ -110,7 +110,7 @@ kanji, and I figured maybe I can use that data to build out a graph.</p>
 <div id="how-hard-could-it-be" class="section level3">
 <h3>How Hard Could It Be?</h3>
 <p>I had a look around and couldn’t find any R packages that did what I wanted. I
-didn’t search other programming languages; maybe there’s something in python?
+didn’t search other programming languages; maybe there’s something in Python?
 There was <a href="https://github.com/ZenBrayn/wanikanir">one WaniKani API package</a>
 <code>{wanikanir}</code> (on GitHub, not CRAN) that was a bit out of date from 7 years ago.
 I couldn’t use that as-is and I couldn’t find another WaniKani API package. I
@@ -121,7 +121,7 @@ WaniKani API exists and that’s what <a href="https://github.com/jerryhcooke/sm
 I needed a way to query it. So I started by trying to fetch the data myself. I
 <a href="https://www.wanikani.com/settings/personal_access_tokens">got my API key</a>,
 looked up the <a href="https://docs.api.wanikani.com/">documentation</a>, figured out what
-I need to fetch, and then tweaked <code>{wanikanir}</code> to use <code>{httr2}</code> (with
+I needed to fetch, and then tweaked <code>{wanikanir}</code> to use <code>{httr2}</code> (with
 pagination) and query the data via the up-to-date endpoint. I got the results as
 a giant JSON blob, so I needed to dive into what was in there.</p>
 <p>I had to parse out the different pieces that I want, which was the internal IDs,
@@ -179,8 +179,7 @@ the base directory of an <a href="https://obsidian.md/">Obsidian</a> vault full 
 files which seems to be <em>very</em> powerful, e.g.</p>
 <iframe width="420" height="315" src="https://www.youtube.com/embed/d7Pb73dbcIM">
 </iframe>
-<p>and decided to take it for a proper spin. I’ve previously briefly tried used
-<a href="https://ampcode.com/">Amp</a> to vibe code something – Geoff Huntley <a href="https://ghuntley.com/agent/">demonstrated that</a> at <a href="https://dataengbytes.com/">DataEngBytes</a>
+<p>and decided to take it for a proper spin. I’ve previously tried using <a href="https://ampcode.com/">Amp</a> to vibe code something – Geoff Huntley <a href="https://ghuntley.com/agent/">demonstrated that</a> at <a href="https://dataengbytes.com/">DataEngBytes</a>
 and while I don’t necessarily agree with everything he said, the take-away that
 “developers need to be aware of (and familiar with) these tools” really stuck
 with me. The Agentic workflow works quite nicely for iterating by itself if it
@@ -192,7 +191,7 @@ to be. The entire prompt, not even using the <code>/init</code> setup, was just<
 <p>“Build an R package that uses this API <a href="https://docs.api.wanikani.com/" class="uri">https://docs.api.wanikani.com/</a>. Support
 all the endpoints. Add documentation and tests and make sure it passes check”.</p>
 </blockquote>
-<p>and off it went to started building. It made a plan for what it needed to do to
+<p>and off it went and started building. It made a plan for what it needed to do to
 build the package:</p>
 <ul>
 <li>It needed to query the API</li>
@@ -215,7 +214,7 @@ fact I dictated most of this article as a draft. I don’t let any AI write my
 blog posts for me; this is definitely <strong>me</strong> writing all of this — even if I do
 use an em-dash or two. But Wispr Flow seems pretty cool. If you want to give it
 a go, here’s a referral code</p>
-<p><a href="wisprflow.ai/r?JONATHAN746">wisprflow.ai/r?JONATHAN746</a></p>
+<p><a href="https://wisprflow.ai/r?JONATHAN746">wisprflow.ai/r?JONATHAN746</a></p>
 <p>that I think gives you two weeks of full pro-level usage, and in theory if I end
 up keeping on using this, gives me some free weeks too.</p>
 <p>Once it was done, Claude Code had queried the API documentation page, found all
@@ -226,8 +225,8 @@ the functions and a set of mocked tests using <code>{httptest}</code>. It confir
 passed <code>devtools::check()</code> by actually running it from the command line and
 fixing any errors that came up.</p>
 <p>I wanted to make sure that it was clear when I was “doing an AI” and when I was
-doing my own work, so as part of my initial instructions to Claude, I told it
-that any time it commits, it needs to have “(claude)” in the commit message.
+doing my own work, so as part of my initial instructions to Claude Code, I told
+it that any time it commits, it needs to have “(claude)” in the commit message.
 This might have been redundant because it adds itself as a co-author, so all of
 the commits show “co-authored by Claude” in GitHub if it was involved, but I
 think it’s worthwhile calling it out in the commit messages.</p>
@@ -236,7 +235,7 @@ gave it a subset of the JSON output that I’d manually extracted the other day
 and said that I wanted to be able to reproduce this. It built a function that
 queried the data according to all of the things that it had found/built so far
 and built the exact same table that I’d spent my entire evening building, but
-now the package could do everything else as well. It also wrote a a vignette of
+now the package could do everything else as well. It also wrote a vignette of
 basic usage that keeps track of all the things it can do. Here I think it’s a
 little less competent in terms of writing documentation that shows how to use
 something, but these models aren’t necessarily great at knowing the intention of
@@ -325,7 +324,7 @@ radicals.</p>
 <p>At this point, I realised that every time it went and fetched all of this data
 it was fetching directly from the API, so I asked it to add a caching layer that
 fetched all of the kanji once and stored it with the package, reloading whenever
-necessary and referred to that. Again, it did it. So now it used the cache of
+necessary and referring to that. Again, it did it. So now it used the cache of
 that data and could look up all of it, and when I checked what was actually in
 that cache it was the full raw JSON processed data, so now it could fetch
 everything, not just the pieces that I was interested in. It built the cards and
@@ -385,7 +384,8 @@ don’t care about words you haven’t learned yet) and some settings for layout
 <div class="figcaption">Kanji Explorer shiny app</div>
 </div>
 <p>FYI, it’s … not great on a phone screen. I haven’t spent a lot of time
-refining this, and don’t plan to.</p>
+refining this, and don’t plan to. Nonetheless, I’m absolutely going to use this
+when I get confused between two kanji!</p>
 <p>In terms of “does it work?” I think it definitely does all of the things that I
 wanted it to do. The old saying of <a href="https://wiki.c2.com/?MakeItWorkMakeItRightMakeItFast">“Make it work, make it right, make it fast”</a> probably applies
 here. I think “work” gets a tick. Is it right? I don’t know. As far as I can
@@ -395,7 +395,7 @@ when I got it manually, but I’m relying on that data. Sure, there’s possibly
 very worst that could happen with any of this code is it deletes my WaniKani
 account, and in that case I’ll live to tell the tale. In terms of “fast”, this
 is also low-risk. It doesn’t need to do anything computationally heavy;
-everything here seems to work okay. I got it to add caching, so that I wasn’t
+everything here seems to work okay. I got it to add caching, so I wasn’t
 being wasteful. But apart from that, what more could I want to do?</p>
 </div>
 <div id="reflections" class="section level3">
@@ -405,7 +405,7 @@ Probably not. I think it would probably build something that might be capable
 and “look right enough” if your bank had an API, but the risk there is just too
 high to actually let a system vibe code it.</p>
 <p>One of the sayings I like was that people used to say “ideas are free,
-implementation costs.” I think it was Jeff Huntley’s who said in his
+implementation costs.” I think it was Geoff Huntley who said in his
 DataEngBytes presentation (something along the lines of) “implementations are
 now free for prototypes,” and I think that definitely holds here. If somebody
 wanted to take this and create a business that made a “production ready” version
