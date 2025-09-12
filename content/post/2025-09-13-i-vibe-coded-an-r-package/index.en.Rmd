@@ -8,7 +8,7 @@ categories:
 tags:
   - rstats
 type: ''
-subtitle: 'and it ... works?!?'
+subtitle: 'and it ... absolutely works?!?'
 image: ''
 ---
 
@@ -58,21 +58,23 @@ this.
 
 ![My Duolingo progress](images/duolingo2.png){width=400px}
 
-So I'm a lot of the way through the course, but it doesn't really _teach_ me
+So I'm a lot of the way through the course, but it doesn't actively _teach_ me
 anything; it's purely by example, which I suppose is how children learn their
 native language, but it is pretty slow going for remembering what things mean. I
 bought some grammar books which are enlightening and I frequently say "Oh,
-that's why they did that!" I was recommended to try
-[WaniKani](https://www.wanikani.com/), which uses spaced-repetition to teach the
-radicals, the kanji, and vocabulary and provides mnemonics to help remember
-which things mean what. I've found that extremely useful for my Duolingo-based
-learning because now I can sometimes recognise what a word might mean based on
-what I've learned in WaniKani and that helps me at least get closer to which
-word is correct. WaniKani is free until you clear level 3 after which it's paid,
-but I found it so useful I paid for a subscription and am now on level 8. There
-are 60 levels, and the first 10 are labelled "pleasant", the next 10 "painful",
-followed by "death", then "hell", so I'm not nearly through even the easy bit
-yet.
+that's why they did that!" 
+
+I was recommended to try [WaniKani](https://www.wanikani.com/), which uses
+spaced-repetition to teach the radicals, kanji, and vocabulary and provides
+mnemonics to help remember which things mean what. I've found that extremely
+useful for my Duolingo-based learning because now I can sometimes recognise what
+a word might mean based on what I've learned in WaniKani and that helps me at
+least get closer to which word is correct.
+
+WaniKani is free until you clear level 3 after which it's paid, but I found it
+so useful I paid for a subscription and am now on level 8. There are 60 levels,
+and the first 10 are labelled "pleasant", the next 10 "painful", followed by
+"death", then "hell", so I'm not nearly through even the easy bit yet.
 
 ![My WaniKani progress](images/wanikani.png){width=600px}
 
@@ -118,25 +120,30 @@ I had a look around and couldn't find any R packages that did what I wanted. I
 didn't search other programming languages; maybe there's something in Python?
 There was [one WaniKani API package](https://github.com/ZenBrayn/wanikanir)
 `{wanikanir}` (on GitHub, not CRAN) that was a bit out of date from 7 years ago.
-I couldn't use that as-is and I couldn't find another WaniKani API package. I
-did find Dominic Schuhmacher's
+I couldn't use that as-is and I couldn't find another WaniKani API package. 
+
+I did find Dominic Schuhmacher's 
 [package](https://github.com/dschuhmacher/kanjistat/) for comparing or looking
 up kanji. But that doesn't do the similarity analysis that I wanted. The
-WaniKani API exists and that's what [Smouldering Durtles](https://github.com/jerryhcooke/smouldering_durtles) (the unofficial Android app I occasionally use to view my progress) uses behind the scenes, and
-I needed a way to query it. So I started by trying to fetch the data myself. I
-[got my API key](https://www.wanikani.com/settings/personal_access_tokens),
-looked up the [documentation](https://docs.api.wanikani.com/), figured out what
-I needed to fetch, and then tweaked `{wanikanir}` to use `{httr2}` (with
-pagination) and query the data via the up-to-date endpoint. I got the results as
-a giant JSON blob, so I needed to dive into what was in there.
+WaniKani API exists and that's what [Smouldering Durtles](https://github.com/jerryhcooke/smouldering_durtles) (the unofficial
+Android app I occasionally use to view my progress) uses behind the scenes. All
+I neeed was a way to query it.
 
-I had to parse out the different pieces that I want, which was the internal IDs,
-the kanji, their readings, their meanings, and then the similarities (which just
-returns another list of IDs to look up). I ended up staying up until about 1am
-that night and _only just_ managed to get the actual data in the form of a table
-that I could look at and maybe see that it would have the pieces that I needed,
-but this was going to take a very long time. Here's where I got to after an
-entire evening hacking away
+I started by trying to fetch the data myself. I [got my API
+key](https://www.wanikani.com/settings/personal_access_tokens), looked up the
+[documentation](https://docs.api.wanikani.com/), figured out what I needed to
+fetch, and then tweaked `{wanikanir}` to use `{httr2}` (with pagination) and
+query the data via the up-to-date endpoint. I got the results as a giant JSON
+blob, so I needed to dive into what was in there.
+
+I had to parse out the different pieces that I wanted, which was the internal
+IDs, the kanji, their readings, their meanings, and then the similarities (which
+just returns another list of IDs to look up). I ended up staying up until about
+1am that night and _only just_ managed to get the actual data in the form of a
+table that I could look at and maybe see that it would have the pieces that I
+needed, but this was going to take a very long time. 
+
+Here's where I got to after an entire evening hacking away
 
 ```r
 # get all the kanji
@@ -188,20 +195,28 @@ This was still a long way off from what I needed it to do, though.
 
 A couple of days later, I'd been watching some videos on [Claude Code](https://www.anthropic.com/claude-code), in particular starting it up in
 the base directory of an [Obsidian](https://obsidian.md/) vault full of markdown
-files which seems to be _very_ powerful, e.g.
+files which seems to be _very_ powerful, e.g. this video which demonstrates lots 
+of Claude Code's abilities
 
+<div align="center">
 <iframe width="420" height="315"
 src="https://www.youtube.com/embed/d7Pb73dbcIM">
 </iframe>
+</div>
+<div class="figcaption">How to 10x your notes with AI agents</div>
 
 and decided to take it for a proper spin. I've previously tried using [Amp](https://ampcode.com/) to vibe code something – Geoff Huntley [demonstrated that](https://ghuntley.com/agent/) at [DataEngBytes](https://dataengbytes.com/)
 and while I don't necessarily agree with everything he said, the take-away that
 "developers need to be aware of (and familiar with) these tools" really stuck
-with me. The Agentic workflow works quite nicely for iterating by itself if it
-can run tools (e.g. via `bash`) so I can trust that it'll run the tests, build
-the docs, and commit all of the code only when everything passes. I loaded up
-Claude Code, gave it some funds, and tried to see how productive this is going
-to be. The entire prompt, not even using the `/init` setup, was just
+with me. 
+
+The Agentic workflow works quite nicely for iterating by itself if it can run
+tools (e.g. via `bash`) so I can trust that it'll run the tests, build the docs,
+and commit all of the code only when everything passes.
+
+I loaded up Claude Code, gave it some funds, and tried to see how productive
+this is going to be. The entire prompt, not even using the `/init` setup, was
+just
 
 > "Build an R package that uses this API https://docs.api.wanikani.com/. Support
 all the endpoints. Add documentation and tests and make sure it passes check".
@@ -230,7 +245,7 @@ Geoff's presentation — used voice dictation. So I installed Wispr Flow, and it
 gave me two weeks of pro-level usage, which means I can just talk to my computer
 about what I wanted to do. I'm pretty happy with how this is working, and in
 fact I dictated most of this article as a draft. I don't let any AI write my
-blog posts for me; this is definitely **me** writing all of this — even if I do
+blog posts for me; **this is definitely me** writing all of this — even if I do
 use an em-dash or two. But Wispr Flow seems pretty cool. If you want to give it
 a go, here's a referral code
 
@@ -278,7 +293,7 @@ each kanji I get any similar kanji and their meaning.
 
 The last piece is to actually show this on a network graph. Again, I'm not going
 to be writing any of the code here, so I just asked it to build me a function
-that queries on any one kanji and shows all of the related ones in either
+that queries for any one kanji and shows all of the related ones in either
 direction up to some depth. It went off and built that, and again, it works. It
 added tests. It made sure that it passed check and added documentation and
 examples to the README and vignette. When I started testing it out, I realised
@@ -353,8 +368,8 @@ Individual Level Progress:
 
 Since it can query all of this from WaniKani, I thought maybe I'd do something a
 bit similar to what is in there and on-demand build a card for each character
-(either kanji or radical) to show the readings and the name and the similar
-kanji independent of the network graph, especially for kanji containing
+(either radical, kanji, or vocab) to show the readings and the name and the
+similar kanji independent of the network graph, especially for kanji containing
 radicals.
 
 At this point, I realised that every time it went and fetched all of this data
@@ -414,7 +429,7 @@ Usage by model:
 
 ### Putting It To Use
 
-So does it "work"? Well, I built a Shiny app that uses just this package and a
+So does it "work"? Well, I built a shiny app that uses just this package and a
 stored copy of all the cached data (so that it doesn't need my API key) to show
 the network graph for any kanji at any depth, and you can play with it here
 
@@ -450,13 +465,13 @@ Probably not. I think it would probably build something that might be capable
 and "look right enough" if your bank had an API, but the risk there is just too
 high to actually let a system vibe code it.
 
-One of the sayings I like was that people used to say "ideas are free,
-implementation costs." I think it was Geoff Huntley who said in his
-DataEngBytes presentation (something along the lines of) "implementations are
-now free for prototypes," and I think that definitely holds here. If somebody
-wanted to take this and create a business that made a "production ready" version
-of this shiny app, go for it! You're welcome to; I'll maybe even subscribe to
-it. But I built this entire prototype from an empty file in a day and twenty
+People used to say "ideas are free, implementing costs." I think it was Geoff
+Huntley who said in his DataEngBytes presentation (something along the lines of)
+"implementing prototypes for ideas is now free" and I believe I've demonstrated
+that here (provided you consider $20 close enough to free). If somebody wanted
+to take this and create a business that made a "production ready" version of
+this shiny app, go for it! You're welcome to; I'll maybe even subscribe to it.
+But I built this entire prototype from an empty file in a day and twenty
 dollars, so I have what I need to continue with that.
 
 Does this mean that R programmers can stop learning and just rely on AI now?
@@ -464,19 +479,21 @@ Absolutely not. I think the only way that I managed to get this to work the way
 that I wanted it to was by querying the data manually myself first and having a
 look at it. That helped me understand what was available, where things were in
 the response, and when the model had trouble building around that I was able to
-say or point out that oh there's a `x$data$something` field. In terms of
-business requirements, that's always been something that you need to have before
-you can start building a package. Can it speed up your iteration process? I
-think absolutely. I got nowhere near actually building the first function for a
-package in the night that I spent working on this, and within about an hour with
-an AI agent I had something that was not only documented with tests, but fully
-passing `devtools::check()`. That's so much faster than I could have built it
-even if it is just a prototype. The old advice of "throw away your first
-prototype" is very likely still applicable here, and if I went through and
-rewrote all of these things in my own style, I don't think much would change in
-terms of the functionality. The big difference from doing it manually is that I
-now *have* that first version, and can see if it does what I actually want it to
-do (it does!).
+say or point out that oh there's a `x$data$something` field. 
+
+In terms of business requirements, that's always been something that you need to
+have before you can start building a package. Can it speed up your iteration
+process? I think absolutely. I got nowhere near actually building the first
+function for a package in the night that I spent working on this, and within
+about an hour with an AI agent I had something that was not only documented with
+tests, but fully passing `devtools::check()`. That's so much faster than I could
+have built it even if it is just a prototype.
+
+The old advice of "throw away your first prototype" is very likely still
+applicable here, and if I went through and rewrote all of these things in my own
+style, I don't think much would change in terms of the functionality. The big
+difference from doing it manually is that I now *have* that first version, and
+can see if it does what I actually want it to do (it does!).
 
 I don't mind if no one beyond me uses this. I built it exclusively for me. It
 does what I want it to do. The code and the shiny app are available if that's
