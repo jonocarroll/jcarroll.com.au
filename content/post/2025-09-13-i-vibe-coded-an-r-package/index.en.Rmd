@@ -23,15 +23,19 @@ knitr::opts_chunk$set(fig.path = "")
 ```
 
 
-I wanted calculate something, and there wasn't an R package for it yet (rare,
-these days). Here's how I built a solution with an AI model, and how you could
-do it too if there's something that you want to bring into existence.
+Learning Japanese means memorizing thousands of characters, some of which look
+nearly identical. I wanted a way to visualize which kanji are similar to each
+other, and for once there's no R package for this, so I built one using Claude
+Code for $20 and an afternoon's work. I got a fully-documented package with
+mocked tests, complete API coverage, caching, and graph visualizations.
 
 <!--more-->
 
-I wanted calculate something, and there wasn't an R package for it yet (rare,
-these days). Here's how I built a solution with an AI model, and how you could
-do it too if there's something that you want to bring into existence.
+Learning Japanese means memorizing thousands of characters, some of which look
+nearly identical. I wanted a way to visualize which kanji are similar to each
+other, and for once there's no R package for this, so I built one using Claude
+Code for $20 and an afternoon's work. I got a fully-documented package with
+mocked tests, complete API coverage, caching, and graph visualizations.
 
 I won't keep you in suspense - here's the result: 
 
@@ -108,10 +112,10 @@ kanji, and I figured maybe I can use that data to build out a graph.
 
 ![WaniKani's 'visually similar' panel](images/similar.png){width=600px}
 
-### Trying to do it manually
+### How Hard Could It Be?
 
-I had a look around and couldn't find any R packages that did what I wanted (I
-didn't search other programming languages; maybe there's something in python?).
+I had a look around and couldn't find any R packages that did what I wanted. I
+didn't search other programming languages; maybe there's something in python?
 There was [one WaniKani API package](https://github.com/ZenBrayn/wanikanir)
 `{wanikanir}` (on GitHub, not CRAN) that was a bit out of date from 7 years ago.
 I couldn't use that as-is and I couldn't find another WaniKani API package. I
@@ -131,7 +135,8 @@ the kanji, their readings, their meanings, and then the similarities (which just
 returns another list of IDs to look up). I ended up staying up until about 1am
 that night and _only just_ managed to get the actual data in the form of a table
 that I could look at and maybe see that it would have the pieces that I needed,
-but this was going to take a very long time.
+but this was going to take a very long time. Here's where I got to after an
+entire evening hacking away
 
 ```r
 # get all the kanji
@@ -179,7 +184,7 @@ https://github.com/jonocarroll/wanikanir
 
 This was still a long way off from what I needed it to do, though. 
 
-### Get to work, agent
+### Get To Work, Agent
 
 A couple of days later, I'd been watching some videos on [Claude Code](https://www.anthropic.com/claude-code), in particular starting it up in
 the base directory of an [Obsidian](https://obsidian.md/) vault full of markdown
