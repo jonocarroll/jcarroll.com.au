@@ -1,0 +1,507 @@
+---
+title: I Vibe Coded an R Package
+author: Jonathan Carroll
+date: '2025-09-13'
+slug: i-vibe-coded-an-r-package
+categories:
+  - rstats
+tags:
+  - rstats
+type: ''
+subtitle: 'and it ... works?!?'
+image: ''
+---
+
+
+
+<p>I wanted calculate something, and there wasn’t an R package for it yet (rare,
+these days). Here’s how I built a solution with an AI model, and how you could
+do it too if there’s something that you want to bring into existence.</p>
+<!--more-->
+<p>I wanted calculate something, and there wasn’t an R package for it yet (rare,
+these days). Here’s how I built a solution with an AI model, and how you could
+do it too if there’s something that you want to bring into existence.</p>
+<p>I won’t keep you in suspense - here’s the result:</p>
+<div class="float">
+<img src="images/network.png" width="800" alt="Network diagram of kanji similar to 年 (year)" />
+<div class="figcaption">Network diagram of kanji similar to 年 (year)</div>
+</div>
+<p>This is exactly what I wanted - a way to explore visually similar kanji in
+Japanese and identify the differences between them so I could better remember
+which is which. I barely wrote any of the code to make it happen, and I couldn’t
+be happier with it.</p>
+<div id="how-did-i-get-here" class="section level3">
+<h3>How did I get here?</h3>
+<p>I’ve been learning Japanese since my daughter started high school at the start
+of last year. My main resource is <a href="https://www.duolingo.com/">Duolingo</a>, which I
+think is okay, but not brilliant. My ‘Duolingo Japanese Score’ is 72 with a 625
+day streak. I’m on Section 5 unit 27, and there’s only one Section left after
+this.</p>
+<div class="float">
+<img src="images/duolingo1.png" width="600" alt="My Duolingo stats" />
+<div class="figcaption">My Duolingo stats</div>
+</div>
+<div class="float">
+<img src="images/duolingo2.png" width="400" alt="My Duolingo progress" />
+<div class="figcaption">My Duolingo progress</div>
+</div>
+<p>so I’m a lot of the way through the course, but it doesn’t really <em>teach</em> me
+anything; it’s purely by example, which I suppose is how children learn their
+native language, but it is pretty slow going for remembering what things mean. I
+bought some grammar books which are enlightening and I frequently say “Oh,
+that’s why they did that!” I was recommended to try
+<a href="https://www.wanikani.com/">WaniKani</a>, which uses spaced-repetition to teach the
+radicals, the kanji, and vocabulary and provides mnemonics to help remember
+which things mean what. I’ve found that extremely useful for my Duolingo-based
+learning because now I can sometimes recognise what a word might mean based on
+what I’ve learned in WaniKani and that helps me at least get closer to which
+word is correct. WaniKani is free until you clear level 3 after which it’s paid,
+but I found it so useful I paid for a subscription and am now on level 8. There
+are 60 levels, and the first 10 are labelled “pleasant”, the next 10 “painful”,
+followed by “death”, then “hell”, so I’m not nearly through even the easy bit
+yet.</p>
+<div class="float">
+<img src="images/wanikani.png" width="600" alt="My WaniKani progress" />
+<div class="figcaption">My WaniKani progress</div>
+</div>
+<p>One of the complexities with Japanese language (and Chinese) is that part of the
+writing system is logographic (meaning-based, rather than phonemic, based on
+alphabets) and there are thousands of characters all with multiple meanings and
+multiple readings. Some of them look extremely similar to each other even though
+they refer to completely different things. The words for “dog” 犬 and “big” 大 and
+“fat” 太 differ by one little stroke which is easy to confuse. In the end, you
+just have to know which one is which, but I wanted to be able to compare which
+things are similar.</p>
+</div>
+<div id="prior-art" class="section level3">
+<h3>Prior Art</h3>
+<p>Alex Chan’s 2020 post <a href="https://alexwlchan.net/2020/storing-language-vocabulary-as-a-graph/">Storing language vocabulary as a graph</a>
+explored a really cool idea about linking together words that look similar or
+have similar components in Chinese, and I wanted to do something like that for
+Japanese. I’ve had the idea floating in the back of my mind since I read that
+post, but I had no idea how I was going to build it.</p>
+<div class="float">
+<img src="images/vocab_graph_2x.avif" width="600" alt="Alex Chan’s network graph of Chinese text" />
+<div class="figcaption">Alex Chan’s network graph of Chinese text</div>
+</div>
+<p>One option was just to ask an AI model every time I was confused about things
+and get it to produce the answer, but this seemed both wasteful and potentially
+just slow and annoying (or at worst, plain old wrong). I gave it a go, and I
+think it does some of what I need to, but I’d rather build something I have some
+faith in that I can query on demand without having to go and fetch an AI answer
+every time.</p>
+<div class="float">
+<img src="images/claude.png" width="600" alt="Claude answering a question about similar kanji" />
+<div class="figcaption">Claude answering a question about similar kanji</div>
+</div>
+<p>(oh, so “dog” 犬 has an extra “dot” compared to “big” 大 … that certainly won’t
+come to mind when I see “fat” 太. Also, what “additional horizontal line”???)</p>
+<p>WaniKani does give you this ‘visually similar’ information when it shows you the
+kanji, and I figured maybe I can use that data to build out a graph.</p>
+<div class="float">
+<img src="images/similar.png" width="600" alt="WaniKani’s ‘visually similar’ panel" />
+<div class="figcaption">WaniKani’s ‘visually similar’ panel</div>
+</div>
+</div>
+<div id="trying-to-do-it-manually" class="section level3">
+<h3>Trying to do it manually</h3>
+<p>I had a look around and couldn’t find any R packages that did what I wanted (I
+didn’t search other programming languages; maybe there’s something in python?).
+There was <a href="https://github.com/ZenBrayn/wanikanir">one WaniKani API package</a>
+<code>{wanikanir}</code> (on GitHub, not CRAN) that was a bit out of date from 7 years ago.
+I couldn’t use that as-is and I couldn’t find another WaniKani API package. I
+did find Dominic Schuhmacher’s
+<a href="https://github.com/dschuhmacher/kanjistat/">package</a> for comparing or looking
+up kanji. But that doesn’t do the similarity analysis that I wanted. The
+WaniKani API exists and that’s what <a href="https://github.com/jerryhcooke/smouldering_durtles">Smouldering Durtles</a> (the unofficial Android app I occasionally use to view my progress) uses behind the scenes, and
+I needed a way to query it. So I started by trying to fetch the data myself. I
+<a href="https://www.wanikani.com/settings/personal_access_tokens">got my API key</a>,
+looked up the <a href="https://docs.api.wanikani.com/">documentation</a>, figured out what
+I need to fetch, and then tweaked <code>{wanikanir}</code> to use <code>{httr2}</code> (with
+pagination) and query the data via the up-to-date endpoint. I got the results as
+a giant JSON blob, so I needed to dive into what was in there.</p>
+<p>I had to parse out the different pieces that I want, which was the internal IDs,
+the kanji, their readings, their meanings, and then the similarities (which just
+returns another list of IDs to look up). I ended up staying up until about 1am
+that night and <em>only just</em> managed to get the actual data in the form of a table
+that I could look at and maybe see that it would have the pieces that I needed,
+but this was going to take a very long time.</p>
+<pre class="r"><code># get all the kanji
+kanji &lt;- wanikanir::get_wk_data_by_name(&quot;subjects&quot;, opt_arg = &quot;kanji&quot;)
+
+# map meaning, readings, level, and similar ids
+kanji_maps &lt;- purrr::map_df(
+  seq_along(kanji),
+  ~ data.frame(
+    id = kanji[[.x]]$id,
+    type = kanji[[.x]]$object,
+    kanji = kanji[[.x]]$data$characters %||% NA,
+    meanings = purrr::map_chr(kanji[[.x]]$data$meanings, ~ .x$meaning),
+    readings = paste(
+      purrr::map(kanji[[.x]]$data$readings, ~ .x$reading),
+      collapse = &quot; / &quot;
+    ),
+    level = kanji[[.x]]$data$level,
+    similar = toString(unlist(
+      kanji[[.x]]$data$visually_similar_subject_ids
+    )) %||%
+      NA
+  )
+) |&gt;
+  dplyr::arrange(id, level)
+  
+dplyr::slice_sample(kanji_maps[kanji_maps$level &lt; 10, ], n=10)
+#      id       type kanji        meanings          readings level         similar
+# 1  8664 vocabulary  番組         Program          ばんぐみ     8                
+# 2  2657 vocabulary    字 Kanji Character                じ     3                
+# 3   644      kanji    食            Meal  しょく / た / く     6             805
+# 4   690      kanji    者        Somebody       しゃ / もの     8                
+# 5   685      kanji    役            Duty       やく / えき     8 686, 2304, 2118
+# 6  2795 vocabulary  空気            Mood            くうき     5                
+# 7  3109 vocabulary  名物  Famous Product          めいぶつ     9                
+# 8  2570 vocabulary  日本           Japan にほん / にっぽん     2                
+# 9  2539 vocabulary  上手      Skilled At          じょうず     2                
+# 10 2602 vocabulary  大切        Valuable          たいせつ     3         </code></pre>
+<p>Just in case that’s of use to anyone, I’ve updated my fork with these changes
+and it now passes <code>devtools::check()</code></p>
+<p><a href="https://github.com/jonocarroll/wanikanir" class="uri">https://github.com/jonocarroll/wanikanir</a></p>
+<p>This was still a long way off from what I needed it to do, though.</p>
+</div>
+<div id="get-to-work-agent" class="section level3">
+<h3>Get to work, agent</h3>
+<p>A couple of days later, I’d been watching some videos on <a href="https://www.anthropic.com/claude-code">Claude Code</a>, in particular starting it up in
+the base directory of an <a href="https://obsidian.md/">Obsidian</a> vault full of markdown
+files which seems to be <em>very</em> powerful, e.g.</p>
+{{% youtube "d7Pb73dbcIM" %}}
+<p>and decided to take it for a proper spin. I’ve previously briefly tried used
+<a href="https://ampcode.com/">Amp</a> to vibe code something – Geoff Huntley <a href="https://ghuntley.com/agent/">demonstrated that</a> at <a href="https://dataengbytes.com/">DataEngBytes</a>
+and while I don’t necessarily agree with everything he said, the take-away that
+“developers need to be aware of (and familiar with) these tools” really stuck
+with me. The Agentic workflow works quite nicely for iterating by itself if it
+can run tools (e.g. via <code>bash</code>) so I can trust that it’ll run the tests, build
+the docs, and commit all of the code only when everything passes. I loaded up
+Claude Code, gave it some funds, and tried to see how productive this is going
+to be. The entire prompt, not even using the <code>/init</code> setup, was just</p>
+<blockquote>
+<p>“Build an R package that uses this API <a href="https://docs.api.wanikani.com/" class="uri">https://docs.api.wanikani.com/</a>. Support
+all the endpoints. Add documentation and tests and make sure it passes check”.</p>
+</blockquote>
+<p>and off it went to started building. It made a plan for what it needed to do to
+build the package:</p>
+<ul>
+<li>It needed to query the API</li>
+<li>It needed to figure out which functions to use</li>
+<li>It needed to write documentation and tests</li>
+</ul>
+<pre><code>☒ Examine WaniKani API documentation to understand endpoints
+☒ Create R package structure and configuration files
+☒ Implement core API client functions
+☒ Create functions for each API endpoint
+☒ Add comprehensive documentation with roxygen2
+☒ Write tests with mocking using testthat and httptest
+☐ Create package vignette with usage examples</code></pre>
+<p>And then it just went step-by-step and ticked off things on its to-do list.</p>
+<p>I’ll point out at this point that the recent videos I’d seen — as well as
+Geoff’s presentation — used voice dictation. So I installed Wispr Flow, and it
+gave me two weeks of pro-level usage, which means I can just talk to my computer
+about what I wanted to do. I’m pretty happy with how this is working, and in
+fact I dictated most of this article as a draft. I don’t let any AI write my
+blog posts for me; this is definitely <strong>me</strong> writing all of this — even if I do
+use an em-dash or two. But Wispr Flow seems pretty cool. If you want to give it
+a go, here’s a referral code</p>
+<p><a href="wisprflow.ai/r?JONATHAN746">wisprflow.ai/r?JONATHAN746</a></p>
+<p>that I think gives you two weeks of full pro-level usage, and in theory if I end
+up keeping on using this, gives me some free weeks too.</p>
+<p>Once it was done, Claude Code had queried the API documentation page, found all
+of the endpoints, and then built an entire R package with modern approaches that
+queries the endpoints using <code>{httr2}</code>. This is exactly what I would have done
+myself if I’d spent a <em>lot</em> more time with it. It added documentation for all of
+the functions and a set of mocked tests using <code>{httptest}</code>. It confirmed that it
+passed <code>devtools::check()</code> by actually running it from the command line and
+fixing any errors that came up.</p>
+<p>I wanted to make sure that it was clear when I was “doing an AI” and when I was
+doing my own work, so as part of my initial instructions to Claude, I told it
+that any time it commits, it needs to have “(claude)” in the commit message.
+This might have been redundant because it adds itself as a co-author, so all of
+the commits show “co-authored by Claude” in GitHub if it was involved, but I
+think it’s worthwhile calling it out in the commit messages.</p>
+<p>I had everything that I needed to get started actually pulling some data, so I
+gave it a subset of the JSON output that I’d manually extracted the other day
+and said that I wanted to be able to reproduce this. It built a function that
+queried the data according to all of the things that it had found/built so far
+and built the exact same table that I’d spent my entire evening building, but
+now the package could do everything else as well. It also wrote a a vignette of
+basic usage that keeps track of all the things it can do. Here I think it’s a
+little less competent in terms of writing documentation that shows how to use
+something, but these models aren’t necessarily great at knowing the intention of
+what you’re trying to do.</p>
+<p>One of the problems that I found from manually inspecting the data was that the
+‘visually similar’ component (the bit that I actually want) returned a list of
+IDs, but I wanted to get the actual kanji that were related so that I could see
+them on the network graph. So again, I just asked Claude Code to resolve those
+so that we have the actual names and meanings, and that’s where it did something
+a little bit wrong; it started querying the API again for each character that it
+needed to look up. But Claude Code lets you interrupt and change course, so I
+interrupted it and told it to use the data it already had, and it cheerfully
+agreed (I’m sure we’re all sick of hearing “You’re absolutely right!”). Now, for
+each kanji I get any similar kanji and their meaning.</p>
+<p>The last piece is to actually show this on a network graph. Again, I’m not going
+to be writing any of the code here, so I just asked it to build me a function
+that queries on any one kanji and shows all of the related ones in either
+direction up to some depth. It went off and built that, and again, it works. It
+added tests. It made sure that it passed check and added documentation and
+examples to the README and vignette. When I started testing it out, I realised
+that I had to actually paste in kanji, which isn’t the interface that I
+necessarily wanted, so I asked it to modify the function to optionally use the
+English word and just search for that in the meanings.</p>
+</div>
+<div id="functionality" class="section level3">
+<h3>Functionality</h3>
+<p>Now I can query for ‘water’ either by the kanji 水 or by the English word “water”.</p>
+<div class="float">
+<img src="images/network2.png" width="800" alt="Searching for similar kanji to ‘water’ 水" />
+<div class="figcaption">Searching for similar kanji to ‘water’ 水</div>
+</div>
+<p>Looking through the vignette of what it was able to do, it had some extra
+wrapper functions around the raw data that it fetched, so I asked it to
+integrate them into the actual functions so that they didn’t just return raw
+data. One of the things it can do now is fetch the worst mistakes that I’ve made
+in WaniKani so that I can review those</p>
+<pre><code>=== Review Statistics Summary ===
+
+Total subjects with reviews: 500 
+Average meaning accuracy: 91.9% 
+Average reading accuracy: 89.4% 
+
+Meaning Accuracy Distribution:
+  0-50%: 0 subjects
+  51-70%: 0 subjects
+  71-80%: 46 subjects
+  81-90%: 161 subjects
+  91-100%: 293 subjects
+
+Subjects That Need Most Practice:
+  1. 出 (Exit) - 72% [Level 2 Kanji]
+  2. 少女 (Girl, Young Girl) - 72% [Level 3 Vocabulary]
+  3. 年中 (Year Round, All Year, Whole Year, Throughout The Year) - 72% [Level 4 Vocabulary]
+  4. 去年 (Last Year) - 72% [Level 4 Vocabulary]
+  5. 村人 (Villager) - 75% [Level 4 Vocabulary]</code></pre>
+<p>(most of my errors are “spelling”-related; is it “しゅう” or “しょう”?)</p>
+<p>and my level progress</p>
+<pre><code>=== Level Progression Summary ===
+
+Total levels tracked: 8 
+Levels completed: 0 
+Levels passed (not completed): 7 
+Levels in progress: 1 
+
+Passing Time Statistics:
+  Average days to pass: 25.5 
+  Median days to pass: 21.2 
+  Fastest level passed: 10.1 days
+  Slowest level passed: 48.6 days
+
+Individual Level Progress:
+   Level 1 - passed in 13 days 
+   Level 2 - passed in 10.1 days 
+   Level 3 - passed in 24 days 
+   Level 4 - passed in 21.2 days 
+   Level 5 - passed in 13.7 days 
+   Level 6 - passed in 47.8 days 
+   Level 7 - passed in 48.6 days 
+   Level 8 - in progress </code></pre>
+<p>(I’m slowing down, but it’s definitely getting harder to keep up)</p>
+<p>Since it can query all of this from WaniKani, I thought maybe I’d do something a
+bit similar to what is in there and on-demand build a card for each character
+(either kanji or radical) to show the readings and the name and the similar
+kanji independent of the network graph, especially for kanji containing
+radicals.</p>
+<p>At this point, I realised that every time it went and fetched all of this data
+it was fetching directly from the API, so I asked it to add a caching layer that
+fetched all of the kanji once and stored it with the package, reloading whenever
+necessary and referred to that. Again, it did it. So now it used the cache of
+that data and could look up all of it, and when I checked what was actually in
+that cache it was the full raw JSON processed data, so now it could fetch
+everything, not just the pieces that I was interested in. It built the cards and
+they look amazing - it would’ve taken me a while to figure out the CSS styling
+of this; definitely not impossible but so much easier to just ask and have it
+done.</p>
+<p>Just look at these!</p>
+<pre><code>wk_create_character_card(&quot;水&quot;)
+wk_create_character_card(&quot;氷&quot;)</code></pre>
+<div class="float">
+<img src="images/cards.png" width="600" alt="Character cards for ‘water’ radical 水 and ‘ice’ kanji 氷" />
+<div class="figcaption">Character cards for ‘water’ radical 水 and ‘ice’ kanji 氷</div>
+</div>
+<p>Oh, and is everyone using the new ‘Minimalist Async Evaluation Framework for R’
+<a href="https://mirai.r-lib.org/">mirai</a>? みらい 未来</p>
+<pre><code>wk_create_character_card(&quot;未来&quot;)</code></pre>
+<div class="float">
+<img src="images/mirai.png" width="300" alt="Character card for ‘mirai’ (future) 未来" />
+<div class="figcaption">Character card for ‘mirai’ (future) 未来</div>
+</div>
+<p>The package has everything that I wanted it to do:</p>
+<ul>
+<li>queries all of the endpoints on WaniKani</li>
+<li>shows the meaning and definition for kanji</li>
+<li>shows how they’re related in a network graph</li>
+</ul>
+<p>I’m <em>extremely</em> happy. I let it do all the committing and pushed it to Github. I
+added the <code>{pkgdown}</code> docs to actually render things, and dealt with the issue
+of having to pre-render the vignette because it needs an API key. Apart from
+that, I had all of this done in a matter of hours. Now that’s not to say that
+this is just free and easy for everyone; I did spend about US$20 on building
+this and that included an about an hour of API time. But these things are
+constantly getting better, and they’re getting cheaper. Honestly I would’ve
+spent a week building these components myself, so I think that’s a pretty good
+deal. A thing that didn’t exist before now exists, and all it took was one
+person spending $20 and connecting up their thoughts of what they wanted to a
+capable system.</p>
+<pre><code>Total cost:            $20.06
+Total duration (API):  1h 13m 18.5s
+Total code changes:    5605 lines added, 750 lines removed
+Usage by model:
+      claude-sonnet:  813 input, 170.6k output, 38.0m cache read, 1.6m cache write
+	    claude-3-5-haiku:  284.2k input, 7.3k output, 0 cache read, 0 cache write</code></pre>
+</div>
+<div id="putting-it-to-use" class="section level3">
+<h3>Putting It To Use</h3>
+<p>So does it “work”? Well, I built a Shiny app that uses just this package and a
+stored copy of all the cached data (so that it doesn’t need my API key) to show
+the network graph for any kanji at any depth, and you can play with it here</p>
+<p><a href="https://jcarroll.shinyapps.io/kanjiexplorer/" class="uri">https://jcarroll.shinyapps.io/kanjiexplorer/</a></p>
+<p>I’ve hosted it on shinyapps.io, and of course I got Claude (not Code this time)
+to help me build it. It takes either kanji or an English word and builds the
+network graph to some maximum depth, with a limitation on the level (in case you
+don’t care about words you haven’t learned yet) and some settings for layout.</p>
+<div class="float">
+<img src="images/kanjiexplorer.png" width="800" alt="Kanji Explorer shiny app" />
+<div class="figcaption">Kanji Explorer shiny app</div>
+</div>
+<p>FYI, it’s … not great on a phone screen. I haven’t spent a lot of time
+refining this, and don’t plan to.</p>
+<p>In terms of “does it work?” I think it definitely does all of the things that I
+wanted it to do. The old saying of <a href="https://wiki.c2.com/?MakeItWorkMakeItRightMakeItFast">“Make it work, make it right, make it fast”</a> probably applies
+here. I think “work” gets a tick. Is it right? I don’t know. As far as I can
+see, it uses the data from the WaniKani API and gets the same results that I did
+when I got it manually, but I’m relying on that data. Sure, there’s possibly
+(probably) bugs in there. But this is pretty low-risk work I’m doing here. The
+very worst that could happen with any of this code is it deletes my WaniKani
+account, and in that case I’ll live to tell the tale. In terms of “fast”, this
+is also low-risk. It doesn’t need to do anything computationally heavy;
+everything here seems to work okay. I got it to add caching, so that I wasn’t
+being wasteful. But apart from that, what more could I want to do?</p>
+</div>
+<div id="reflections" class="section level3">
+<h3>Reflections</h3>
+<p>Should <em>you</em> build one of these packages to connect to your banking app?
+Probably not. I think it would probably build something that might be capable
+and “look right enough” if your bank had an API, but the risk there is just too
+high to actually let a system vibe code it.</p>
+<p>One of the sayings I like was that people used to say “ideas are free,
+implementation costs.” I think it was Jeff Huntley’s who said in his
+DataEngBytes presentation (something along the lines of) “implementations are
+now free for prototypes,” and I think that definitely holds here. If somebody
+wanted to take this and create a business that made a “production ready” version
+of this shiny app, go for it! You’re welcome to; I’ll maybe even subscribe to
+it. But I built this entire prototype from an empty file in a day and twenty
+dollars, so I have what I need to continue with that.</p>
+<p>Does this mean that R programmers can stop learning and just rely on AI now?
+Absolutely not. I think the only way that I managed to get this to work the way
+that I wanted it to was by querying the data manually myself first and having a
+look at it. That helped me understand what was available, where things were in
+the response, and when the model had trouble building around that I was able to
+say or point out that oh there’s a <code>x$data$something</code> field. In terms of
+business requirements, that’s always been something that you need to have before
+you can start building a package. Can it speed up your iteration process? I
+think absolutely. I got nowhere near actually building the first function for a
+package in the night that I spent working on this, and within about an hour with
+an AI agent I had something that was not only documented with tests, but fully
+passing <code>devtools::check()</code>. That’s so much faster than I could have built it
+even if it is just a prototype. The old advice of “throw away your first
+prototype” is very likely still applicable here, and if I went through and
+rewrote all of these things in my own style, I don’t think much would change in
+terms of the functionality. The big difference from doing it manually is that I
+now <em>have</em> that first version, and can see if it does what I actually want it to
+do (it does!).</p>
+<p>I don’t mind if no one beyond me uses this. I built it exclusively for me. It
+does what I want it to do. The code and the shiny app are available if that’s
+helpful to you, and if there’s something else that you’d find useful, maybe I’ll
+find that useful too, so feel free to send in any pull requests or issues about
+what you think it could or should do. In the meantime, I’ll be using this to
+enhance my own Japanese learning.</p>
+<p>I’d love to hear what people think about this… Was this all a terrible idea?
+Is there already a better tool which does this? Have I wasted $20 enjoying seeing
+something come to life? As always, I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> and the comment section below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.4.1 (2024-06-14)
+##  os       macOS 15.6.1
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2025-09-12
+##  pandoc   3.7.0.2 @ /opt/homebrew/bin/ (via rmarkdown)
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version    date (UTC) lib source
+##  blogdown      1.21.1     2025-06-28 [1] Github (rstudio/blogdown@33313a5)
+##  bookdown      0.41       2024-10-16 [1] CRAN (R 4.4.1)
+##  bslib         0.8.0      2024-07-29 [1] CRAN (R 4.4.0)
+##  cachem        1.1.0      2024-05-16 [1] CRAN (R 4.4.0)
+##  cli           3.6.4      2025-02-13 [1] CRAN (R 4.4.1)
+##  devtools      2.4.5      2022-10-11 [1] CRAN (R 4.4.0)
+##  digest        0.6.37     2024-08-19 [1] CRAN (R 4.4.1)
+##  ellipsis      0.3.2      2021-04-29 [1] CRAN (R 4.4.0)
+##  evaluate      1.0.3      2025-01-10 [1] CRAN (R 4.4.1)
+##  fastmap       1.2.0      2024-05-15 [1] CRAN (R 4.4.0)
+##  fs            1.6.5      2024-10-30 [1] CRAN (R 4.4.1)
+##  glue          1.8.0      2024-09-30 [1] CRAN (R 4.4.1)
+##  htmltools     0.5.8.1    2024-04-04 [1] CRAN (R 4.4.0)
+##  htmlwidgets   1.6.4      2023-12-06 [1] CRAN (R 4.4.0)
+##  httpuv        1.6.15     2024-03-26 [1] CRAN (R 4.4.0)
+##  jquerylib     0.1.4      2021-04-26 [1] CRAN (R 4.4.0)
+##  jsonlite      2.0.0      2025-03-27 [1] CRAN (R 4.4.1)
+##  knitr         1.50       2025-03-16 [1] CRAN (R 4.4.1)
+##  later         1.4.1      2024-11-27 [1] CRAN (R 4.4.1)
+##  lifecycle     1.0.4      2023-11-07 [1] CRAN (R 4.4.0)
+##  magrittr      2.0.3      2022-03-30 [1] CRAN (R 4.4.0)
+##  memoise       2.0.1      2021-11-26 [1] CRAN (R 4.4.0)
+##  mime          0.12       2021-09-28 [1] CRAN (R 4.4.0)
+##  miniUI        0.1.1.1    2018-05-18 [1] CRAN (R 4.4.0)
+##  pkgbuild      1.4.7      2025-03-24 [1] CRAN (R 4.4.1)
+##  pkgload       1.4.0      2024-06-28 [1] CRAN (R 4.4.0)
+##  profvis       0.4.0      2024-09-20 [1] CRAN (R 4.4.1)
+##  promises      1.3.2      2024-11-28 [1] CRAN (R 4.4.1)
+##  purrr         1.0.4      2025-02-05 [1] CRAN (R 4.4.1)
+##  R6            2.6.1      2025-02-15 [1] CRAN (R 4.4.1)
+##  Rcpp          1.0.14     2025-01-12 [1] CRAN (R 4.4.1)
+##  remotes       2.5.0      2024-03-17 [1] CRAN (R 4.4.1)
+##  rlang         1.1.5      2025-01-17 [1] CRAN (R 4.4.1)
+##  rmarkdown     2.28       2024-08-17 [1] CRAN (R 4.4.0)
+##  rstudioapi    0.17.1     2024-10-22 [1] CRAN (R 4.4.1)
+##  sass          0.4.9      2024-03-15 [1] CRAN (R 4.4.0)
+##  sessioninfo   1.2.2      2021-12-06 [1] CRAN (R 4.4.0)
+##  shiny         1.9.1      2024-08-01 [1] CRAN (R 4.4.0)
+##  urlchecker    1.0.1      2021-11-30 [1] CRAN (R 4.4.0)
+##  usethis       3.1.0.9000 2025-03-31 [1] Github (r-lib/usethis@a653d6e)
+##  vctrs         0.6.5      2023-12-01 [1] CRAN (R 4.4.0)
+##  xfun          0.51       2025-02-19 [1] CRAN (R 4.4.1)
+##  xtable        1.8-4      2019-04-21 [1] CRAN (R 4.4.0)
+##  yaml          2.3.10     2024-07-26 [1] CRAN (R 4.4.0)
+## 
+##  [1] /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
