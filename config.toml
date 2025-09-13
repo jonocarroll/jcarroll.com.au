@@ -24,7 +24,7 @@ enableInlineShortcodes = true
   section = ["html", "rss"]
   taxonomy = ["html", "rss"]
   term = ["html", "rss"]
-  
+
 
 [Params]
 #  homeTitle = "Beautiful Hugo Theme" # Set a different text for the header on the home page
@@ -130,9 +130,9 @@ enableInlineShortcodes = true
     url = "tags"
     weight = 3
 
-[module]
-    [[module.imports]]
-        path = 'beautifulhugo'
+#[module]
+#    [[module.imports]]
+#        path = 'beautifulhugo'
 
 [markup]
   [markup.goldmark]
