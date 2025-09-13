@@ -48,11 +48,11 @@ be happier with it.
 
 ### How did I get here? 
 
-I've been learning Japanese since my daughter started high school at the start
-of last year. My main resource is [Duolingo](https://www.duolingo.com/), which I
-think is okay, but not brilliant. My 'Duolingo Japanese Score' is 72 with a 625
-day streak. I'm on Section 5 unit 27, and there's only one Section left after
-this.
+I've been learning Japanese since my daughter took it up when starting high
+school at the start of last year, and I figured we could learn together. My main
+resource is [Duolingo](https://www.duolingo.com/), which I think is okay, but
+not brilliant. My 'Duolingo Japanese Score' is 72 with a 625 day streak. I'm on
+Section 5 unit 27, and there's only one Section left after this.
 
 ![My Duolingo stats](images/duolingo1.png){width=600px}
 
@@ -89,9 +89,10 @@ things are similar.
 
 ### Prior Art
 
-Alex Chan's 2020 post [Storing language vocabulary as a graph](https://alexwlchan.net/2020/storing-language-vocabulary-as-a-graph/)
-explored a really cool idea about linking together words that look similar or
-have similar components in Chinese, and I wanted to do something like that for
+Alex Chan's excellent 2020 post [Storing language vocabulary as a
+graph](https://alexwlchan.net/2020/storing-language-vocabulary-as-a-graph/)
+explored a cool idea about linking together words that look similar or have
+similar components in Chinese, and I wanted to do something like that for
 Japanese. I've had the idea floating in the back of my mind since I read that
 post, but I had no idea how I was going to build it.
 
