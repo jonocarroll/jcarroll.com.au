@@ -158,8 +158,8 @@ kanji_maps &lt;- purrr::map_df(
 ) |&gt;
   dplyr::arrange(id, level)
   
-dplyr::slice_sample(kanji_maps[kanji_maps$level &lt; 10, ], n=10)
-#      id       type kanji        meanings          readings level         similar
+dplyr::slice_sample(kanji_maps[kanji_maps$level &lt; 10, ], n=10)</code></pre>
+<pre class="r bg-success"><code>#      id       type kanji        meanings          readings level         similar
 # 1  8664 vocabulary  番組         Program          ばんぐみ     8                
 # 2  2657 vocabulary    字 Kanji Character                じ     3                
 # 3   644      kanji    食            Meal  しょく / た / く     6             805
@@ -298,7 +298,9 @@ wrapper functions around the raw data that it fetched, so I asked it to
 integrate them into the actual functions so that they didn’t just return raw
 data. One of the things it can do now is fetch the worst mistakes that I’ve made
 in WaniKani so that I can review those</p>
-<pre><code>=== Review Statistics Summary ===
+<pre class="r"><code># ---8&lt;--- from vignette 
+analyze_progress()</code></pre>
+<pre class="r bg-success"><code>=== Review Statistics Summary ===
 
 Total subjects with reviews: 500 
 Average meaning accuracy: 91.9% 
@@ -319,7 +321,8 @@ Subjects That Need Most Practice:
   5. 村人 (Villager) - 75% [Level 4 Vocabulary]</code></pre>
 <p>(most of my errors are “spelling”-related; is it “しゅう” or “しょう”?)</p>
 <p>and my level progress</p>
-<pre><code>=== Level Progression Summary ===
+<pre class="r"><code>wk_print_level_progression_summary(wk_level_progressions(all_pages = TRUE))</code></pre>
+<pre class="r bg-success"><code>=== Level Progression Summary ===
 
 Total levels tracked: 8 
 Levels completed: 0 

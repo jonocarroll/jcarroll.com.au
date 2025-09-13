@@ -172,6 +172,9 @@ kanji_maps <- purrr::map_df(
   dplyr::arrange(id, level)
   
 dplyr::slice_sample(kanji_maps[kanji_maps$level < 10, ], n=10)
+```
+
+```{r, eval = FALSE, class.source = "bg-success"}
 #      id       type kanji        meanings          readings level         similar
 # 1  8664 vocabulary  番組         Program          ばんぐみ     8                
 # 2  2657 vocabulary    字 Kanji Character                じ     3                
@@ -330,7 +333,12 @@ integrate them into the actual functions so that they didn't just return raw
 data. One of the things it can do now is fetch the worst mistakes that I've made
 in WaniKani so that I can review those
 
+```{r, eval = FALSE}
+# ---8<--- from vignette 
+analyze_progress()
 ```
+
+```{r, eval = FALSE, class.source = "bg-success"}
 === Review Statistics Summary ===
 
 Total subjects with reviews: 500 
@@ -356,7 +364,11 @@ Subjects That Need Most Practice:
 
 and my level progress 
 
+```{r, eval = FALSE}
+wk_print_level_progression_summary(wk_level_progressions(all_pages = TRUE))
 ```
+
+```{r, eval = FALSE, class.source = "bg-success"}
 === Level Progression Summary ===
 
 Total levels tracked: 8 
