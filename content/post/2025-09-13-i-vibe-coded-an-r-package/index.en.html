@@ -8,7 +8,7 @@ categories:
 tags:
   - rstats
 type: ''
-subtitle: 'and it ... absolutely works?!?'
+subtitle: 'and it ... actually works?!?'
 image: ''
 ---
 
@@ -273,9 +273,13 @@ English word and just search for that in the meanings.</p>
 <p>At the end of this round of development it’s a fully working package with 133
 passing tests and no failures</p>
 <div class="float">
-<img src="images/tests.png" width="300" alt="Passing 133 tests" />
+<img src="images/tests.png" width="350" alt="Passing 133 tests" />
 <div class="figcaption">Passing 133 tests</div>
 </div>
+<p>These tests cover functions which call out to the API, and they’re all mocked so
+that an API key (or network access) isn’t actually needed - this is probably the
+approach I should take for other API packages, so this also serves as a useful
+example for me to learn from.</p>
 <p><code>devtools::check()</code> succeeds with no errors or warnings and only two NOTES
 related to having a bit too large data and a <code>figures</code> directory for the vignette</p>
 <div class="float">
@@ -469,6 +473,8 @@ enhance my own Japanese learning.</p>
 Is there already a better tool which does this? Have I wasted $20 enjoying seeing
 something come to life? As always, I can be found on
 <a href="https://fosstodon.org/@jonocarroll">Mastodon</a> and the comment section below.</p>
+<p>In case you missed it in the middle of the post, the link to the package is
+<a href="https://github.com/jonocarroll/rwanikani" class="uri">https://github.com/jonocarroll/rwanikani</a> - happy learning!</p>
 <br />
 <details>
 <summary>

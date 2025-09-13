@@ -8,7 +8,7 @@ categories:
 tags:
   - rstats
 type: ''
-subtitle: 'and it ... absolutely works?!?'
+subtitle: 'and it ... actually works?!?'
 image: ''
 ---
 
@@ -308,7 +308,12 @@ English word and just search for that in the meanings.
 At the end of this round of development it's a fully working package with 133 
 passing tests and no failures
 
-![Passing 133 tests](images/tests.png){width=300px}
+![Passing 133 tests](images/tests.png){width=350px}
+
+These tests cover functions which call out to the API, and they're all mocked so
+that an API key (or network access) isn't actually needed - this is probably the 
+approach I should take for other API packages, so this also serves as a useful 
+example for me to learn from.
 
 `devtools::check()` succeeds with no errors or warnings and only two NOTES 
 related to having a bit too large data and a `figures` directory for the vignette
@@ -535,6 +540,9 @@ I'd love to hear what people think about this... Was this all a terrible idea?
 Is there already a better tool which does this? Have I wasted $20 enjoying seeing
 something come to life? As always, I can be found on
 [Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
+
+In case you missed it in the middle of the post, the link to the package is
+https://github.com/jonocarroll/rwanikani - happy learning!
 
 <br />
 <details>
