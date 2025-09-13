@@ -301,6 +301,22 @@ that I had to actually paste in kanji, which isn't the interface that I
 necessarily wanted, so I asked it to modify the function to optionally use the
 English word and just search for that in the meanings.
 
+At the end of this round of development it's a fully working package with 133 
+passing tests and no failures
+
+![Passing 133 tests](images/tests.png){width=300px}
+
+`devtools::check()` succeeds with no errors or warnings and only two NOTES 
+related to having a bit too large data and a `figures` directory for the vignette
+
+![Passing check() with only minor NOTES](images/check.png){width=500px}
+
+The package is here in case anyone's interested:
+
+https://github.com/jonocarroll/rwanikani
+
+and if I find any new features I'll continue to add to this.
+
 ### Functionality
 
 Now I can query for 'water' either by the kanji 水 or by the English word "water". 

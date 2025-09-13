@@ -269,6 +269,21 @@ examples to the README and vignette. When I started testing it out, I realised
 that I had to actually paste in kanji, which isn’t the interface that I
 necessarily wanted, so I asked it to modify the function to optionally use the
 English word and just search for that in the meanings.</p>
+<p>At the end of this round of development it’s a fully working package with 133
+passing tests and no failures</p>
+<div class="float">
+<img src="images/tests.png" width="300" alt="Passing 133 tests" />
+<div class="figcaption">Passing 133 tests</div>
+</div>
+<p><code>devtools::check()</code> succeeds with no errors or warnings and only two NOTES
+related to having a bit too large data and a <code>figures</code> directory for the vignette</p>
+<div class="float">
+<img src="images/check.png" width="500" alt="Passing check() with only minor NOTES" />
+<div class="figcaption">Passing check() with only minor NOTES</div>
+</div>
+<p>The package is here in case anyone’s interested:</p>
+<p><a href="https://github.com/jonocarroll/rwanikani" class="uri">https://github.com/jonocarroll/rwanikani</a></p>
+<p>and if I find any new features I’ll continue to add to this.</p>
 </div>
 <div id="functionality" class="section level3">
 <h3>Functionality</h3>
@@ -465,7 +480,7 @@ something come to life? As always, I can be found on
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2025-09-12
+##  date     2025-09-13
 ##  pandoc   3.7.0.2 @ /opt/homebrew/bin/ (via rmarkdown)
 ## 
 ## ─ Packages ───────────────────────────────────────────────────────────────────
