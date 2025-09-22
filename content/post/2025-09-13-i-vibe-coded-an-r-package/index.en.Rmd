@@ -9,7 +9,7 @@ tags:
   - rstats
 type: ''
 subtitle: 'and it ... actually works?!?'
-image: ''
+image: '' 
 ---
 
 ```{r, setup, include = FALSE}
