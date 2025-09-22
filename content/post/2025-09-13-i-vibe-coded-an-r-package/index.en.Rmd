@@ -128,7 +128,7 @@ I did find Dominic Schuhmacher's
 up kanji. But that doesn't do the similarity analysis that I wanted. The
 WaniKani API exists and that's what [Smouldering Durtles](https://github.com/jerryhcooke/smouldering_durtles) (the unofficial
 Android app I occasionally use to view my progress) uses behind the scenes. All
-I neeed was a way to query it.
+I need was a way to query it.
 
 I started by trying to fetch the data myself. I [got my API
 key](https://www.wanikani.com/settings/personal_access_tokens), looked up the
