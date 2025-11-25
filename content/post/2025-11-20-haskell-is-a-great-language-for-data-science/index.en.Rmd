@@ -1,0 +1,303 @@
+---
+title: Haskell IS a Great Language for Data Science
+author: Jonathan Carroll
+date: '2025-11-20'
+categories:
+  - haskell
+  - rstats
+tags:
+  - haskell
+  - rstats
+slug: haskell-is-a-great-language-for-data-science
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+knitr::opts_chunk$set(fig.path = "") 
+```
+
+I've been learning Haskell for a few years now and I am really liking a lot of 
+the features, not least the strong typing and functional approach. I thought it 
+was lacking some of the things I missed from R until I found the dataHaskell 
+project. In this post I'll demonstrate some of the features and explain why I 
+think it makes for a good (great?) data science language.
+
+<!--more-->
+
+I've been learning Haskell for a few years now and I am really liking a lot of
+the features, not least the strong typing and functional approach. I thought it
+was lacking some of the things I missed from R until I found the
+[dataHaskell](https://www.datahaskell.org/) project.
+
+There have been several attempts recently to enhance R with some strong types, e.g. 
+[vapour](https://vapour.run/) and [typr](https://github.com/we-data-ch/typr), but 
+while these try to bend R towards types, perhaps an all-in solution makes more sense.
+
+In this post I'll demonstrate some of the features and explain why I think it
+makes for a good (great?) data science language.
+
+I've posted [more than a handful of times](https://jcarroll.com.au/tags/haskell/) 
+about Haskell but maybe not so much the benefits of a real-world usage, more 
+toy problems (e.g. I did a lot of Advent of Code using it last year). I've been 
+working towards using it more, and even managed to get a custom {knitr} engine 
+working - here's the special sauce that makes a ` ```{haskell} ` block work:
+
+```{r}
+knitr::knit_engines$set(haskell = function(options) {
+  code <- options$code
+  codefile <- tempfile(fileext = ".hs")
+  on.exit(file.remove(codefile))
+  writeLines(c(":set +m", ":set -XOverloadedStrings", ":set -XTemplateHaskell", "", code), con = codefile)
+  out  <- system2(
+    file.path(path.expand('~'), '.ghcup/bin/ghc'),
+    c('-package dataframe -package text', '-e',"':script ", codefile, "'"),
+    # c('-e',"':script ", codefile, "'"),
+    stdout = TRUE
+  )
+
+  knitr::engine_output(options, code, out)
+})
+```
+
+This writes the lines of code to a temporary file, prepended with some
+configuration options, then runs essentially `ghc -e ':script file.txt'` and
+deletes the temporary file. It also adds a package just in case that's not
+exposed to the session. The result is then shown in the code block, so this is a
+"live" output
+
+```{haskell}
+map (+5) [2..8]
+```
+
+Neat, right?
+
+So, what would one use this for?
+
+I saw [this (follow-up) post](https://blog.genesmindsmachines.com/p/python-is-not-a-great-language-for-2e0)
+from Claus Wilke about Python not being a great language for data science and
+while I concur with the points made there, I do believe some of them are
+personal preference. I'm a proponent of "use the tools you're comfortable with"
+and I can't argue with however many thousands of data scientists are
+successfully using Python to do data science.
+
+The point about "what makes for a good data science language" made me pause to 
+think and I came to the conclusion that Haskell actually ticks the boxes, at least 
+with the dataHaskell ecosystem and the dataframe package. What follows is not to 
+be taken as a pile-on against Python or even a complaint about R, but rather 
+something in the style of "if you like that, check this out!"
+
+Lots of languages seem to have some sort of dataframe these days - thanks R! - e.g. 
+Python has Pandas/Polars, Julia has DataFrames.jl, even Kotlin has a DataFrame. 
+Haskell does, too with [dataframe](https://dataframe.readthedocs.io/) and I've 
+been learning how to use this recently.
+
+The points made in Claus' post were that the features which make R a better language
+for data science over Python are (paraphrasing):
+- call-by-value semantics (non-mutability)
+- built-in missing values
+- built-in vectorization
+- non-standard evaluation (NSE)
+
+Let's look at how Haskell deals with each of these.
+
+## Non-mutability
+
+Claus details how Python's call-by-reference semantics enables one to modify 
+variables unintentionally, since they're scoped across functions. Haskell certainly 
+doesn't have this problem - everything is immutable, and functions are "pure" (no 
+side-effects, though you can interact with typed side-effect 'instructions'). If you 
+want to "do" anything to a data object you pass it into a function and get a new 
+object out. There's no risk of accidentally modifying a variable, but of course 
+the downside of this is that you _can't_ do so without a function. While in R it's 
+straightforward to do 
+
+```{r}
+a <- c(2, 9, 6)
+a[2] <- 4
+a
+```
+
+in Haskell you'd need to break the vector apart and stitch the new value inside
+
+```{haskell}
+a = [2, 9, 6]
+
+:{
+updateSecond (x:_:z) y = x : y : z
+updateSecond xs _ = xs
+:}
+
+updateSecond a 4
+```
+
+(I'm still figuring out how to get multiline definitions to work well in knitr, 
+but it's getting there).
+
+No risk of accidentally writing that, I'm sure.
+
+## Built-in missing values
+
+This is somewhere that Haskell shines - if you want a value that _might_ not be
+available in R you use an `NA` (which is a shorthand for whichever flavour/class 
+you actually want, e.g. `NA_character_`). Using one of these in any mathematical 
+calculation 'poisons' it and returns `NA`, e.g.
+
+```{r}
+sum(1, NA, 3)
+```
+
+To avoid this, most functions offer a `na.rm` argument
+
+```{r}
+sum(1, NA, 3, na.rm = TRUE)
+```
+
+What's happening here is that R encodes a value that is _maybe_ missing. Haskell 
+formalises this into the `Data.Maybe` package and you have to be explicit in 
+dealing with a missing value (`Nothing`) or a definitely-not-missing value (`Just x`)
+
+```{haskell}
+non_missing = [1, 2, 3, 4]
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+
+:t non_missing
+:t has_missing
+```
+
+where we see that `has_missing` is a `Maybe` type. 
+
+```{haskell, echo = -c(1, 2)}
+non_missing = [1, 2, 3, 4]
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+sum non_missing
+```
+
+You can't just `sum` the latter
+
+```haskell
+sum has_missing
+```
+```{r, eval = FALSE, class.source = "bg-danger"}
+s:7:1: error: [GHC-39999]
+    • No instance for ‘Num (Maybe Integer)’ arising from a use of ‘it’
+    • In the first argument of ‘print’, namely ‘it’
+      In a stmt of an interactive GHCi command: print it
+  |
+7 | sum has_missing
+  | ^^^^^^^^^^^^^^^
+```
+
+you need to remove any `Nothing` first, then most likely 'unwrap' from the 
+`Maybe` context
+
+```{haskell, echo = -c(1)}
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+import Data.Maybe
+sum $ map fromJust $ filter isJust has_missing
+```
+
+or alternatively
+
+```{haskell, echo = -c(1,2)}
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+import Data.Maybe
+sum (mapMaybe id has_missing)
+```
+
+or you can get fancy
+
+```{haskell, echo = -c(1)}
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+sum [x | Just x <- has_missing]
+```
+
+The point is that you _have to_ deal with the missingness if it's there. What this
+also means is that if you have a `Double` column, it _does NOT_ have missing values, 
+so you can safely sum those values (plus get all sorts of performance benefits from 
+the compiler because it, too, knows there's no missing values).
+
+For Claus' example, we can produce a proper `Nothing` at the end of this calculation
+
+```{haskell}
+import Data.Maybe
+x = [Just 1,Just 2,Nothing,Just 4,Just 5]
+fmap (fmap (> 3)) x
+```
+
+## Built-in vectorisation
+
+Haskell is NOT an array language, so sure, it doesn't have vectorisation built-in, 
+but it's worth noting that at the end of Claus' post he details some limitations 
+of R and acknowledges that "R does not have any scalar data types". Haskell has 
+scalars, vectors, and arrays, and you need to be specific when you want to iterate 
+over those - the "type" of a variable includes the dimensionality, so `Double` is 
+not the same as `[Double]` (a list of doubles). 
+
+Since Haskell is a functional programming language it has every type of `map` you 
+could want, including specialities for monads and applicatives. While this means 
+you _do_ need to write `map` when you want to iterate, it also means you're never 
+surprised that there was more than one value there.
+
+## Non-standard evaluation (NSE)
+
+This is where the fun really starts - the dataframe package in Haskell adds 
+the sort of slicing and dicing you're probably familiar with 
+
+```{haskell}
+import qualified DataFrame as D
+
+df <- D.readParquet "iris.parquet"
+
+D.nRows df
+```
+
+(don't be fooled by that `<-` - that's Haskell's way of doing something that reaches 
+outside of the CPU, e.g. to the disk to read a file). 
+
+```{haskell}
+import qualified DataFrame as D
+import qualified DataFrame.Functions as F
+import qualified Data.Text as T
+import DataFrame ((|>))
+import DataFrame.Functions ((.==), (.>))
+
+iris <- D.readParquet "iris.parquet"
+
+:{
+iris |> 
+  D.filterWhere (F.col @T.Text "variety" .== "Setosa") |> 
+  D.filterWhere (F.col @Double "sepal.length" .> 5.4)
+:}
+```
+
+but goes one step further via template haskell... you can expose the columns as
+variables (admittedly, in the wider scope) so this works
+
+```{haskell}
+import qualified DataFrame as D
+import qualified DataFrame.Functions as F
+import Data.Text (Text)
+
+iris <- D.readParquet "iris.parquet"
+
+_ = (); F.declareColumns iris
+D.derive "ratio" (sepal_width / sepal_length) iris 
+```
+
+(explain output and redirection)
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />

@@ -1,0 +1,309 @@
+---
+title: Haskell IS a Great Language for Data Science
+author: Jonathan Carroll
+date: '2025-11-20'
+categories:
+  - haskell
+  - rstats
+tags:
+  - haskell
+  - rstats
+slug: haskell-is-a-great-language-for-data-science
+---
+
+
+
+<p>I’ve been learning Haskell for a few years now and I am really liking a lot of
+the features, not least the strong typing and functional approach. I thought it
+was lacking some of the things I missed from R until I found the dataHaskell
+project. In this post I’ll demonstrate some of the features and explain why I
+think it makes for a good (great?) data science language.</p>
+<!--more-->
+<p>I’ve been learning Haskell for a few years now and I am really liking a lot of
+the features, not least the strong typing and functional approach. I thought it
+was lacking some of the things I missed from R until I found the
+<a href="https://www.datahaskell.org/">dataHaskell</a> project.</p>
+<p>There have been several attempts recently to enhance R with some strong types, e.g. 
+<a href="https://vapour.run/">vapour</a> and <a href="https://github.com/we-data-ch/typr">typr</a>, but
+while these try to bend R towards types, perhaps an all-in solution makes more sense.</p>
+<p>In this post I’ll demonstrate some of the features and explain why I think it
+makes for a good (great?) data science language.</p>
+<p>I’ve posted <a href="https://jcarroll.com.au/tags/haskell/">more than a handful of times</a>
+about Haskell but maybe not so much the benefits of a real-world usage, more
+toy problems (e.g. I did a lot of Advent of Code using it last year). I’ve been
+working towards using it more, and even managed to get a custom {knitr} engine
+working - here’s the special sauce that makes a <code>```{haskell}</code> block work:</p>
+<pre class="r"><code>knitr::knit_engines$set(haskell = function(options) {
+  code &lt;- options$code
+  codefile &lt;- tempfile(fileext = &quot;.hs&quot;)
+  on.exit(file.remove(codefile))
+  writeLines(c(&quot;:set +m&quot;, &quot;:set -XOverloadedStrings&quot;, &quot;:set -XTemplateHaskell&quot;, &quot;&quot;, code), con = codefile)
+  out  &lt;- system2(
+    file.path(path.expand(&#39;~&#39;), &#39;.ghcup/bin/ghc&#39;),
+    c(&#39;-package dataframe -package text&#39;, &#39;-e&#39;,&quot;&#39;:script &quot;, codefile, &quot;&#39;&quot;),
+    # c(&#39;-e&#39;,&quot;&#39;:script &quot;, codefile, &quot;&#39;&quot;),
+    stdout = TRUE
+  )
+
+  knitr::engine_output(options, code, out)
+})</code></pre>
+<p>This writes the lines of code to a temporary file, prepended with some
+configuration options, then runs essentially <code>ghc -e ':script file.txt'</code> and
+deletes the temporary file. It also adds a package just in case that’s not
+exposed to the session. The result is then shown in the code block, so this is a
+“live” output</p>
+<pre class="haskell"><code>map (+5) [2..8]</code></pre>
+<pre class="bg-success"><code>## [7,8,9,10,11,12,13]</code></pre>
+<p>Neat, right?</p>
+<p>So, what would one use this for?</p>
+<p>I saw <a href="https://blog.genesmindsmachines.com/p/python-is-not-a-great-language-for-2e0">this (follow-up) post</a>
+from Claus Wilke about Python not being a great language for data science and
+while I concur with the points made there, I do believe some of them are
+personal preference. I’m a proponent of “use the tools you’re comfortable with”
+and I can’t argue with however many thousands of data scientists are
+successfully using Python to do data science.</p>
+<p>The point about “what makes for a good data science language” made me pause to
+think and I came to the conclusion that Haskell actually ticks the boxes, at least
+with the dataHaskell ecosystem and the dataframe package. What follows is not to
+be taken as a pile-on against Python or even a complaint about R, but rather
+something in the style of “if you like that, check this out!”</p>
+<p>Lots of languages seem to have some sort of dataframe these days - thanks R! - e.g. 
+Python has Pandas/Polars, Julia has DataFrames.jl, even Kotlin has a DataFrame.
+Haskell does, too with <a href="https://dataframe.readthedocs.io/">dataframe</a> and I’ve
+been learning how to use this recently.</p>
+<p>The points made in Claus’ post were that the features which make R a better language
+for data science over Python are (paraphrasing):
+- call-by-value semantics (non-mutability)
+- built-in missing values
+- built-in vectorization
+- non-standard evaluation (NSE)</p>
+<p>Let’s look at how Haskell deals with each of these.</p>
+<div id="non-mutability" class="section level2">
+<h2>Non-mutability</h2>
+<p>Claus details how Python’s call-by-reference semantics enables one to modify
+variables unintentionally, since they’re scoped across functions. Haskell certainly
+doesn’t have this problem - everything is immutable, and functions are “pure” (no
+side-effects, though you can interact with typed side-effect ‘instructions’). If you
+want to “do” anything to a data object you pass it into a function and get a new
+object out. There’s no risk of accidentally modifying a variable, but of course
+the downside of this is that you <em>can’t</em> do so without a function. While in R it’s
+straightforward to do</p>
+<pre class="r"><code>a &lt;- c(2, 9, 6)
+a[2] &lt;- 4
+a</code></pre>
+<pre class="bg-success"><code>## [1] 2 4 6</code></pre>
+<p>in Haskell you’d need to break the vector apart and stitch the new value inside</p>
+<pre class="haskell"><code>a = [2, 9, 6]
+
+:{
+updateSecond (x:_:z) y = x : y : z
+updateSecond xs _ = xs
+:}
+
+updateSecond a 4</code></pre>
+<pre class="bg-success"><code>## [2,4,6]</code></pre>
+<p>(I’m still figuring out how to get multiline definitions to work well in knitr,
+but it’s getting there).</p>
+<p>No risk of accidentally writing that, I’m sure.</p>
+</div>
+<div id="built-in-missing-values" class="section level2">
+<h2>Built-in missing values</h2>
+<p>This is somewhere that Haskell shines - if you want a value that <em>might</em> not be
+available in R you use an <code>NA</code> (which is a shorthand for whichever flavour/class
+you actually want, e.g. <code>NA_character_</code>). Using one of these in any mathematical
+calculation ‘poisons’ it and returns <code>NA</code>, e.g.</p>
+<pre class="r"><code>sum(1, NA, 3)</code></pre>
+<pre class="bg-success"><code>## [1] NA</code></pre>
+<p>To avoid this, most functions offer a <code>na.rm</code> argument</p>
+<pre class="r"><code>sum(1, NA, 3, na.rm = TRUE)</code></pre>
+<pre class="bg-success"><code>## [1] 4</code></pre>
+<p>What’s happening here is that R encodes a value that is <em>maybe</em> missing. Haskell
+formalises this into the <code>Data.Maybe</code> package and you have to be explicit in
+dealing with a missing value (<code>Nothing</code>) or a definitely-not-missing value (<code>Just x</code>)</p>
+<pre class="haskell"><code>non_missing = [1, 2, 3, 4]
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+
+:t non_missing
+:t has_missing</code></pre>
+<pre class="bg-success"><code>## non_missing :: Num a =&gt; [a]
+## has_missing :: Num a =&gt; [Maybe a]</code></pre>
+<p>where we see that <code>has_missing</code> is a <code>Maybe</code> type.</p>
+<pre class="haskell"><code>sum non_missing</code></pre>
+<pre class="bg-success"><code>## 10</code></pre>
+<p>You can’t just <code>sum</code> the latter</p>
+<pre class="haskell"><code>sum has_missing</code></pre>
+<pre class="r bg-danger"><code>s:7:1: error: [GHC-39999]
+    • No instance for ‘Num (Maybe Integer)’ arising from a use of ‘it’
+    • In the first argument of ‘print’, namely ‘it’
+      In a stmt of an interactive GHCi command: print it
+  |
+7 | sum has_missing
+  | ^^^^^^^^^^^^^^^</code></pre>
+<p>you need to remove any <code>Nothing</code> first, then most likely ‘unwrap’ from the
+<code>Maybe</code> context</p>
+<pre class="haskell"><code>import Data.Maybe
+sum $ map fromJust $ filter isJust has_missing</code></pre>
+<pre class="bg-success"><code>## 7</code></pre>
+<p>or alternatively</p>
+<pre class="haskell"><code>sum (mapMaybe id has_missing)</code></pre>
+<pre class="bg-success"><code>## 7</code></pre>
+<p>or you can get fancy</p>
+<pre class="haskell"><code>sum [x | Just x &lt;- has_missing]</code></pre>
+<pre class="bg-success"><code>## 7</code></pre>
+<p>The point is that you <em>have to</em> deal with the missingness if it’s there. What this
+also means is that if you have a <code>Double</code> column, it <em>does NOT</em> have missing values,
+so you can safely sum those values (plus get all sorts of performance benefits from
+the compiler because it, too, knows there’s no missing values).</p>
+<p>For Claus’ example, we can produce a proper <code>Nothing</code> at the end of this calculation</p>
+<pre class="haskell"><code>import Data.Maybe
+x = [Just 1,Just 2,Nothing,Just 4,Just 5]
+fmap (fmap (&gt; 3)) x</code></pre>
+<pre class="bg-success"><code>## [Just False,Just False,Nothing,Just True,Just True]</code></pre>
+</div>
+<div id="built-in-vectorisation" class="section level2">
+<h2>Built-in vectorisation</h2>
+<p>Haskell is NOT an array language, so sure, it doesn’t have vectorisation built-in,
+but it’s worth noting that at the end of Claus’ post he details some limitations
+of R and acknowledges that “R does not have any scalar data types”. Haskell has
+scalars, vectors, and arrays, and you need to be specific when you want to iterate
+over those - the “type” of a variable includes the dimensionality, so <code>Double</code> is
+not the same as <code>[Double]</code> (a list of doubles).</p>
+<p>Since Haskell is a functional programming language it has every type of <code>map</code> you
+could want, including specialities for monads and applicatives. While this means
+you <em>do</em> need to write <code>map</code> when you want to iterate, it also means you’re never
+surprised that there was more than one value there.</p>
+</div>
+<div id="non-standard-evaluation-nse" class="section level2">
+<h2>Non-standard evaluation (NSE)</h2>
+<p>This is where the fun really starts - the dataframe package in Haskell adds
+the sort of slicing and dicing you’re probably familiar with</p>
+<pre class="haskell"><code>import qualified DataFrame as D
+
+df &lt;- D.readParquet &quot;iris.parquet&quot;
+
+D.nRows df</code></pre>
+<pre class="bg-success"><code>## 150</code></pre>
+<p>(don’t be fooled by that <code>&lt;-</code> - that’s Haskell’s way of doing something that reaches
+outside of the CPU, e.g. to the disk to read a file).</p>
+<pre class="haskell"><code>import qualified DataFrame as D
+import qualified DataFrame.Functions as F
+import qualified Data.Text as T
+import DataFrame ((|&gt;))
+import DataFrame.Functions ((.==), (.&gt;))
+
+iris &lt;- D.readParquet &quot;iris.parquet&quot;
+
+:{
+iris |&gt; 
+  D.filterWhere (F.col @T.Text &quot;variety&quot; .== &quot;Setosa&quot;) |&gt; 
+  D.filterWhere (F.col @Double &quot;sepal.length&quot; .&gt; 5.4)
+:}</code></pre>
+<pre class="bg-success"><code>## -----------------------------------------------------------------
+## sepal.length | sepal.width | petal.length | petal.width | variety
+## -------------|-------------|--------------|-------------|--------
+##    Double    |   Double    |    Double    |   Double    |  Text  
+## -------------|-------------|--------------|-------------|--------
+## 5.8          | 4.0         | 1.2          | 0.2         | Setosa 
+## 5.7          | 4.4         | 1.5          | 0.4         | Setosa 
+## 5.7          | 3.8         | 1.7          | 0.3         | Setosa 
+## 5.5          | 4.2         | 1.4          | 0.2         | Setosa 
+## 5.5          | 3.5         | 1.3          | 0.2         | Setosa</code></pre>
+<p>but goes one step further via template haskell… you can expose the columns as
+variables (admittedly, in the wider scope) so this works</p>
+<pre class="haskell"><code>import qualified DataFrame as D
+import qualified DataFrame.Functions as F
+import Data.Text (Text)
+
+iris &lt;- D.readParquet &quot;iris.parquet&quot;
+
+_ = (); F.declareColumns iris
+D.derive &quot;ratio&quot; (sepal_width / sepal_length) iris </code></pre>
+<pre class="bg-success"><code>## --------------------------------------------------------------------------------------
+## sepal.length | sepal.width | petal.length | petal.width | variety |       ratio       
+## -------------|-------------|--------------|-------------|---------|-------------------
+##    Double    |   Double    |    Double    |   Double    |  Text   |       Double      
+## -------------|-------------|--------------|-------------|---------|-------------------
+## 5.1          | 3.5         | 1.4          | 0.2         | Setosa  | 0.6862745098039216
+## 4.9          | 3.0         | 1.4          | 0.2         | Setosa  | 0.6122448979591836
+## 4.7          | 3.2         | 1.3          | 0.2         | Setosa  | 0.6808510638297872
+## 4.6          | 3.1         | 1.5          | 0.2         | Setosa  | 0.673913043478261 
+## 5.0          | 3.6         | 1.4          | 0.2         | Setosa  | 0.72              
+## 5.4          | 3.9         | 1.7          | 0.4         | Setosa  | 0.7222222222222222
+## 4.6          | 3.4         | 1.4          | 0.3         | Setosa  | 0.7391304347826088
+## 5.0          | 3.4         | 1.5          | 0.2         | Setosa  | 0.6799999999999999
+## 4.4          | 2.9         | 1.4          | 0.2         | Setosa  | 0.6590909090909091
+## 4.9          | 3.1         | 1.5          | 0.1         | Setosa  | 0.6326530612244897
+## 5.4          | 3.7         | 1.5          | 0.2         | Setosa  | 0.6851851851851851
+## 4.8          | 3.4         | 1.6          | 0.2         | Setosa  | 0.7083333333333334
+## 4.8          | 3.0         | 1.4          | 0.1         | Setosa  | 0.625             
+## 4.3          | 3.0         | 1.1          | 0.1         | Setosa  | 0.6976744186046512
+## 5.8          | 4.0         | 1.2          | 0.2         | Setosa  | 0.6896551724137931
+## 5.7          | 4.4         | 1.5          | 0.4         | Setosa  | 0.7719298245614036
+## 5.4          | 3.9         | 1.3          | 0.4         | Setosa  | 0.7222222222222222
+## 5.1          | 3.5         | 1.4          | 0.3         | Setosa  | 0.6862745098039216
+## 5.7          | 3.8         | 1.7          | 0.3         | Setosa  | 0.6666666666666666
+## 5.1          | 3.8         | 1.5          | 0.3         | Setosa  | 0.7450980392156863
+## 
+## Showing 20 rows out of 150</code></pre>
+<p>(explain output and redirection)</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.4.1 (2024-06-14)
+##  os       macOS 15.6.1
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2025-11-26
+##  pandoc   3.8.2.1 @ /opt/homebrew/bin/ (via rmarkdown)
+##  quarto   1.7.31 @ /usr/local/bin/quarto
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.21.1  2025-06-28 [1] Github (rstudio/blogdown@33313a5)
+##  bookdown      0.41    2024-10-16 [1] CRAN (R 4.4.1)
+##  bslib         0.9.0   2025-01-30 [1] CRAN (R 4.4.1)
+##  cachem        1.1.0   2024-05-16 [1] CRAN (R 4.4.0)
+##  cli           3.6.5   2025-04-23 [1] CRAN (R 4.4.1)
+##  devtools      2.4.6   2025-10-03 [1] CRAN (R 4.4.1)
+##  digest        0.6.38  2025-11-12 [1] CRAN (R 4.4.1)
+##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.4.0)
+##  evaluate      1.0.5   2025-08-27 [1] CRAN (R 4.4.1)
+##  fastmap       1.2.0   2024-05-15 [1] CRAN (R 4.4.0)
+##  fs            1.6.6   2025-04-12 [1] CRAN (R 4.4.1)
+##  glue          1.8.0   2024-09-30 [1] CRAN (R 4.4.1)
+##  htmltools     0.5.8.1 2024-04-04 [1] CRAN (R 4.4.0)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.4.0)
+##  jsonlite      2.0.0   2025-03-27 [1] CRAN (R 4.4.1)
+##  knitr         1.50    2025-03-16 [1] CRAN (R 4.4.1)
+##  lifecycle     1.0.4   2023-11-07 [1] CRAN (R 4.4.0)
+##  magrittr      2.0.4   2025-09-12 [1] CRAN (R 4.4.1)
+##  memoise       2.0.1   2021-11-26 [1] CRAN (R 4.4.0)
+##  pkgbuild      1.4.8   2025-05-26 [1] CRAN (R 4.4.1)
+##  pkgload       1.4.1   2025-09-23 [1] CRAN (R 4.4.1)
+##  purrr         1.2.0   2025-11-04 [1] CRAN (R 4.4.1)
+##  R6            2.6.1   2025-02-15 [1] CRAN (R 4.4.1)
+##  remotes       2.5.0   2024-03-17 [1] CRAN (R 4.4.1)
+##  rlang         1.1.6   2025-04-11 [1] CRAN (R 4.4.1)
+##  rmarkdown     2.30    2025-09-28 [1] CRAN (R 4.4.1)
+##  rstudioapi    0.17.1  2024-10-22 [1] CRAN (R 4.4.1)
+##  sass          0.4.10  2025-04-11 [1] CRAN (R 4.4.1)
+##  sessioninfo   1.2.3   2025-02-05 [1] CRAN (R 4.4.1)
+##  usethis       3.2.1   2025-09-06 [1] CRAN (R 4.4.1)
+##  vctrs         0.6.5   2023-12-01 [1] CRAN (R 4.4.0)
+##  xfun          0.54    2025-10-30 [1] CRAN (R 4.4.1)
+##  yaml          2.3.10  2024-07-26 [1] CRAN (R 4.4.0)
+## 
+##  [1] /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>
