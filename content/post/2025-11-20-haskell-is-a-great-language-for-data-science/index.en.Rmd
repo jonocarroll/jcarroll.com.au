@@ -52,11 +52,10 @@ knitr::knit_engines$set(haskell = function(options) {
   code <- options$code
   codefile <- tempfile(fileext = ".hs")
   on.exit(file.remove(codefile))
-  writeLines(c(":set +m", ":set -XOverloadedStrings", ":set -XTemplateHaskell", "", code), con = codefile)
+  writeLines(c(":script dataframe", "", code), con = codefile)
   out  <- system2(
     file.path(path.expand('~'), '.ghcup/bin/ghc'),
-    c('-package dataframe -package text', '-e',"':script ", codefile, "'"),
-    # c('-e',"':script ", codefile, "'"),
+    c('-e',"':script ", codefile, "'"),
     stdout = TRUE
   )
 
@@ -224,7 +223,7 @@ the compiler because it, too, knows there's no missing values).
 For Claus' example, we can produce a proper `Nothing` at the end of this calculation
 
 ```{haskell}
-import Data.Maybe
+import Data.Maybe 
 x = [Just 1,Just 2,Nothing,Just 4,Just 5]
 fmap (fmap (> 3)) x
 ```
@@ -246,7 +245,7 @@ surprised that there was more than one value there.
 What's more, because it's a compiled language, the compiler can optimise all sorts 
 of vector operations. One example is using "fusion" to combine a `filter` and a 
 `map` such that the 
-[intermediate vector isn't actually used at all, e.g.](https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion).
+[intermediate vector isn't actually used at all](https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion).
 
 ## Non-standard evaluation (NSE)
 
@@ -254,8 +253,6 @@ This is where the fun really starts - the dataframe package in Haskell adds
 the sort of slicing and dicing you're probably familiar with 
 
 ```{haskell}
-import qualified DataFrame as D
-
 df <- D.readParquet "iris.parquet"
 
 D.nRows df
@@ -265,12 +262,6 @@ D.nRows df
 outside of the CPU, e.g. to the disk to read a file). 
 
 ```{haskell}
-import qualified DataFrame as D
-import qualified DataFrame.Functions as F
-import qualified Data.Text as T
-import DataFrame ((|>))
-import DataFrame.Functions ((.==), (.>))
-
 iris <- D.readParquet "iris.parquet"
 
 :{
@@ -284,15 +275,10 @@ but goes one step further via template haskell... you can expose the columns as
 variables (admittedly, in the wider scope) so this works
 
 ```{haskell}
-import qualified DataFrame as D
-import qualified DataFrame.Functions as F
-import DataFrame ((|>))
-import Data.Text (Text)
-
 iris <- D.readParquet "iris.parquet"
 
 -- make columns available as expressions
-_ = (); F.declareColumns iris
+:exposeColumns iris
 
 :{
 iris |> 

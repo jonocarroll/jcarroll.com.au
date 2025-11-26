@@ -37,11 +37,10 @@ working - here’s the special sauce that makes a <code>```{haskell}</code> bloc
   code &lt;- options$code
   codefile &lt;- tempfile(fileext = &quot;.hs&quot;)
   on.exit(file.remove(codefile))
-  writeLines(c(&quot;:set +m&quot;, &quot;:set -XOverloadedStrings&quot;, &quot;:set -XTemplateHaskell&quot;, &quot;&quot;, code), con = codefile)
+  writeLines(c(&quot;:script dataframe&quot;, &quot;&quot;, code), con = codefile)
   out  &lt;- system2(
     file.path(path.expand(&#39;~&#39;), &#39;.ghcup/bin/ghc&#39;),
-    c(&#39;-package dataframe -package text&#39;, &#39;-e&#39;,&quot;&#39;:script &quot;, codefile, &quot;&#39;&quot;),
-    # c(&#39;-e&#39;,&quot;&#39;:script &quot;, codefile, &quot;&#39;&quot;),
+    c(&#39;-e&#39;,&quot;&#39;:script &quot;, codefile, &quot;&#39;&quot;),
     stdout = TRUE
   )
 
@@ -156,7 +155,7 @@ also means is that if you have a <code>Double</code> column, it <em>does NOT</em
 so you can safely sum those values (plus get all sorts of performance benefits from
 the compiler because it, too, knows there’s no missing values).</p>
 <p>For Claus’ example, we can produce a proper <code>Nothing</code> at the end of this calculation</p>
-<pre class="haskell"><code>import Data.Maybe
+<pre class="haskell"><code>import Data.Maybe 
 x = [Just 1,Just 2,Nothing,Just 4,Just 5]
 fmap (fmap (&gt; 3)) x</code></pre>
 <pre class="bg-success"><code>## [Just False,Just False,Nothing,Just True,Just True]</code></pre>
@@ -176,27 +175,19 @@ surprised that there was more than one value there.</p>
 <p>What’s more, because it’s a compiled language, the compiler can optimise all sorts
 of vector operations. One example is using “fusion” to combine a <code>filter</code> and a
 <code>map</code> such that the
-<a href="https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion">intermediate vector isn’t actually used at all, e.g.</a>.</p>
+<a href="https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion">intermediate vector isn’t actually used at all</a>.</p>
 </div>
 <div id="non-standard-evaluation-nse" class="section level2">
 <h2>Non-standard evaluation (NSE)</h2>
 <p>This is where the fun really starts - the dataframe package in Haskell adds
 the sort of slicing and dicing you’re probably familiar with</p>
-<pre class="haskell"><code>import qualified DataFrame as D
-
-df &lt;- D.readParquet &quot;iris.parquet&quot;
+<pre class="haskell"><code>df &lt;- D.readParquet &quot;iris.parquet&quot;
 
 D.nRows df</code></pre>
 <pre class="bg-success"><code>## 150</code></pre>
 <p>(don’t be fooled by that <code>&lt;-</code> - that’s Haskell’s way of doing something that reaches
 outside of the CPU, e.g. to the disk to read a file).</p>
-<pre class="haskell"><code>import qualified DataFrame as D
-import qualified DataFrame.Functions as F
-import qualified Data.Text as T
-import DataFrame ((|&gt;))
-import DataFrame.Functions ((.==), (.&gt;))
-
-iris &lt;- D.readParquet &quot;iris.parquet&quot;
+<pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
 
 :{
 iris |&gt; 
@@ -215,15 +206,10 @@ iris |&gt;
 ## 5.5          | 3.5         | 1.3          | 0.2         | Setosa</code></pre>
 <p>but goes one step further via template haskell… you can expose the columns as
 variables (admittedly, in the wider scope) so this works</p>
-<pre class="haskell"><code>import qualified DataFrame as D
-import qualified DataFrame.Functions as F
-import DataFrame ((|&gt;))
-import Data.Text (Text)
-
-iris &lt;- D.readParquet &quot;iris.parquet&quot;
+<pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
 
 -- make columns available as expressions
-_ = (); F.declareColumns iris
+:exposeColumns iris
 
 :{
 iris |&gt; 
