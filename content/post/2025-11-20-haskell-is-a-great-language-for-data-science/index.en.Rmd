@@ -98,6 +98,7 @@ been learning how to use this recently.
 
 The points made in Claus' post were that the features which make R a better language
 for data science over Python are (paraphrasing):
+
 - call-by-value semantics (non-mutability)
 - built-in missing values
 - built-in vectorization
@@ -135,8 +136,7 @@ updateSecond xs _ = xs
 updateSecond a 4
 ```
 
-(I'm still figuring out how to get multiline definitions to work well in knitr, 
-but it's getting there).
+[Multi-line statements](https://sanj.ink/posts/2018-08-09-defining-a-multiline-function-in-haskell-using-ghci.html) need to be enclosed between `:{` and `:}`.
 
 No risk of accidentally writing that, I'm sure.
 
@@ -243,6 +243,11 @@ could want, including specialities for monads and applicatives. While this means
 you _do_ need to write `map` when you want to iterate, it also means you're never 
 surprised that there was more than one value there.
 
+What's more, because it's a compiled language, the compiler can optimise all sorts 
+of vector operations. One example is using "fusion" to combine a `filter` and a 
+`map` such that the 
+[intermediate vector isn't actually used at all, e.g.](https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion).
+
 ## Non-standard evaluation (NSE)
 
 This is where the fun really starts - the dataframe package in Haskell adds 
@@ -281,12 +286,19 @@ variables (admittedly, in the wider scope) so this works
 ```{haskell}
 import qualified DataFrame as D
 import qualified DataFrame.Functions as F
+import DataFrame ((|>))
 import Data.Text (Text)
 
 iris <- D.readParquet "iris.parquet"
 
+-- make columns available as expressions
 _ = (); F.declareColumns iris
-D.derive "ratio" (sepal_width / sepal_length) iris 
+
+:{
+iris |> 
+  D.derive "ratio" (sepal_width / sepal_length) |>
+  D.take 5
+:}
 ```
 
 (explain output and redirection)
