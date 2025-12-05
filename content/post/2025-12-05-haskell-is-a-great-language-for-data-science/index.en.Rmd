@@ -1,7 +1,7 @@
 ---
 title: Haskell IS a Great Language for Data Science
 author: Jonathan Carroll
-date: '2025-11-20'
+date: '2025-12-05'
 categories:
   - haskell
   - rstats
@@ -114,7 +114,8 @@ come as a surprise. A single number might be of type `Double` and a list of thes
 would be of type `[Double]`.
 
 If you're worried that you've become too reliant on a piped workflow, fear not! 
-Haskell has the familiar pipe operator
+dataHaskell's [dataframe](https://dataframe.readthedocs.io/en/latest/) package 
+adds the familiar pipe operator 
 
 ```{haskell}
 [2,8,7,10,1,9,5,3,4,6] |>
@@ -141,8 +142,11 @@ or for multi-line comments, between `{-` and `-}`.
 If you need to write a function (for which you use camelCase) you can annotate 
 it with a definition, though the compiler can figure this out itself most of the 
 time (plus it helps for readability). The way to do this is with one extra line 
-above the implementation. If the type is generic, you can use a placeholder rather 
-than a _specific_ type
+above the implementation. If the type is generic, you can use a placeholder e.g. 
+`a` rather than a _specific_ type. Technically all functions take only one argument, 
+possibly returning another function (see [currying](https://en.wikipedia.org/wiki/Currying)) 
+but this is more explicit in the signature; e.g. `[a] -> a -> [a]` represents a 
+function which takes a list and a value and returns a list
 
 ```{haskell}
 appendValueToList :: [a] -> a -> [a]
@@ -250,11 +254,12 @@ I've also included the type definition in this case which reads as "a function
 which takes a list of some type `a` (`[a]`) and a single value of type `a` and
 returns a list of that same type, `[a]`." FYI, this is one example where you may
 need the definition to be enclosed between `:{` and `:}`, if you're running
-interactively in `ghci`, but here I'm using a neat 
-[pre-processing trick](https://github.com/DataHaskell/datahaskell-starter/blob/main/hscript).
+interactively in `ghci`, but here I'm using the  
+[pre-processing trick](https://github.com/DataHaskell/datahaskell-starter/blob/main/hscript)
+mentioned above.
 
-A tick for _truly_ immutable data - the only way to alter a value is to operate 
-on it with a function.
+A tick for _truly_ immutable data - the only way to "alter" a value is to operate 
+on it with a function and reassign it.
 
 ## Built-in missing values
 
@@ -267,7 +272,8 @@ calculation 'poisons' it and returns `NA`, e.g.
 sum(1, NA, 3)
 ```
 
-To avoid this, most functions offer a `na.rm` argument
+To avoid this, most functions offer a `na.rm` argument which instructs to remove
+the missing values prior to performing the calculation
 
 ```{r}
 sum(1, NA, 3, na.rm = TRUE)
@@ -328,7 +334,7 @@ has_missing = [Just 1,Just 2,Nothing,Just 4]
 
 import Data.Maybe
 
-sum (mapMaybe id has_missing)
+sum (catMaybes has_missing) 
 ```
 
 or you can get fancy
@@ -374,6 +380,70 @@ What's more, because it's a compiled language, the compiler can optimise all sor
 of vector operations. One example is using "fusion" to combine a `filter` and a 
 `map` such that the 
 [intermediate vector isn't actually used at all](https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion).
+
+This means that a stack of functions like
+
+```haskell
+foldr (+) 0 . map (*2) . filter even
+```
+
+which would naively require a full pass to filter the even values, a half pass 
+to double those, then anther half pass to add them up, can be done in a single 
+pass. 
+
+You can also add [rewrite rules](https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/rewrite_rules.html)
+if you're sure your replacement holds (and many libraries can assert these 
+conditions, so implement such rules) so that some operations can be entirely 
+compiled away. Reversing a finite list twice is a no-op, so takes no time, so 
+one could add
+
+```
+{-# RULES
+"reverse.reverse/id" reverse . reverse = id
+  #-}
+```
+
+which means a double reverse can be replaced with the identity function. 
+
+Even without such a rule, Haskell (being a compiled language) is _fast_
+
+```haskell
+x = [1..1000000000]
+:set +s
+a = reverse $ reverse x
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+(0.00 secs, 0 bytes)
+```
+
+This is disappointing to run inline in R
+
+```r
+x <- seq_len(1e9)
+system.time(rev(rev(x)))
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+   user  system elapsed 
+  4.596   2.543   8.824 
+```
+
+This ins't just about compiling; R _does_ have just-in-time compilation of 
+functions, but lacks the compiler tricks that Haskell uses, so a compiled 
+version of this doesn't do a lot better
+
+```r
+revrev <- function(x) {
+  rev(rev(x))
+}
+revrev_comp <- compiler::cmpfun(revrev)
+system.time(revrev_comp(x))
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+   user  system elapsed 
+  4.035   0.739   4.777
+```
+
+So, no vectorisation, but possibly enough compiler tricks to make up for it - tick.
 
 ## Non-standard evaluation (NSE)
 
@@ -427,20 +497,9 @@ iris |>
   D.take 5 
 ```
 
-What you _don't_ see here (because it's piped to `stderr`) is the info about the 
-exposed columns
-
-```
-sepal_length :: Expr Double
-sepal_width :: Expr Double
-petal_length :: Expr Double
-petal_width :: Expr Double
-variety :: Expr Text
-```
-
-and it's worth noting that the dots/periods have been replaced by underscores. 
-That's because in Haskell the period is used for composition, as described 
-[above](#syntax).
+The info printed prior to the result is the about the exposed columns, and it's 
+worth noting that the dots/periods have been replaced by underscores. That's 
+because in Haskell the period is used for composition, as described [above](#syntax).
 
 Many verbs are supported, so we can do some more detailed transformations
 

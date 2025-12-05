@@ -1,7 +1,7 @@
 ---
 title: Haskell IS a Great Language for Data Science
 author: Jonathan Carroll
-date: '2025-11-20'
+date: '2025-12-05'
 categories:
   - haskell
   - rstats
@@ -81,7 +81,8 @@ and they need to contain a single type. For a strongly typed language, that shou
 come as a surprise. A single number might be of type <code>Double</code> and a list of these
 would be of type <code>[Double]</code>.</p>
 <p>If you’re worried that you’ve become too reliant on a piped workflow, fear not!
-Haskell has the familiar pipe operator</p>
+dataHaskell’s <a href="https://dataframe.readthedocs.io/en/latest/">dataframe</a> package
+adds the familiar pipe operator</p>
 <pre class="haskell"><code>[2,8,7,10,1,9,5,3,4,6] |&gt;
   reverse |&gt;
   take 5</code></pre>
@@ -104,8 +105,11 @@ or for multi-line comments, between <code>{-</code> and <code>-}</code>.</p>
 <p>If you need to write a function (for which you use camelCase) you can annotate
 it with a definition, though the compiler can figure this out itself most of the
 time (plus it helps for readability). The way to do this is with one extra line
-above the implementation. If the type is generic, you can use a placeholder rather
-than a <em>specific</em> type</p>
+above the implementation. If the type is generic, you can use a placeholder e.g. 
+<code>a</code> rather than a <em>specific</em> type. Technically all functions take only one argument,
+possibly returning another function (see <a href="https://en.wikipedia.org/wiki/Currying">currying</a>)
+but this is more explicit in the signature; e.g. <code>[a] -&gt; a -&gt; [a]</code> represents a
+function which takes a list and a value and returns a list</p>
 <pre class="haskell"><code>appendValueToList :: [a] -&gt; a -&gt; [a]
 appendValueToList xs y = xs ++ [y]
 
@@ -198,10 +202,11 @@ updateSecond a 4</code></pre>
 which takes a list of some type <code>a</code> (<code>[a]</code>) and a single value of type <code>a</code> and
 returns a list of that same type, <code>[a]</code>.” FYI, this is one example where you may
 need the definition to be enclosed between <code>:{</code> and <code>:}</code>, if you’re running
-interactively in <code>ghci</code>, but here I’m using a neat
-<a href="https://github.com/DataHaskell/datahaskell-starter/blob/main/hscript">pre-processing trick</a>.</p>
-<p>A tick for <em>truly</em> immutable data - the only way to alter a value is to operate
-on it with a function.</p>
+interactively in <code>ghci</code>, but here I’m using the<br />
+<a href="https://github.com/DataHaskell/datahaskell-starter/blob/main/hscript">pre-processing trick</a>
+mentioned above.</p>
+<p>A tick for <em>truly</em> immutable data - the only way to “alter” a value is to operate
+on it with a function and reassign it.</p>
 </div>
 <div id="built-in-missing-values" class="section level2">
 <h2>Built-in missing values</h2>
@@ -212,7 +217,8 @@ calculation ‘poisons’ it and returns <code>NA</code>, e.g.</p>
 <pre class="r"><code>sum(1, NA, 3)</code></pre>
 <pre class="bg-success"><code>## [1] NA
 </code></pre>
-<p>To avoid this, most functions offer a <code>na.rm</code> argument</p>
+<p>To avoid this, most functions offer a <code>na.rm</code> argument which instructs to remove
+the missing values prior to performing the calculation</p>
 <pre class="r"><code>sum(1, NA, 3, na.rm = TRUE)</code></pre>
 <pre class="bg-success"><code>## [1] 4
 </code></pre>
@@ -249,7 +255,7 @@ sum $ map fromJust $ filter isJust has_missing</code></pre>
 <pre class="bg-success"><code>## 7
 </code></pre>
 <p>or alternatively</p>
-<pre class="haskell"><code>sum (mapMaybe id has_missing)</code></pre>
+<pre class="haskell"><code>sum (catMaybes has_missing) </code></pre>
 <pre class="bg-success"><code>## 7
 </code></pre>
 <p>or you can get fancy</p>
@@ -282,6 +288,41 @@ surprised that there was more than one value there.</p>
 of vector operations. One example is using “fusion” to combine a <code>filter</code> and a
 <code>map</code> such that the
 <a href="https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion">intermediate vector isn’t actually used at all</a>.</p>
+<p>This means that a stack of functions like</p>
+<pre class="haskell"><code>foldr (+) 0 . map (*2) . filter even</code></pre>
+<p>which would naively require a full pass to filter the even values, a half pass
+to double those, then anther half pass to add them up, can be done in a single
+pass.</p>
+<p>You can also add <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/rewrite_rules.html">rewrite rules</a>
+if you’re sure your replacement holds (and many libraries can assert these
+conditions, so implement such rules) so that some operations can be entirely
+compiled away. Reversing a finite list twice is a no-op, so takes no time, so
+one could add</p>
+<pre><code>{-# RULES
+&quot;reverse.reverse/id&quot; reverse . reverse = id
+  #-}</code></pre>
+<p>which means a double reverse can be replaced with the identity function.</p>
+<p>Even without such a rule, Haskell (being a compiled language) is <em>fast</em></p>
+<pre class="haskell"><code>x = [1..1000000000]
+:set +s
+a = reverse $ reverse x</code></pre>
+<pre class="r bg-success"><code>(0.00 secs, 0 bytes)</code></pre>
+<p>This is disappointing to run inline in R</p>
+<pre class="r"><code>x &lt;- seq_len(1e9)
+system.time(rev(rev(x)))</code></pre>
+<pre class="r bg-success"><code>   user  system elapsed 
+  4.596   2.543   8.824 </code></pre>
+<p>This ins’t just about compiling; R <em>does</em> have just-in-time compilation of
+functions, but lacks the compiler tricks that Haskell uses, so a compiled
+version of this doesn’t do a lot better</p>
+<pre class="r"><code>revrev &lt;- function(x) {
+  rev(rev(x))
+}
+revrev_comp &lt;- compiler::cmpfun(revrev)
+system.time(revrev_comp(x))</code></pre>
+<pre class="r bg-success"><code>   user  system elapsed 
+  4.035   0.739   4.777</code></pre>
+<p>So, no vectorisation, but possibly enough compiler tricks to make up for it - tick.</p>
 </div>
 <div id="non-standard-evaluation-nse" class="section level2">
 <h2>Non-standard evaluation (NSE)</h2>
@@ -344,7 +385,12 @@ columns as variables (admittedly, in the wider scope) so this works</p>
 iris |&gt; 
   D.derive &quot;sepal.ratio&quot; (sepal_width / sepal_length) |&gt;
   D.take 5 </code></pre>
-<pre class="bg-success"><code>## --------------------------------------------------------------------------------------
+<pre class="bg-success"><code>## sepal_length :: Expr Double
+## sepal_width :: Expr Double
+## petal_length :: Expr Double
+## petal_width :: Expr Double
+## variety :: Expr Text
+## --------------------------------------------------------------------------------------
 ## sepal.length | sepal.width | petal.length | petal.width | variety |    sepal.ratio    
 ## -------------|-------------|--------------|-------------|---------|-------------------
 ##    Double    |   Double    |    Double    |   Double    |  Text   |       Double      
@@ -355,16 +401,9 @@ iris |&gt;
 ## 4.6          | 3.1         | 1.5          | 0.2         | Setosa  | 0.673913043478261 
 ## 5.0          | 3.6         | 1.4          | 0.2         | Setosa  | 0.72
 </code></pre>
-<p>What you <em>don’t</em> see here (because it’s piped to <code>stderr</code>) is the info about the
-exposed columns</p>
-<pre><code>sepal_length :: Expr Double
-sepal_width :: Expr Double
-petal_length :: Expr Double
-petal_width :: Expr Double
-variety :: Expr Text</code></pre>
-<p>and it’s worth noting that the dots/periods have been replaced by underscores.
-That’s because in Haskell the period is used for composition, as described
-<a href="#syntax">above</a>.</p>
+<p>The info printed prior to the result is the about the exposed columns, and it’s
+worth noting that the dots/periods have been replaced by underscores. That’s
+because in Haskell the period is used for composition, as described <a href="#syntax">above</a>.</p>
 <p>Many verbs are supported, so we can do some more detailed transformations</p>
 <pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
 
@@ -378,14 +417,19 @@ iris |&gt;
       , &quot;sl_mean&quot; .= F.mean sepal_length
       , &quot;pl_mean&quot; .= F.mean petal_length
       ]</code></pre>
-<pre class="bg-success"><code>## ---------------------------------------------------------
+<pre class="bg-success"><code>## sepal_length :: Expr Double
+## sepal_width :: Expr Double
+## petal_length :: Expr Double
+## petal_width :: Expr Double
+## variety :: Expr Text
+## ---------------------------------------------------------
 ##  variety   |  n  |      sl_mean      |      pl_mean      
 ## -----------|-----|-------------------|-------------------
 ##    Text    | Int |      Double       |       Double      
 ## -----------|-----|-------------------|-------------------
+## Versicolor | 34  | 6.099999999999998 | 4.435294117647058 
 ## Setosa     | 49  | 5.016326530612244 | 1.4653061224489798
-## Virginica  | 43  | 6.651162790697675 | 5.57674418604651  
-## Versicolor | 34  | 6.099999999999998 | 4.435294117647058
+## Virginica  | 43  | 6.651162790697675 | 5.57674418604651
 </code></pre>
 <p>and remember, because we <em>know</em> there’s no missing values in a column of <code>Double</code>s
 (not <code>Maybe Double</code>s) we can take averages without worrying about any <code>na.rm</code>
@@ -456,7 +500,7 @@ more data scientists about what they’d like the ecosystem to be able to suppor
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2025-11-28
+##  date     2025-12-05
 ##  pandoc   3.8.2.1 @ /opt/homebrew/bin/ (via rmarkdown)
 ##  quarto   1.7.31 @ /usr/local/bin/quarto
 ## 
