@@ -1,0 +1,550 @@
+---
+title: Haskell IS a Great Language for Data Science
+author: Jonathan Carroll
+date: '2025-12-05'
+categories:
+  - haskell
+  - rstats
+tags:
+  - haskell
+  - rstats
+slug: haskell-is-a-great-language-for-data-science
+---
+
+
+
+<p>I’ve been learning Haskell for a few years now and I am really liking a lot of
+the features, not least the strong typing and functional approach. I thought it
+was lacking some of the things I missed from R until I found the dataHaskell
+project. In this post I’ll demonstrate some of the features and explain why I
+think it makes for a good (great?) data science language.</p>
+<!--more-->
+<p>I’ve been learning Haskell for a few years now and I am really liking a lot of
+the features, not least the strong typing and functional approach. I thought it
+was lacking some of the things I missed from R until I found the
+<a href="https://www.datahaskell.org/">dataHaskell</a> project.</p>
+<p>There have been several attempts recently to enhance R with some strong types, e.g. 
+<a href="https://vapour.run/">vapour</a>, <a href="https://github.com/we-data-ch/typr">typr</a>, using
+<a href="https://josiahparry.com/posts/2024-06-30-type-safety/">{rlang}’s checks</a>, and even
+discussions about implementations at the core level e.g. 
+<a href="https://stat.ethz.ch/pipermail/r-devel/2025-September/084164.html">in September 2025</a>
+continued <a href="https://stat.ethz.ch/pipermail/r-devel/2025-November/084223.html">in November 2025</a>.
+While these try to bend R towards types, perhaps an all-in solution makes more sense.</p>
+<p>In this post I’ll demonstrate some of the features and explain why I think it
+makes for a good (great?) data science language.</p>
+<p>I’ve posted <a href="https://jcarroll.com.au/tags/haskell/">more than a handful of times</a>
+about Haskell but maybe not so much the benefits of a real-world usage, more
+toy problems (e.g. I did a lot of Advent of Code using it last year). I’ve been
+working towards using it more, and even managed to get a custom {knitr} engine
+working - here’s the special sauce that makes a <code>```{haskell}</code> block work:</p>
+<pre class="r"><code>knitr::knit_engines$set(haskell = function(options) {
+  code &lt;- options$code
+  codefile &lt;- tempfile(fileext = &quot;.hs&quot;)
+  codefile_brace &lt;- tempfile(fileext = &quot;.hs&quot;)
+  on.exit(file.remove(codefile, codefile_brace))
+  writeLines(c(&quot;:script dataframe&quot;, &quot;&quot;, code), con = codefile)
+  system2(&#39;hscript&#39;, codefile, stdout = codefile_brace)
+  out  &lt;- system2(
+    file.path(path.expand(&#39;~&#39;), &#39;.ghcup/bin/ghc&#39;),
+    c(&#39;-e&#39;,&quot;&#39;:script &quot;, codefile_brace, &quot;&#39;&quot;),
+    stdout = TRUE
+  )
+
+  knitr::engine_output(options, code, out)
+})</code></pre>
+<p>This writes the lines of code to a temporary file, prepended with some
+configuration options, then runs essentially <code>ghc -e ':script file.txt'</code> and
+deletes the temporary file. For the purposes of making cleaner code blocks, the
+code detours through an <a href="https://github.com/DataHaskell/datahaskell-starter/blob/main/hscript"><code>awk</code> script</a>
+which inserts some <code>:{</code> blocks around
+<a href="https://sanj.ink/posts/2018-08-09-defining-a-multiline-function-in-haskell-using-ghci.html">multi-line statements</a>,
+helping to reproduce how these look in a Jupyter notebook.
+The result is then shown in the code block, so this is a “live” output</p>
+<pre class="haskell"><code>map (+5) [2..8]</code></pre>
+<pre class="bg-success"><code>## [7,8,9,10,11,12,13]
+</code></pre>
+<p>Neat, right?</p>
+<p>Because I’m treating each code block as an independent script, it means there is
+<em>some</em> repetition between blocks. I’ll hide that away with some judicious <code>echo</code>
+options where necessary, but otherwise each block should be able to be run
+as a ‘script’ with the right pre-processing.</p>
+<p><a id="syntax"></a></p>
+<div id="a-brief-intro-to-haskell-syntax" class="section level2">
+<h2>A Brief intro to Haskell Syntax</h2>
+<p>Haskell <em>is</em> a bit different if you’ve only ever seen R or Python, but it doesn’t
+take too much effort to understand what’s going on. Firstly, while parentheses are
+used for function calls in R, a space is used in Haskell, so instead of <code>sum(x)</code>
+you use <code>sum x</code>. Parentheses are still used for grouping together combinations of
+things that need to be evaluated together.</p>
+<p>Lists are a fundamental data type and are denoted by square brackets, e.g. <code>[3,4,5]</code>
+and they need to contain a single type. For a strongly typed language, that shouldn’t
+come as a surprise. A single number might be of type <code>Double</code> and a list of these
+would be of type <code>[Double]</code>.</p>
+<p>If you’re worried that you’ve become too reliant on a piped workflow, fear not!
+dataHaskell’s <a href="https://dataframe.readthedocs.io/en/latest/">dataframe</a> package
+adds the familiar pipe operator</p>
+<pre class="haskell"><code>[2,8,7,10,1,9,5,3,4,6] |&gt;
+  reverse |&gt;
+  take 5</code></pre>
+<pre class="bg-success"><code>## [6,4,3,5,9]
+</code></pre>
+<p>with the important distinction that it passes the left side to the <em>end</em> of the
+right side (not to the first argument) which flows cleaner given how Haskell
+functions are typically written, e.g.</p>
+<pre class="haskell"><code>take 3 [1,2,3,4,5,6]
+
+-- vs 
+
+[1,2,3,4,5,6] |&gt;
+  take 3</code></pre>
+<pre class="bg-success"><code>## [1,2,3]
+## [1,2,3]
+</code></pre>
+<p>The line in the middle there demonstrates that comments start with two hyphens <code>--</code>,
+or for multi-line comments, between <code>{-</code> and <code>-}</code>.</p>
+<p>If you need to write a function (for which you use camelCase) you can annotate
+it with a definition, though the compiler can figure this out itself most of the
+time (plus it helps for readability). The way to do this is with one extra line
+above the implementation. If the type is generic, you can use a placeholder e.g. 
+<code>a</code> rather than a <em>specific</em> type. Technically all functions take only one argument,
+possibly returning another function (see <a href="https://en.wikipedia.org/wiki/Currying">currying</a>)
+but this is more explicit in the signature; e.g. <code>[a] -&gt; a -&gt; [a]</code> represents a
+function which takes a list and a value and returns a list</p>
+<pre class="haskell"><code>appendValueToList :: [a] -&gt; a -&gt; [a]
+appendValueToList xs y = xs ++ [y]
+
+appendValueToList [2,4,6] 8
+
+appendValueToList [&quot;f&quot;, &quot;o&quot;, &quot;o&quot;] &quot;t&quot;</code></pre>
+<pre class="bg-success"><code>## [2,4,6,8]
+## ["f","o","o","t"]
+</code></pre>
+<p>The period is used for function composition, i.e.</p>
+<pre class="haskell"><code>import Data.List (sort)
+
+(reverse . sort) [2,8,7,10,1,9,5,3,4,6]</code></pre>
+<pre class="bg-success"><code>## [10,9,8,7,6,5,4,3,2,1]
+</code></pre>
+<p>applies a composed ‘sort and reverse’ operation to the list. The <code>import</code> is there
+because the ‘base’ library (“Prelude”) doesn’t have the <code>sort</code> function, so it’s
+imported. There’s actually a few of these which need to be imported to use the
+code I’m showing below, but it’s inserted into the codeblocks via the <code>:script dataframe</code>
+line in the engine definition above. That calls out to an executable which runs
+the code block as if it was contained in a <code>main</code> function in a full program,
+which enables us to use <code>IO</code> operations inline, such as reading from files and
+printing results. That all gets a little trickier without this ‘scripting’ context,
+but I’m here to make the point that such a scripting context <em>works well</em> for
+doing data science.</p>
+<p>So, what would one use this for?</p>
+<p>I saw <a href="https://blog.genesmindsmachines.com/p/python-is-not-a-great-language-for-2e0">this (follow-up) post</a>
+from Claus Wilke about Python not being a great language for data science and
+while I concur with the points made there, I do believe some of them are
+personal preference. I’m a proponent of “use the tools you’re comfortable with”
+and I can’t argue with however many thousands of data scientists are
+successfully using Python to do data science.</p>
+<p>The point about “what makes for a good data science language” made me pause to
+think and I came to the conclusion that Haskell actually ticks the boxes, at least
+with the <a href="https://www.datahaskell.org/blog/2025/11/11/welcome-to-datahaskell.html">dataHaskell ecosystem</a>
+and the dataframe package. What follows is not to
+be taken as a pile-on against Python or even a complaint about R, but rather
+something in the style of “if you like that, check this out!”</p>
+<p>Lots of languages seem to have some sort of dataframe these days - thanks R! - e.g. 
+Python has <a href="https://pandas.pydata.org/">Pandas</a>/<a href="https://docs.pola.rs/api/python/stable/reference/index.html">Polars</a>,
+Julia has <a href="https://dataframes.juliadata.org/stable/">DataFrames.jl</a>,
+<a href="https://kotlin.github.io/dataframe/home.html">even Kotlin has a DataFrame</a>.
+Haskell does, too with <a href="https://dataframe.readthedocs.io/">dataframe</a> and I’ve
+been learning how to use this recently.</p>
+<p>The points made in Claus’ post were that the features which make R a better language
+for data science over Python are (paraphrasing):</p>
+<ul>
+<li>call-by-value semantics (non-mutability)</li>
+<li>built-in missing values</li>
+<li>built-in vectorization</li>
+<li>non-standard evaluation (NSE)</li>
+</ul>
+<p>Let’s look at how Haskell deals with each of these.</p>
+</div>
+<div id="non-mutability" class="section level2">
+<h2>Non-mutability</h2>
+<p>Claus details how Python’s call-by-reference semantics enables one to modify
+variables unintentionally, since they’re scoped across functions. Haskell certainly
+doesn’t have this problem - everything is immutable, and functions are “pure” (no
+side-effects, though you can interact with typed side-effect ‘instructions’). If you
+want to “do” anything to a data object you pass it into a function and get a new
+object out. There’s no risk of accidentally modifying a variable, but of course
+the downside of this is that you <em>can’t</em> do so without a function. While in R it’s
+straightforward to do</p>
+<pre class="r"><code>a &lt;- c(2, 9, 6)
+a[2] &lt;- 4
+a</code></pre>
+<pre class="bg-success"><code>## [1] 2 4 6
+</code></pre>
+<p>in Haskell that sort of thing is off limits - you can use an operator to extract
+a value from a list (0-indexed), e.g. </p>
+<pre class="haskell"><code>a = [2,9,6]
+
+a !! 1</code></pre>
+<pre class="bg-success"><code>## 9
+</code></pre>
+<p>but there’s no way to assign the second element to some other value. Instead,
+you need to break the vector apart and stitch the new value inside</p>
+<pre class="haskell"><code>a = [2,9,6]
+
+updateSecond :: [a] -&gt; a -&gt; [a]
+updateSecond (x:_:z) y = x : y : z
+updateSecond xs _ = xs
+
+updateSecond a 4</code></pre>
+<pre class="bg-success"><code>## [2,4,6]
+</code></pre>
+<p>No risk of accidentally writing that, I’m sure.</p>
+<p>I’ve also included the type definition in this case which reads as “a function
+which takes a list of some type <code>a</code> (<code>[a]</code>) and a single value of type <code>a</code> and
+returns a list of that same type, <code>[a]</code>.” FYI, this is one example where you may
+need the definition to be enclosed between <code>:{</code> and <code>:}</code>, if you’re running
+interactively in <code>ghci</code>, but here I’m using the<br />
+<a href="https://github.com/DataHaskell/datahaskell-starter/blob/main/hscript">pre-processing trick</a>
+mentioned above.</p>
+<p>A tick for <em>truly</em> immutable data - the only way to “alter” a value is to operate
+on it with a function and reassign it.</p>
+</div>
+<div id="built-in-missing-values" class="section level2">
+<h2>Built-in missing values</h2>
+<p>This is somewhere that Haskell shines - if you want a value that <em>might</em> not be
+available in R you use an <code>NA</code> (which is a shorthand for whichever flavour/class
+you actually want, e.g. <code>NA_character_</code>). Using one of these in any mathematical
+calculation ‘poisons’ it and returns <code>NA</code>, e.g.</p>
+<pre class="r"><code>sum(1, NA, 3)</code></pre>
+<pre class="bg-success"><code>## [1] NA
+</code></pre>
+<p>To avoid this, most functions offer a <code>na.rm</code> argument which instructs to remove
+the missing values prior to performing the calculation</p>
+<pre class="r"><code>sum(1, NA, 3, na.rm = TRUE)</code></pre>
+<pre class="bg-success"><code>## [1] 4
+</code></pre>
+<p>What’s happening here is that R encodes a value that is <em>maybe</em> missing. Haskell
+formalises this into the <code>Data.Maybe</code> package and you have to be explicit in
+dealing with a missing value (<code>Nothing</code>) or a definitely-not-missing value (<code>Just x</code>)</p>
+<pre class="haskell"><code>non_missing = [1, 2, 3, 4]
+has_missing = [Just 1,Just 2,Nothing,Just 4]
+
+:t non_missing
+:t has_missing</code></pre>
+<pre class="bg-success"><code>## non_missing :: Num a => [a]
+## has_missing :: Num a => [Maybe a]
+</code></pre>
+<p>where we see that <code>has_missing</code> is a <code>Maybe</code> type.</p>
+<pre class="haskell"><code>sum non_missing</code></pre>
+<pre class="bg-success"><code>## 10
+</code></pre>
+<p>You can’t just <code>sum</code> the latter; it produces an error because it doesn’t have a
+function which can sum a <code>Maybe Integer</code></p>
+<pre class="haskell"><code>sum has_missing</code></pre>
+<pre class="r bg-danger"><code>s:7:1: error: [GHC-39999]
+    • No instance for ‘Num (Maybe Integer)’ arising from a use of ‘it’
+    • In the first argument of ‘print’, namely ‘it’
+      In a stmt of an interactive GHCi command: print it
+  |
+7 | sum has_missing
+  | ^^^^^^^^^^^^^^^</code></pre>
+<p>you need to remove any <code>Nothing</code> first, then most likely ‘unwrap’ from the
+<code>Maybe</code> context</p>
+<pre class="haskell"><code>import Data.Maybe
+
+sum $ map fromJust $ filter isJust has_missing</code></pre>
+<pre class="bg-success"><code>## 7
+</code></pre>
+<p>or alternatively</p>
+<pre class="haskell"><code>sum (catMaybes has_missing) </code></pre>
+<pre class="bg-success"><code>## 7
+</code></pre>
+<p>or you can get fancy</p>
+<pre class="haskell"><code>sum [x | Just x &lt;- has_missing]</code></pre>
+<pre class="bg-success"><code>## 7
+</code></pre>
+<p>The point is that you <em>have to</em> deal with the missingness if it’s there. What this
+also means is that if you have a <code>Double</code> column, it <em>does NOT</em> have missing values,
+so you can safely sum those values (plus get all sorts of performance benefits from
+the compiler because it, too, knows there’s no missing values).</p>
+<p>For Claus’ example, we can produce a proper <code>Nothing</code> at the end of this calculation</p>
+<pre class="haskell"><code>fmap (fmap (&gt; 3)) x</code></pre>
+<pre class="bg-success"><code>## [Just False,Just False,Nothing,Just True,Just True]
+</code></pre>
+<p>Another tick - proper missing values.</p>
+</div>
+<div id="built-in-vectorisation" class="section level2">
+<h2>Built-in vectorisation</h2>
+<p>Haskell is NOT an array language, so sure, it doesn’t have vectorisation built-in,
+but it’s worth noting that at the end of Claus’ post he details some limitations
+of R and acknowledges that “R does not have any scalar data types”. Haskell has
+scalars, vectors, and arrays, and you need to be specific when you want to iterate
+over those - the “type” of a variable includes the dimensionality, so <code>Double</code> is
+not the same as <code>[Double]</code> (a list of doubles).</p>
+<p>Since Haskell is a functional programming language it has every type of <code>map</code> you
+could want, including specialities for monads and applicatives. While this means
+you <em>do</em> need to write <code>map</code> when you want to iterate, it also means you’re never
+surprised that there was more than one value there.</p>
+<p>What’s more, because it’s a compiled language, the compiler can optimise all sorts
+of vector operations. One example is using “fusion” to combine a <code>filter</code> and a
+<code>map</code> such that the
+<a href="https://www.tweag.io/blog/2017-10-12-vector-package/#array-fusion">intermediate vector isn’t actually used at all</a>.</p>
+<p>This means that a stack of functions like</p>
+<pre class="haskell"><code>foldr (+) 0 . map (*2) . filter even</code></pre>
+<p>which would naively require a full pass to filter the even values, a half pass
+to double those, then anther half pass to add them up, can be done in a single
+pass.</p>
+<p>You can also add <a href="https://ghc.gitlab.haskell.org/ghc/doc/users_guide/exts/rewrite_rules.html">rewrite rules</a>
+if you’re sure your replacement holds (and many libraries can assert these
+conditions, so implement such rules) so that some operations can be entirely
+compiled away. Reversing a finite list twice is a no-op, so takes no time, so
+one could add</p>
+<pre><code>{-# RULES
+&quot;reverse.reverse/id&quot; reverse . reverse = id
+  #-}</code></pre>
+<p>which means a double reverse can be replaced with the identity function.</p>
+<p>Even without such a rule, Haskell (being a compiled language) is <em>fast</em></p>
+<pre class="haskell"><code>x = [1..1000000000]
+:set +s
+a = reverse $ reverse x</code></pre>
+<pre class="r bg-success"><code>(0.00 secs, 0 bytes)</code></pre>
+<p>This is disappointing to run inline in R</p>
+<pre class="r"><code>x &lt;- seq_len(1e9)
+system.time(rev(rev(x)))</code></pre>
+<pre class="r bg-success"><code>   user  system elapsed 
+  4.596   2.543   8.824 </code></pre>
+<p>This ins’t just about compiling; R <em>does</em> have just-in-time compilation of
+functions, but lacks the compiler tricks that Haskell uses, so a compiled
+version of this doesn’t do a lot better</p>
+<pre class="r"><code>revrev &lt;- function(x) {
+  rev(rev(x))
+}
+revrev_comp &lt;- compiler::cmpfun(revrev)
+system.time(revrev_comp(x))</code></pre>
+<pre class="r bg-success"><code>   user  system elapsed 
+  4.035   0.739   4.777</code></pre>
+<p>So, no vectorisation, but possibly enough compiler tricks to make up for it - tick.</p>
+</div>
+<div id="non-standard-evaluation-nse" class="section level2">
+<h2>Non-standard evaluation (NSE)</h2>
+<p>This is where the fun really starts - the <a href="https://dataframe.readthedocs.io/en/latest/">dataframe</a>
+package from the dataHaskell ecosystem adds the sort of slicing and dicing
+you’re probably familiar with. Apart from general inspection of data frames</p>
+<pre class="haskell"><code>df &lt;- D.readParquet &quot;iris.parquet&quot;
+
+D.describeColumns df</code></pre>
+<pre class="bg-success"><code>## ---------------------------------------------------------
+## Column Name  | # Non-null Values | # Null Values |  Type 
+## -------------|-------------------|---------------|-------
+##     Text     |        Int        |      Int      |  Text 
+## -------------|-------------------|---------------|-------
+## variety      | 150               | 0             | Text  
+## petal.width  | 150               | 0             | Double
+## petal.length | 150               | 0             | Double
+## sepal.width  | 150               | 0             | Double
+## sepal.length | 150               | 0             | Double
+</code></pre>
+<p>(don’t be fooled by that <code>&lt;-</code> - that’s Haskell’s way of doing something that reaches
+outside of the CPU, e.g. to the disk to read a file) we can use <code>D.dimensions</code> to get the
+overall shape, and more specific helpers like <code>D.nRows</code> and <code>D.nColumns</code> are available
+which we can incorporate into e.g. text output</p>
+<pre class="haskell"><code>import Text.Printf (printf)
+
+df &lt;- D.readParquet &quot;iris.parquet&quot;
+
+D.dimensions df
+
+printf &quot;%d rows, %d columns&quot; (D.nRows df) (D.nColumns df)</code></pre>
+<pre class="bg-success"><code>## (150,5)
+## 150 rows, 5 columns
+</code></pre>
+<p>Many of the <code>dplyr</code>-esqe operations are available, with a lot of thought put into
+how these would interact with a strongly typed structure</p>
+<pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
+
+iris |&gt; 
+  D.filterWhere (F.col @Text &quot;variety&quot; .== &quot;Setosa&quot;) |&gt; 
+  D.filterWhere (F.col @Double &quot;sepal.length&quot; .&gt; 5.4)</code></pre>
+<pre class="bg-success"><code>## -----------------------------------------------------------------
+## sepal.length | sepal.width | petal.length | petal.width | variety
+## -------------|-------------|--------------|-------------|--------
+##    Double    |   Double    |    Double    |   Double    |  Text  
+## -------------|-------------|--------------|-------------|--------
+## 5.8          | 4.0         | 1.2          | 0.2         | Setosa 
+## 5.7          | 4.4         | 1.5          | 0.4         | Setosa 
+## 5.7          | 3.8         | 1.7          | 0.3         | Setosa 
+## 5.5          | 4.2         | 1.4          | 0.2         | Setosa 
+## 5.5          | 3.5         | 1.3          | 0.2         | Setosa
+</code></pre>
+<p>but dataframe goes one step further via template haskell… you can expose the
+columns as variables (admittedly, in the wider scope) so this works</p>
+<pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
+
+-- make columns available as expressions
+:exposeColumns iris
+
+iris |&gt; 
+  D.derive &quot;sepal.ratio&quot; (sepal_width / sepal_length) |&gt;
+  D.take 5 </code></pre>
+<pre class="bg-success"><code>## sepal_length :: Expr Double
+## sepal_width :: Expr Double
+## petal_length :: Expr Double
+## petal_width :: Expr Double
+## variety :: Expr Text
+## --------------------------------------------------------------------------------------
+## sepal.length | sepal.width | petal.length | petal.width | variety |    sepal.ratio    
+## -------------|-------------|--------------|-------------|---------|-------------------
+##    Double    |   Double    |    Double    |   Double    |  Text   |       Double      
+## -------------|-------------|--------------|-------------|---------|-------------------
+## 5.1          | 3.5         | 1.4          | 0.2         | Setosa  | 0.6862745098039216
+## 4.9          | 3.0         | 1.4          | 0.2         | Setosa  | 0.6122448979591836
+## 4.7          | 3.2         | 1.3          | 0.2         | Setosa  | 0.6808510638297872
+## 4.6          | 3.1         | 1.5          | 0.2         | Setosa  | 0.673913043478261 
+## 5.0          | 3.6         | 1.4          | 0.2         | Setosa  | 0.72
+</code></pre>
+<p>The info printed prior to the result is the about the exposed columns, and it’s
+worth noting that the dots/periods have been replaced by underscores. That’s
+because in Haskell the period is used for composition, as described <a href="#syntax">above</a>.</p>
+<p>Many verbs are supported, so we can do some more detailed transformations</p>
+<pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
+
+:exposeColumns iris
+
+iris |&gt; 
+  D.filterWhere ( sepal_width .&gt; 2.6 ) |&gt;
+  D.groupBy [&quot;variety&quot;] |&gt; 
+  D.aggregate
+      [ &quot;n&quot;       .= F.count petal_length
+      , &quot;sl_mean&quot; .= F.mean sepal_length
+      , &quot;pl_mean&quot; .= F.mean petal_length
+      ]</code></pre>
+<pre class="bg-success"><code>## sepal_length :: Expr Double
+## sepal_width :: Expr Double
+## petal_length :: Expr Double
+## petal_width :: Expr Double
+## variety :: Expr Text
+## ---------------------------------------------------------
+##  variety   |  n  |      sl_mean      |      pl_mean      
+## -----------|-----|-------------------|-------------------
+##    Text    | Int |      Double       |       Double      
+## -----------|-----|-------------------|-------------------
+## Versicolor | 34  | 6.099999999999998 | 4.435294117647058 
+## Setosa     | 49  | 5.016326530612244 | 1.4653061224489798
+## Virginica  | 43  | 6.651162790697675 | 5.57674418604651
+</code></pre>
+<p>and remember, because we <em>know</em> there’s no missing values in a column of <code>Double</code>s
+(not <code>Maybe Double</code>s) we can take averages without worrying about any <code>na.rm</code>
+complications.</p>
+<p>The NSE bit doesn’t <em>quite</em> work everywhere, but sometimes a string is just fine, e.g.</p>
+<pre class="haskell"><code>iris &lt;- D.readParquet &quot;iris.parquet&quot;
+
+D.plotScatter &quot;sepal.length&quot; &quot;sepal.width&quot; iris</code></pre>
+<pre class="bg-success"><code>##    4.5│                                                            
+##       │                       <span style='color: #5555FF;'>⠈</span>                                    
+##       │                    <span style='color: #5555FF;'>⠠</span>                                       
+##       │                <span style='color: #5555FF;'>⠂</span>                                           
+##       │                   <span style='color: #5555FF;'>⡀</span>     <span style='color: #5555FF;'>⠁</span>                                  
+##       │              <span style='color: #5555FF;'>⠠</span>        <span style='color: #5555FF;'>⠠</span>                              <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄</span>  
+##       │              <span style='color: #5555FF;'>⠐</span>  <span style='color: #5555FF;'>⠐</span> <span style='color: #5555FF;'>⠂</span>                                        
+##       │       <span style='color: #5555FF;'>⠁</span>   <span style='color: #5555FF;'>⠈</span> <span style='color: #5555FF;'>⡁⢀</span> <span style='color: #5555FF;'>⡀</span>   <span style='color: #5555FF;'>⢀</span>                         <span style='color: #5555FF;'>⠈</span>             
+##       │       <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄⠠</span> <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄</span>        <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠠</span> <span style='color: #5555FF;'>⠄</span>                          
+##       │    <span style='color: #5555FF;'>⡀</span>  <span style='color: #5555FF;'>⡀⢀</span>    <span style='color: #5555FF;'>⡂⠐</span>           <span style='color: #5555FF;'>⢀</span>      <span style='color: #5555FF;'>⠂⢀</span> <span style='color: #5555FF;'>⡀</span>  <span style='color: #5555FF;'>⠂⢀</span> <span style='color: #5555FF;'>⡀⢀</span>  <span style='color: #5555FF;'>⢀</span>             
+##    3.2│       <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄⠠</span>                      <span style='color: #5555FF;'>⠠</span>    <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄</span>                 
+##       │  <span style='color: #5555FF;'>⠐</span> <span style='color: #5555FF;'>⠂</span>     <span style='color: #5555FF;'>⠂⠐</span> <span style='color: #5555FF;'>⠂</span>     <span style='color: #5555FF;'>⠂</span>  <span style='color: #5555FF;'>⠂⠐</span>  <span style='color: #5555FF;'>⠐</span> <span style='color: #5555FF;'>⠂⠐</span>      <span style='color: #5555FF;'>⠂⠐</span> <span style='color: #5555FF;'>⠂⠐</span>    <span style='color: #5555FF;'>⠂⠐</span>     <span style='color: #5555FF;'>⠐</span> <span style='color: #5555FF;'>⠂</span>     
+##       │    <span style='color: #5555FF;'>⠁</span>                 <span style='color: #5555FF;'>⡁⢈</span> <span style='color: #5555FF;'>⡀</span>  <span style='color: #5555FF;'>⠁⢈</span> <span style='color: #5555FF;'>⢈</span> <span style='color: #5555FF;'>⡁⢈</span> <span style='color: #5555FF;'>⡀⠈</span>  <span style='color: #5555FF;'>⢀</span>       <span style='color: #5555FF;'>⠁⢀</span>    <span style='color: #5555FF;'>⡀</span>     
+##       │                <span style='color: #5555FF;'>⠄</span>     <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄</span>  <span style='color: #5555FF;'>⠄</span>    <span style='color: #5555FF;'>⠄⠠</span>                         
+##       │                    <span style='color: #5555FF;'>⠐</span>  <span style='color: #5555FF;'>⠐</span> <span style='color: #5555FF;'>⠂</span>   <span style='color: #5555FF;'>⠐</span>                        <span style='color: #5555FF;'>⠂</span>     
+##       │           <span style='color: #5555FF;'>⢈</span>  <span style='color: #5555FF;'>⠈</span>     <span style='color: #5555FF;'>⢈</span> <span style='color: #5555FF;'>⠁⠈</span>         <span style='color: #5555FF;'>⠁</span>     <span style='color: #5555FF;'>⠁</span>                    
+##       │     <span style='color: #5555FF;'>⠠</span>       <span style='color: #5555FF;'>⠄</span>      <span style='color: #5555FF;'>⠠</span>            <span style='color: #5555FF;'>⠄</span>                          
+##       │                            <span style='color: #5555FF;'>⠂</span>  <span style='color: #5555FF;'>⠐</span>                            
+##       │             <span style='color: #5555FF;'>⡀</span>                                              
+##    1.9│                                                            
+##       └────────────────────────────────────────────────────────────
+##        4.1                           6.1                          8.1
+## 
+## <span style='color: #5555FF;'>⣿</span> sepal.length vs sepal.width
+</code></pre>
+<p>(following <a href="https://blog.djnavarro.net/posts/2021-04-18_pretty-little-clis/" class="uri">https://blog.djnavarro.net/posts/2021-04-18_pretty-little-clis/</a> to get
+the ANSI sequences to work in a code block).</p>
+<p>A more detailed comparison to <code>dplyr</code> is provided in
+<a href="https://dataframe.readthedocs.io/en/latest/coming_from_other_implementations.html#coming-from-dplyr">the dataframe documentation</a>.</p>
+<p>So, NSE? Tick!</p>
+</div>
+<div id="conclusion" class="section level2">
+<h2>Conclusion</h2>
+<p>I’ve hopefully demonstrated some of the power of a strongly typed language and
+a package focused on data science enabling the sort of functionality that an
+R (or Python) user might be looking for. I am hopeful that Haskell (and the
+dataHaskell ecosystem) can be a viable option for those of us wanting to do
+data science in a strongly typed language with a very clever compiler capable
+of making significant performance improvements.</p>
+<p>If you’re interested in dataHaskell then check out
+<a href="https://www.datahaskell.org/blog/2025/11/11/welcome-to-datahaskell.html">this post</a>
+and consider taking it for a spin - we’re working on reducing friction to get
+started via devcontainers and hosted notebook solutions, and are keen to hear from
+more data scientists about what they’d like the ecosystem to be able to support.</p>
+<p><em>I believe Haskell IS a great language for data science!</em></p>
+<p>As always, I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> and the comment section below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## <span style='color: #00BBBB; font-weight: bold;'>─ Session info ───────────────────────────────────────────────────────────────</span>
+##  <span style='color: #555555; font-style: italic;'>setting </span> <span style='color: #555555; font-style: italic;'>value</span>
+##  version  R version 4.4.1 (2024-06-14)
+##  os       macOS 15.6.1
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2025-12-05
+##  pandoc   3.8.2.1 @ /opt/homebrew/bin/ (via rmarkdown)
+##  quarto   1.7.31 @ /usr/local/bin/quarto
+## 
+## <span style='color: #00BBBB; font-weight: bold;'>─ Packages ───────────────────────────────────────────────────────────────────</span>
+##  <span style='color: #555555; font-style: italic;'>package    </span> <span style='color: #555555; font-style: italic;'>*</span> <span style='color: #555555; font-style: italic;'>version</span> <span style='color: #555555; font-style: italic;'>date (UTC)</span> <span style='color: #555555; font-style: italic;'>lib</span> <span style='color: #555555; font-style: italic;'>source</span>
+##  blogdown      1.21.1  <span style='color: #555555;'>2025-06-28</span> <span style='color: #555555;'>[1]</span> <span style='color: #BB00BB; font-weight: bold;'>Github (rstudio/blogdown@33313a5)</span>
+##  bookdown      0.41    <span style='color: #555555;'>2024-10-16</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  bslib         0.9.0   <span style='color: #555555;'>2025-01-30</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  cachem        1.1.0   <span style='color: #555555;'>2024-05-16</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  cli           3.6.5   <span style='color: #555555;'>2025-04-23</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  devtools      2.4.6   <span style='color: #555555;'>2025-10-03</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  digest        0.6.38  <span style='color: #555555;'>2025-11-12</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  ellipsis      0.3.2   <span style='color: #555555;'>2021-04-29</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  evaluate      1.0.5   <span style='color: #555555;'>2025-08-27</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  fansi         1.0.7   <span style='color: #555555;'>2025-11-19</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.3)</span>
+##  fastmap       1.2.0   <span style='color: #555555;'>2024-05-15</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  fs            1.6.6   <span style='color: #555555;'>2025-04-12</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  glue          1.8.0   <span style='color: #555555;'>2024-09-30</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  htmltools     0.5.8.1 <span style='color: #555555;'>2024-04-04</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  jquerylib     0.1.4   <span style='color: #555555;'>2021-04-26</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  jsonlite      2.0.0   <span style='color: #555555;'>2025-03-27</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  knitr         1.50    <span style='color: #555555;'>2025-03-16</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  lifecycle     1.0.4   <span style='color: #555555;'>2023-11-07</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  magrittr      2.0.4   <span style='color: #555555;'>2025-09-12</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  memoise       2.0.1   <span style='color: #555555;'>2021-11-26</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  pkgbuild      1.4.8   <span style='color: #555555;'>2025-05-26</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  pkgload       1.4.1   <span style='color: #555555;'>2025-09-23</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  purrr         1.2.0   <span style='color: #555555;'>2025-11-04</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  R6            2.6.1   <span style='color: #555555;'>2025-02-15</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  remotes       2.5.0   <span style='color: #555555;'>2024-03-17</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  rlang         1.1.6   <span style='color: #555555;'>2025-04-11</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  rmarkdown     2.30    <span style='color: #555555;'>2025-09-28</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  rstudioapi    0.17.1  <span style='color: #555555;'>2024-10-22</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  sass          0.4.10  <span style='color: #555555;'>2025-04-11</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  sessioninfo   1.2.3   <span style='color: #555555;'>2025-02-05</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  usethis       3.2.1   <span style='color: #555555;'>2025-09-06</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  vctrs         0.6.5   <span style='color: #555555;'>2023-12-01</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+##  xfun          0.54    <span style='color: #555555;'>2025-10-30</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.1)</span>
+##  yaml          2.3.10  <span style='color: #555555;'>2024-07-26</span> <span style='color: #555555;'>[1]</span> <span style='color: #555555;'>CRAN (R 4.4.0)</span>
+## 
+## <span style='color: #555555;'> [1] /Library/Frameworks/R.framework/Versions/4.4-arm64/Resources/library</span>
+## 
+## <span style='color: #00BBBB; font-weight: bold;'>──────────────────────────────────────────────────────────────────────────────</span>
+</code></pre>
+</details>
+<p><br /></p>
+</div>
