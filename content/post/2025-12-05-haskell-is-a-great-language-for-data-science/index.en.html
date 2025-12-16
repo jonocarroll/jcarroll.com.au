@@ -307,6 +307,10 @@ one could add</p>
 :set +s
 a = reverse $ reverse x</code></pre>
 <pre class="r bg-success"><code>(0.00 secs, 0 bytes)</code></pre>
+<p><strong>UPDATE</strong>: <a href="https://functional.cafe/@prophet/115698227419709447">Alice</a> helpfully
+explains why this runs so fast here - Haskell is lazy, so I wasn’t <em>actually</em> evaluating
+anything there. Trying to calculate the length of the result <em>does</em> take some
+time. Entirely my fault, but this comparison is unfair.</p>
 <p>This is disappointing to run inline in R</p>
 <pre class="r"><code>x &lt;- seq_len(1e9)
 system.time(rev(rev(x)))</code></pre>
@@ -500,7 +504,7 @@ more data scientists about what they’d like the ecosystem to be able to suppor
 ##  collate  en_US.UTF-8
 ##  ctype    en_US.UTF-8
 ##  tz       Australia/Adelaide
-##  date     2025-12-05
+##  date     2025-12-16
 ##  pandoc   3.8.2.1 @ /opt/homebrew/bin/ (via rmarkdown)
 ##  quarto   1.7.31 @ /usr/local/bin/quarto
 ## 

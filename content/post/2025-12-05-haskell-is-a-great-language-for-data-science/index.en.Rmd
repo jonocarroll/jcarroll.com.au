@@ -416,6 +416,11 @@ a = reverse $ reverse x
 (0.00 secs, 0 bytes)
 ```
 
+**UPDATE**: [Alice](https://functional.cafe/@prophet/115698227419709447) helpfully 
+explains why this runs so fast here - Haskell is lazy, so I wasn't _actually_ evaluating
+anything there. Trying to calculate the length of the result _does_ take some 
+time. Entirely my fault, but this comparison is unfair.
+
 This is disappointing to run inline in R
 
 ```r
