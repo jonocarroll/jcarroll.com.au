@@ -18,21 +18,22 @@ editor_options:
 
 
 
-<p>Translating things between languages helps grow an understanding of how each
-language handles various ergonomics, and I believe it’s a useful exercise. Having
+<p>Translating things between languages reveals how each language approaches
+different design trade-offs, and I believe it’s a useful exercise. Having
 something to translate is the first step. I found a plot I wanted to generate,
 and some code that reproduced it, so off we go!</p>
 <!--more-->
-<p>Translating things between languages helps grow an understanding of how each
-language handles various ergonomics, and I believe it’s a useful exercise. Having
+<p>Translating things between languages reveals how each language approaches
+different design trade-offs, and I believe it’s a useful exercise. Having
 something to translate is the first step. I found a plot I wanted to generate,
 and some code that reproduced it, so off we go!</p>
 <p>I don’t recall how I originally found <a href="https://zellyn.com/2024/06/schotter-1/">this page</a>
 (I didn’t keep a note on it, it seems) and this has been sitting on my
 to-be-posted-about pile for way too long, so here’s the post I’ve been meaning to write.</p>
 <p>That post details some ALGOL code that generates Georg Nees’ “Schotter”
-computer-generated art from 1968</p>
-<pre><code>1   &#39;BEGIN&#39;&#39;COMMENT&#39;SCHOTTER.,
+computer-generated art from 1968 which shows a grid of squares which get
+increasingly displaced in position and rotation</p>
+<pre class="algol"><code>1   &#39;BEGIN&#39;&#39;COMMENT&#39;SCHOTTER.,
 2   &#39;REAL&#39;R,PIHALB,PI4T.,
 3   &#39;INTEGER&#39;I.,
 4   &#39;PROCEDURE&#39;QUAD.,
@@ -80,9 +81,11 @@ computer-generated art from 1968</p>
 <img src="images/schotter.jpg" alt="Schotter" />
 <div class="figcaption">Schotter</div>
 </div>
-<p>which shows a grid of squares which get progressively more and more shifted
-in position and rotation. The author of that post provided a translation into
-Python</p>
+<p>What’s missing from this ALGOL code is the seeds needed to reproduce the plot.
+<a href="https://zellyn.com/2024/06/schotter-2/">The author went down a rabbit hole</a>
+investigating and calculating different values, but managed to determine them to
+be “(1922110153) for the x- and y-shift seed, and (1769133315) for the rotation
+seed”. They also provided a translation into Python</p>
 <pre class="python"><code>import math
 import drawsvg as draw
 
@@ -405,7 +408,7 @@ print(d.as_svg())</code></pre>
 <path d="M59.00345474975128,107.72734799580972 L58.8692612423792,97.72835097482636 L48.87026404335737,97.86253121558009 L49.004431017492536,107.86152859262278 L59.00342857253848,107.72737488510641" />
 </g>
 </svg>
-<p>I wanted to see if I could also translate that to R - base <code>plot</code> can draw line
+<p>I wanted to see if I could also translate that to R – base <code>plot</code> can draw line
 segments just fine, and I was curious about colouring the squares my own way.</p>
 <p>Most of that code translates straightforwardly, with the exception that the
 ‘randomness’ is actually a sequence of values, starting with a specific seed. I
@@ -450,7 +453,7 @@ maintaining a (non-global) state via <code>&lt;&lt;-</code></p>
 <img src="images/state.png" alt="Maintaining the state of the total balance internal to the function" />
 <div class="figcaption">Maintaining the state of the total balance internal to the function</div>
 </div>
-<p>with this same trick we can write an equivalent of the <code>Random</code> class which also
+<p>With this same trick we can write an equivalent of the <code>Random</code> class which also
 updates the seed internally</p>
 <pre class="r"><code>random &lt;- function(seed) {
   list(
@@ -522,7 +525,7 @@ Figure 1: ‘Schotter’ in R
 </p>
 </div>
 <p>Which uses the special seeds discovered in that original post. Checking the
-rotations, this does appear to match the original art.</p>
+rotations, this does indeed appear to match the original art.</p>
 <p>Why stop there, though? Now that I can plot it, I can change things… what if I
 used a different set of seeds, e.g. swapped them?</p>
 <pre class="r"><code>draw_plot(10.0, 10.0, 12, 22, 1769133315, 1922110153)</code></pre>
@@ -571,7 +574,7 @@ draw_plot(10.0, 10.0, 12, 22, 1922110153, 1769133315)</code></pre>
 Figure 4: ‘Schotter’ in R with viridis colours
 </p>
 </div>
-<p>Ever since I first drafted this post I’ve seen other examples of similar work.
+<p>Ever since I first drafted this post, I’ve seen other examples of similar work.
 <a href="https://mastodon.social/@safest_integer/114296256313964335">This toot</a>
 demonstrated a simplified version</p>
 <pre class="r"><code>suppressPackageStartupMessages(library(tidyverse))
@@ -596,7 +599,7 @@ showed a book ‘Crisis Engineering’ with a similar idea</p>
 <div class="figcaption">Cover of ‘Crisis Engineering’</div>
 </div>
 <p>I’m sure I’ve seen others around, too.</p>
-<p>This was a fun exploration of some artistic-inspired code translation, and I got
+<p>This was a fun exploration of some artistically inspired code translation, and I got
 to stretch my ‘maintaining internal state’ muscles a little. I have no doubt that
 someone more artistic than I could do a lot more with it.</p>
 <p>As always, I can be found on

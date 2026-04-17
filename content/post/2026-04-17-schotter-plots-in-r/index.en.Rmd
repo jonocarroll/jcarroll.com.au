@@ -28,15 +28,15 @@ reticulate::py_require('drawsvg')
 reticulate::py_require('IPython')
 ```
 
-Translating things between languages helps grow an understanding of how each 
-language handles various ergonomics, and I believe it's a useful exercise. Having 
+Translating things between languages reveals how each language approaches 
+different design trade-offs, and I believe it's a useful exercise. Having 
 something to translate is the first step. I found a plot I wanted to generate, 
 and some code that reproduced it, so off we go!
 
 <!--more-->
 
-Translating things between languages helps grow an understanding of how each 
-language handles various ergonomics, and I believe it's a useful exercise. Having 
+Translating things between languages reveals how each language approaches 
+different design trade-offs, and I believe it's a useful exercise. Having 
 something to translate is the first step. I found a plot I wanted to generate, 
 and some code that reproduced it, so off we go!
 
@@ -45,9 +45,10 @@ I don't recall how I originally found [this page](https://zellyn.com/2024/06/sch
 to-be-posted-about pile for way too long, so here's the post I've been meaning to write. 
 
 That post details some ALGOL code that generates Georg Nees' "Schotter" 
-computer-generated art from 1968
+computer-generated art from 1968 which shows a grid of squares which get 
+increasingly displaced in position and rotation
 
-```
+```algol
 1   'BEGIN''COMMENT'SCHOTTER.,
 2   'REAL'R,PIHALB,PI4T.,
 3   'INTEGER'I.,
@@ -96,9 +97,11 @@ computer-generated art from 1968
 
 ![Schotter](images/schotter.jpg)
 
-which shows a grid of squares which get progressively more and more shifted 
-in position and rotation. The author of that post provided a translation into 
-Python
+What's missing from this ALGOL code is the seeds needed to reproduce the plot. 
+[The author went down a rabbit hole](https://zellyn.com/2024/06/schotter-2/) 
+investigating and calculating different values, but managed to determine them to 
+be "(1922110153) for the x- and y-shift seed, and (1769133315) for the rotation 
+seed". They also provided a translation into Python
 
 ```{python, fig.asp=2, fig.cap="'Schotter' in Python", results='asis'}
 import math
@@ -154,7 +157,7 @@ d = draw_plot(10.0, 10.0, 12, 22, 1922110153, 1769133315).set_render_size(w=500)
 print(d.as_svg())
 ```
 
-I wanted to see if I could also translate that to R - base `plot` can draw line 
+I wanted to see if I could also translate that to R – base `plot` can draw line 
 segments just fine, and I was curious about colouring the squares my own way.
 
 Most of that code translates straightforwardly, with the exception that the 
@@ -205,7 +208,7 @@ maintaining a (non-global) state via `<<-`
 
 ![Maintaining the state of the total balance internal to the function](images/state.png)
 
-with this same trick we can write an equivalent of the `Random` class which also 
+With this same trick we can write an equivalent of the `Random` class which also 
 updates the seed internally
 
 ```{r}
@@ -278,7 +281,7 @@ draw_plot(10.0, 10.0, 12, 22, 1922110153, 1769133315)
 ```
 
 Which uses the special seeds discovered in that original post. Checking the 
-rotations, this does appear to match the original art.
+rotations, this does indeed appear to match the original art.
 
 Why stop there, though? Now that I can plot it, I can change things... what if I 
 used a different set of seeds, e.g. swapped them?
@@ -322,7 +325,7 @@ draw_plot <- function(x_size, y_size, x_count, y_count, s1, s2) {
 draw_plot(10.0, 10.0, 12, 22, 1922110153, 1769133315)
 ```
 
-Ever since I first drafted this post I've seen other examples of similar work. 
+Ever since I first drafted this post, I've seen other examples of similar work. 
 [This toot](https://mastodon.social/@safest_integer/114296256313964335) 
 demonstrated a simplified version
 
@@ -345,7 +348,7 @@ showed a book 'Crisis Engineering' with a similar idea
 
 I'm sure I've seen others around, too.
 
-This was a fun exploration of some artistic-inspired code translation, and I got 
+This was a fun exploration of some artistically inspired code translation, and I got 
 to stretch my 'maintaining internal state' muscles a little. I have no doubt that 
 someone more artistic than I could do a lot more with it.
 
