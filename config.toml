@@ -115,6 +115,12 @@ enableInlineShortcodes = true
     weight = 2
 
 [[menu.main]]
+
+    name = "Services"
+    url = "page/services"
+    weight = 1
+
+[[menu.main]]
     parent = "aboutme"
     name = "Projects"
     url = "page/projects_jonathan_carroll"
