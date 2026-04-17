@@ -199,7 +199,7 @@ r.next(2, 3)
 
 with the added complexity that the subsequent calls _update the seed itself_. 
 
-When I first saw this I was taken back to reading the 
+When I first saw this, my mind went back to reading the 
 ["original" R paper](https://stat.auckland.ac.nz/~ihaka/downloads/R-paper.pdf) 
 'R: A Language for Data Analysis and Graphics' by Ross Ihaka and Robert Gentleman, 
 in which 
