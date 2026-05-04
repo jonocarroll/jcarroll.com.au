@@ -25,9 +25,9 @@ options(blogdown.method = "markdown")
 
 I'm getting more and more into data engineering these days and having used R for
 a long time, I'm seeing a lot of problems that look nail-shaped to my R-shaped
-hammer. Those tools exist for (presumably) very good reasons, so I wanted to
-take some time to dig into how to use them and compare their workflows to what I
-would otherwise naively do in R.
+hammer. The available tools to solve those problems exist for (presumably) very
+good reasons, so I wanted to take some time to dig into how to use them and
+compare their workflows to what I would otherwise naively do in R.
 
 <!--more-->
 
@@ -148,10 +148,10 @@ above.
 
 I also ran some pre-processing over my CSVs to categorise the merchants. My bank 
 provides a 'category' and 'subcategory' for each item, but I wanted to be able 
-to override some of those to more specific definitions to that I could group by 
+to override some of those to more specific definitions so that I could group by 
 them, e.g. 'total spent on books' since I mainly buy those from just a couple of 
 merchants. This produced a new CSV of patterns, resolved names, and classifications, 
-since the 'description' of an item in my transactions might have , e.g. 
+since the 'description' of an item in my transactions might have, e.g. 
 
 ```
 Paypal *FruitShop 0401000000 Au
