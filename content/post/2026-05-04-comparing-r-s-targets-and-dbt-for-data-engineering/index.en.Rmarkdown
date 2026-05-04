@@ -23,11 +23,11 @@ knitr::opts_chunk$set(fig.path = "")
 options(blogdown.method = "markdown") 
 ```
 
-I'm getting more and more into data engineering these days and having used R for 
-a long time, I'm seeing a lot of nail-shaped tools to point my R-shaped hammer at. 
-Those tools exist for (presumably) very good reasons, so I wanted to take some 
-time to dig into how to use them and compare their workflows to what I would 
-otherwise naively do in R.
+I'm getting more and more into data engineering these days and having used R for
+a long time, I'm seeing a lot of problems that look nail-shaped to my R-shaped
+hammer. Those tools exist for (presumably) very good reasons, so I wanted to
+take some time to dig into how to use them and compare their workflows to what I
+would otherwise naively do in R.
 
 <!--more-->
 
@@ -53,11 +53,12 @@ expenses. I decided I'll build my own 'slowbooks' processing workflow based on
 some manual exports (I don't think my bank has an API).
 
 Both of the approaches I'll compare here build on the idea of a `Makefile` which
-connects up commands to run based on dependencies, and only runs what is needed
-(if all the input dependencies of a step have not changed, there's no need to
-re-run that step). From what I understand, you could largely get away with just 
-writing some `Makefile`s (or the newer implementation [`just`](https://just.systems/man/en/)) 
-but these two approaches help to better structure how that's constructed.
+connects up commands to run based on dependencies, and only runs what is needed;
+if all the input dependencies of a step have not changed, there's no need to
+re-run that step. From what I understand, you could largely get away with just
+writing some `Makefile`s (or the newer implementation
+[`just`](https://just.systems/man/en/)) but these two approaches help to better
+structure how that's constructed.
 
 This is a somewhat longer post than some of mine, so here's some quick links to 
 the sections
@@ -73,7 +74,7 @@ though if you do try to just install something called 'dbt' you get the
 [cloud CLI](https://pypi.org/project/dbt/) tool which isn't quite the same. Naming
 stuff is hard.
 
-It's a way to write code you can commit which translates to SQL and performs data
+It's a way to write code you can commit, which translates to SQL and performs data
 ingestion, processing, transformation, and storage in a structured way with 
 relationships between various steps in the workflow. It adds macros on top of 
 plain SQL to make the transformations easier, written in 
@@ -83,7 +84,7 @@ writing something more like Python within SQL.
 [This episode of Data Science Lab](https://www.youtube.com/watch?v=f7_WwFmlslo) 
 from Posit walks through an example of using dbt, and while it's a fantastic 
 overview of what a project looks like, it can't answer all of the 'how would I do 
-that?' problems which will come up in a different project.
+that?' problems that will come up in a different project.
 
 Like they did, I will use DuckDB for a database - I enjoyed reading through
 '[DuckDB in Action](https://www.manning.com/books/duckdb-in-action)' with the
@@ -104,8 +105,8 @@ cd slowbooks
 uv add dbt-duckdb duckdb streamlit
 ```
 
-Adding a `profiles.yml` defining the database (DuckDB) I want to produce to store 
-the tables
+Adding a `profiles.yml` in the project root defining the database (DuckDB) I 
+want to produce to store the tables
 
 ```yaml
 slowbooks:
@@ -157,7 +158,8 @@ Paypal *FruitShop 0401000000 Au
 ```
 
 and I want to identify the 'FruitShop' part, so I can match against that pattern.
-This _is_ a (fairly) static file, so that did go into `seeds/`.
+This _is_ a (fairly) static file (the source data will occasionally be extended), 
+so that did go into `seeds/`.
 
 ## {targets}
 
@@ -274,7 +276,7 @@ adjusting much, certainly without having to rename all the dependency labels.
   
   These are then combined in `models/staging/stg_transactions.sql`, referencing 
   each of the dependencies with the `ref()` macro. A 'surrogate key' is created 
-  to uniquely identify rows, so that when I add more data, the duplicated will 
+  to uniquely identify rows, so that when I add more data, the duplicates will 
   drop out. This does mean that any intentional duplicates: double records on 
   the same date from the same merchant for the same amount – e.g. buying one 
   ice-cream, dropping it, buying another – will also be dropped, but I'm 
@@ -741,6 +743,12 @@ producing junk data inadvertently.
   ```
   
   which in this case shows that one category didn't match.
+  
+  The tests can also be run independently with
+  
+  ```dbt
+  uv run dbt test
+  ```
 
 * <span><img src="images/targets.png" height="40px"></span>
 
@@ -750,7 +758,8 @@ producing junk data inadvertently.
   
   In my case I'll use Appsilon's    
   [{data.validator}](https://appsilon.github.io/data.validator/articles/targets_workflow.html)
-  which has an example for {targets} already.
+  which has an example for {targets} already, but one could just as easily use 
+  {pointblank} or {validate}.
   
   That leverages assertions from {assertr} and is again just another function
   
@@ -1195,11 +1204,11 @@ between how things actually run.
   makes for more complexity if I _do_ want to re-categorise existing records, in 
   which case I need to add `--full-refresh` to the build step.
   
-  With the model defined I can visualise it by generating the documentation 
-  site with
+  With the model defined I can visualise it by generating and serving the 
+  documentation site with
   
   ```bash
-  uv run dbt docs serve
+  uv run dbt docs generate && uv run dbt docs serve 
   ```
   
   This builds a site locally hosted which includes all of the SQL code and a 
@@ -1375,9 +1384,10 @@ so with fewer bells and whistles likely comes more stability. Provided the helpe
 functions are available for things like basic statistics (e.g. in DuckDB) this 
 doesn't sound like too much of a downside. Doing a bit more research, it seems 
 that dbt _does_ support using 
-[Python for a model](https://docs.getdbt.com/docs/build/python-models), 
+[Python for models](https://docs.getdbt.com/docs/build/python-models), 
 provided the adapter supports it (which `dbt-duckdb` does), so that's a big win 
-for those more familiar with Python.
+for those more familiar with Python, although I am under the impression that not 
+everything works exactly the same for these models.
 
 * Connection: I appreciate the massive leg-up that dbt offers in terms of handling 
 connections to sources via extensions (e.g. `dbt-duckdb`). I'm sure if you're not 
