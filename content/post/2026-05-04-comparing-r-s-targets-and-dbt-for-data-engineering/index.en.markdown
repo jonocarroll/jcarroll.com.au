@@ -1,5 +1,5 @@
 ---
-title: Comparing R's Targets and dbt for Data Engineering
+title: Comparing R's {targets} and dbt for Data Engineering
 author: Jonathan Carroll
 date: '2026-05-04'
 categories:
@@ -27,7 +27,7 @@ and am actively seeking a new role – if your organisation is looking for someo
 aligned with my skillset, please get in touch with me any way you can, e.g. 
 [contact at jcarroll.com.au](mailto:contact@jcarroll.com.au?subject=Work%20opportunity).
 
-I'm a firm believer in "you learn with your hands, not with your eyes" so I want 
+I'm a firm believer in "you learn with your hands, not with your eyes" so I wanted 
 to actually build something. I definitely could spin up Claude Code and have it 
 produce the entire thing for me – and in a different project I might do that – but 
 in this case I want to make the mistakes myself so I can learn where the complexity
@@ -73,7 +73,7 @@ writing something more like Python within SQL.
 
 [This episode of Data Science Lab](https://www.youtube.com/watch?v=f7_WwFmlslo) 
 from Posit walks through an example of using dbt, and while it's a fantastic 
-overview of what a project looks like, it can't answer every 'how would I do 
+overview of what a project looks like, it can't answer all of the 'how would I do 
 that?' problems which will come up in a different project.
 
 Like they did, I will use DuckDB for a database - I enjoyed reading through
@@ -86,7 +86,7 @@ I installed dbt via `uv` - the
 and I've been burned too many times with that tool; `uv` is much nicer.
 Nonetheless, I still encountered Python-related issues because it looks like
 `dbt` doesn't yet support Python 3.14 and yet this isn't mentioned in their
-instructions either. I got it working with this command, adding the `duckdb`
+instructions either. I got it working with this command, adding the `dbt-duckdb`
 extension I plan to use, as well as `streamlit` to make a dashboard later
 
 ```bash
@@ -160,7 +160,7 @@ demonstrates the power of it, and Miles McBain has been singing the praises of i
 since [at least as early as 2020](https://www.youtube.com/watch?v=jU1Zv21GvT4) 
 (along with the predecessor {drake}). 
 
-Rather than double up all of my inputs, I will just keep the targets implementation 
+Rather than double up all of my inputs, I will just keep the {targets} implementation 
 as a subdirectory of my dbt project and refer to the exact same source files. I
 will create a distinct database, though. 
 
@@ -171,7 +171,7 @@ as straightforward as
 install.packages("targets")
 ```
 
-with an R session, be that in RStudio, Positron, Emacs, or a terminal.
+within an R session, be that in RStudio, Positron, Emacs, or a terminal.
 
 As for the rest of the file structure, 100% of the R code here goes into a 
 `_targets.R` file - much cleaner, albeit that's a tradeoff in terms of separating 
@@ -181,10 +181,12 @@ different components.
 
 ## Comparing Workflows
 
-For the actual processing I'm going to show both dbt and targets approaches in 
+For the actual processing I'm going to show both dbt and {targets} approaches in 
 tabsets for switching back and forth. 
 
-The overview of each section (from the dbt docs) is:
+For dbt a 'model' is a `select` statement producing a table, with the structure being 
+models split out into three layers of increasingly production-ready data. From 
+the dbt docs, these are defined as:
 
 * Staging: Preparing atomic building blocks
 * Intermediate: Purpose-built transformation steps
@@ -319,7 +321,7 @@ adjusting much, certainly without having to rename all the dependency labels.
 
   The equivalent in {targets} uses `tar_target()` to identify dependencies and 
   things to be output. I start by identifying the files I want to read in. A 
-  strict comparison would have been to list the files not starting with a `'v'` 
+  strict comparison would have been to do another `grepv()` with `invert=TRUE`
   but `setdiff()` works nicely here
   
   ```r
@@ -409,9 +411,6 @@ adjusting much, certainly without having to rename all the dependency labels.
   list(
     tar_target(cc_files,   cc_list,   format = "file"),
     tar_target(bank_files, bank_list, format = "file"),
-
-    tar_target(merchant_file, "../seeds/seed_merchants.csv", format = "file"),
-    tar_target(merchants, readr::read_csv(merchant_file, show_col_types = FALSE)),
 
     # Staging
     tar_target(stg_bank, stage_source(bank_files)),
@@ -825,7 +824,7 @@ a standard deviation away from the average.
 
   Given that this needs the 'final' tables, it belongs in the `models/marts`
   folder. There _is_ an `analysis/` folder in the dbt project by default, 
-  but that's for ad-hoc SQL queries that need `ref()` but don't necessarily 
+  but that's for ad-hoc SQL queries that need to use `ref()` but don't necessarily 
   produce anything one wishes to persist.
   
   Calculating the standard deviations relies on 
@@ -937,14 +936,18 @@ a standard deviation away from the average.
 
 ### The Complete Workflow
   
+That's all the pieces I need to push data in the exported CSVs through the pipe 
+and produce a database of monthly aggregated, categorised totals. Here's how it 
+looks in terms of the two tools.
+  
 <p></p>
 
 <div class="tabset"></div>
 
 * <span><img src="images/dbt.png" height="40px"></span>
 
-  The file structure is perhaps best seen in the `docs` website, but 
-  essentially the files in `models` define the workflow
+  The file structure is perhaps best seen in the `docs` website (see the next 
+  section), but essentially the files in `models` define the workflow
   
   ```
   models
@@ -1205,7 +1208,8 @@ between how things actually run.
   </a>
   <div class="figcaption">dbt docs site (click to embiggen)</div>
 
-  Expanding this pane shows the full DAG for the project
+  Expanding this pane shows more of the DAG for the project, though not all of 
+  the connections
   
   <a href="images/dbt_dag.png">
     <img src="images/dbt_dag.png" alt="dbt DAG for the whole slowbooks project (click to embiggen)" width="600px"/>
@@ -1328,13 +1332,14 @@ There's obvious issues with it - not least that the legend is incomplete, but
 for the sort of exploration I wanted to try out, it's a great starting point.
 
 It reads the summary tables directly from the database, so the analysis doesn't 
-need to happen within the app - a nice separation of business logic and 
+need to happen within the app – a nice separation of business logic and 
 visualisation.
 
 ## Comparison
 
 As a final sanity check, I'll confirm that I get the same number of transactions 
-in the monthly trend tables which _are_ saved to both databases
+in the monthly trend tables which _are_ saved to both databases, albeit with 
+different names
 
 ```bash
 duckdb slowbooks.duckdb -c "select sum(transaction_count) from mart_category_trends;"
@@ -1391,6 +1396,13 @@ by tracking code this way, but for me it's the default state.
 explorer runs off the screen. {targets} has everything in a single file. This 
 could be organised more like dbt with a liberal use of `source()` calls at the 
 top of `_targets.R`, say for each model and some utils.
+
+* Interrogation: Perhaps there's some more tooling I'm not aware of, but the 
+{targets} visualisation of the DAG is a clear winner for me. Part of the tradeoff 
+between 'run everything locally' and 'run everything remotely' is that I can 
+inspect the intermediate data in the {targets} workflow with `tar_read(id)` and 
+see what's happening. I _can_ read the generated table in the database, but for 
+smallish data being able to just crack it open and have a look wins for me.
 
 ## Other Solutions
 
