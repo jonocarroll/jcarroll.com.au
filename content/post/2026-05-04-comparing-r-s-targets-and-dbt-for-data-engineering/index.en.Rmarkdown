@@ -74,7 +74,7 @@ the sections
 
 One tool that comes up frequently is 'data build tool' most commonly referred to
 as just dbt, though that full name doesn't even show up on [their website](https://www.getdbt.com/product/what-is-dbt). Started in 2016, it's
-released as a python package ([dbt-core](https://pypi.org/project/dbt-core/))
+released as a Python package ([dbt-core](https://pypi.org/project/dbt-core/))
 though if you do try to just install something called 'dbt' you get the 
 [cloud CLI](https://pypi.org/project/dbt/) tool which isn't quite the same. Naming
 stuff is hard.
@@ -84,14 +84,14 @@ ingestion, processing, transformation, and storage in a structured way with
 relationships between various steps in the workflow. It adds macros on top of 
 plain SQL to make the transformations easier, written in 
 [jinja](https://github.com/pallets/jinja), a template engine which enables 
-writing something more like python within SQL.
+writing something more like Python within SQL.
 
 [This episode of Data Science Lab](https://www.youtube.com/watch?v=f7_WwFmlslo) 
 from Posit walks through an example of using dbt, and while it's a fantastic 
 overview of what a project looks like, it can't answer every 'how would I do 
 that?' problems which will come up in a different project.
 
-Like they did, I will use duckdb for a database - I enjoyed reading through
+Like they did, I will use DuckDB for a database - I enjoyed reading through
 '[DuckDB in Action](https://www.manning.com/books/duckdb-in-action)' with the
 [DSLC.io](https://dslc.io/bookclubs.html) book club and can definitely see the
 advantages over SQLite which I would previously have reached for in this case.
@@ -99,8 +99,8 @@ advantages over SQLite which I would previously have reached for in this case.
 I installed dbt via `uv` - the 
 [official instructions](https://docs.getdbt.com/docs/local/install-dbt) use `pip` 
 and I've been burned too many times with that tool; `uv` is much nicer.
-Nonetheless, I still encountered python-related issues because it looks like
-`dbt` doesn't yet support python 3.14 and yet this isn't mentioned in their
+Nonetheless, I still encountered Python-related issues because it looks like
+`dbt` doesn't yet support Python 3.14 and yet this isn't mentioned in their
 instructions either. I got it working with this command, adding the `duckdb`
 extension I plan to use, as well as `streamlit` to make a dashboard later
 
@@ -110,7 +110,7 @@ cd slowbooks
 uv add dbt-duckdb duckdb streamlit
 ```
 
-Adding a `profiles.yml` defining the database (duckdb) I want to produce to store 
+Adding a `profiles.yml` defining the database (DuckDB) I want to produce to store 
 the tables
 
 ```yaml
@@ -129,7 +129,7 @@ I can then initialise the project with
 uv run dbt init . --skip-profile-setup
 ```
 
-This creates the basic project stucture, and there's a lot going on. 
+This creates the basic project structure, and there's a lot going on. 
 
 I also needed to define a dependency in `packages.yml` so that I could use the 
 macros
@@ -224,7 +224,7 @@ adjusting much, certainly without having to rename all the dependency labels.
 * <span><img src="images/dbt.png" height="40px"></span>
 
   First I defined the sources in `models/staging/sources.yml`, leveraging 
-  duckdb's `read_csv()` to read all the CSV files in `raw/`
+  DuckDB's `read_csv()` to read all the CSV files in `raw/`
   
   ```yaml
   version: 2
@@ -493,7 +493,7 @@ to the patterns I've defined in the seed file.
   from matched
   ```
   
-  From there, a monthly aggregation table is produced. The `date_truc()` feature 
+  From there, a monthly aggregation table is produced. The `date_trunc()` feature 
   makes this fairly clean, and being able to `sum()` values is nice. In 
   `models/intermediate/int_monthly_balances.sql`
   
@@ -669,9 +669,9 @@ as well as month
 
 ### Tests / Validation
   
-One 'selling point' I've seen fot dbt is that it can additionally add validation 
+One 'selling point' I've seen for dbt is that it can additionally add validation 
 tests within the workflow. That's extremely useful to ensure that you're not 
-producing junk data inadvertantly. 
+producing junk data inadvertently. 
   
 <p></p>
 
@@ -815,7 +815,7 @@ producing junk data inadvertantly.
 What's the point of organising this data if we're not going to do something with 
 it? This is where I start to really wonder if {targets} maybe has a bigger picture 
 in mind when it connects up the data, because while dbt will do all of the 
-processing in SQL, R will happy continue to do the analysis.
+processing in SQL, R will happily continue to do the analysis.
 
 I think this is where a separation of concerns becomes necessary, and that depends 
 on the scale of the data involved. While you or I working on a small project might 
@@ -1269,7 +1269,7 @@ between how things actually run.
   </a>
   <div class="figcaption">Failed validation in {targets} DAG (click to embiggen)</div>
   
-  That did require following the article in {data.validations} to define 
+  That did require following the article in {data.validator} to define 
   
   ```r
   validation_violation <- function(report) {
@@ -1372,7 +1372,11 @@ On the other hand, I can see the value in moving to a language that's closer to
 the data itself – the abstractions change over time ({dplyr} is notorious for this)
 so with fewer bells and whistles likely comes more stability. Provided the helper 
 functions are available for things like basic statistics (e.g. in DuckDB) this 
-doesn't sound like too much of a downside.
+doesn't sound like too much of a downside. Doing a bit more research, it seems 
+that dbt _does_ support using 
+[Python for a model](https://docs.getdbt.com/docs/build/python-models), 
+provided the adapter supports it (which `dbt-duckdb` does), so that's a big win 
+for those more familiar with Python.
 
 * Connection: I appreciate the massive leg-up that dbt offers in terms of handling 
 connections to sources via extensions (e.g. `dbt-duckdb`). I'm sure if you're not 
@@ -1396,10 +1400,10 @@ top of `_targets.R`, say for each model and some utils.
 
 ## Other Solutions
 
-While I've focussed on this comparison between dbt and {targets}, these aren't 
+While I've focused on this comparison between dbt and {targets}, these aren't 
 the only players in the game. I'm aware of [Airflow](https://airflow.apache.org/), 
 at least in the sense that it can ingest dbt pipelines and schedule them. 
-For the python folks there's also [prefect](https://www.prefect.io/) and 
+For the Python folks there's also [prefect](https://www.prefect.io/) and 
 [dagster](https://dagster.io/), the latter of which also has an R ingestion 
 route in the form of [dagsterpipes](https://joekirincic.github.io/dagsterpipes/). 
 A purely R solution is [maestro](https://whipson.github.io/maestro/) which appears 
@@ -1412,6 +1416,23 @@ can't identify the 'up-to-date-ness' (since that involves a hash of the file).
 
 ## Conclusion
 
+I've vastly grown my understanding of both dbt and {targets} and have a much 
+greater appreciation for what goes into using each of these to move and curate
+data. Plus, now I have a cool new toy I've built to explore my finances. I'm not 
+sharing the code itself – partly so that I don't risk committing my own finance
+data by accident, and partly because what I've done here isn't anything you need 
+to build on; if you're interested in learning either or both of these tools, I 
+recommend you do what I did and build a toy project.
+
+I'm interested to hear what you think of this comparison – have I overlooked 
+some significant difference or similarity? Some use-case where one of them would 
+really shine over the other? Have I misrepresented something? I'm here to learn, 
+so by all means please do let me know. And if you're looking for someone with 
+a history of programming and data who digs into projects this way, I'm on the 
+market for opportunities.
+
+As always, I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
 
 <br />
 <details>
