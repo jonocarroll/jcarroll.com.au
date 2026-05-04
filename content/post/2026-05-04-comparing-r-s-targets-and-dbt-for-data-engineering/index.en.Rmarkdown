@@ -341,9 +341,11 @@ adjusting much, certainly without having to rename all the dependency labels.
   RAW_DIR <- "../raw"
   
   file_list <- list.files(RAW_DIR, full.names = TRUE)
-  cc_list <- grepv("visa.*\\.csv$", file_list, )
+  cc_list <- grepv("visa.*\\.csv$", file_list)
   bank_list <- setdiff(file_list, cc_list)
   ```
+  
+  (sidenote: ooh, yeah – I get to use that new `grepv()` added in R 4.5.0)
   
   Loading the data requires a function, but now we can leverage R and its 
   abstractions, in this case {dplyr}, {stringr}, and {lubridate}
@@ -935,7 +937,7 @@ a standard deviation away from the average.
     dplyr::show_query()
   ```
   
-  which shows that it uses the alias `stddev(x)`.
+  which shows that it uses the alias `STDDEV(x)`.
 
 <div style="text-align: right;">
   <a href="#analysis">Top of this section</a> | <a href="#TableOfContents">⬆️ Table of Contents</a>
@@ -1269,7 +1271,7 @@ between how things actually run.
   </a>
   <div class="figcaption">Failed validation in {targets} DAG (click to embiggen)</div>
   
-  That did require following the article in {data.validator} to define 
+  That did require following the article in the {data.validator} docs to define 
   
   ```r
   validation_violation <- function(report) {
