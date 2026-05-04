@@ -31,12 +31,6 @@ otherwise naively do in R.
 
 <!--more-->
 
-I'm getting more and more into data engineering these days and having used R for
-a long time, I'm seeing a lot of nail-shaped workflows to point my R-shaped
-hammer at. The tools for those workflows exist for (presumably) very good
-reasons, so I wanted to take some time to dig into how to use them and compare
-their workflows to what I would otherwise naively do in R.
-
 I should mention here that I'm currently open to data/code-related opportunities 
 and am actively seeking a new role – if your organisation is looking for someone 
 aligned with my skillset, please get in touch with me any way you can, e.g. 
