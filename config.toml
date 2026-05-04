@@ -14,7 +14,7 @@ disqusShortname = "jcarroll-com-au"
 googleAnalytics = "UA-135066967-1"
 enableGitInfo = true
 enableEmoji = true
-ignoreFiles = ["\\.Rmd$", "\\.Rmarkdown$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
+ignoreFiles = ["\\.Rmd$", "_cache$", "\\.knit\\.md$", "\\.utf8\\.md$"]
 rssLimit = 50
 buildFuture = true
 enableInlineShortcodes = true
@@ -141,6 +141,15 @@ enableInlineShortcodes = true
 #        path = 'beautifulhugo'
 
 [markup]
+  defaultMarkdownHandler = "goldmark"
   [markup.goldmark]
     [markup.goldmark.renderer]
       unsafe = true
+  [markup.tableOfContents]
+    endLevel = 5
+    ordered = false
+    startLevel = 2
+
+[mediaTypes]
+  [mediaTypes."text/markdown"]
+    suffixes = ["md", "markdown"]
