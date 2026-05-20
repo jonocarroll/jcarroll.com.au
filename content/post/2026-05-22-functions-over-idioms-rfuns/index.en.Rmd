@@ -350,8 +350,10 @@ All went well pushing to the test server (via an authentication key) and I manag
 to build up the courage to push to the production instance... 
 [it's live!](https://pypi.org/project/rfuns/)
 
-
 ![rfuns logo - R functions in Python... are fun](images/rfuns_logo_small.png){width=300px}
+
+and the [documentation site](https://jonocarroll.github.io/rfuns/) isn't too bad, 
+either (in my opinion).
 
 which means that you can now run
 

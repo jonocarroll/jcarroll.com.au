@@ -48,7 +48,7 @@ in Python; instead of an <code>sapply(x, f)</code></p>
 <p>I should reach for <code>map</code>, in which case I am reminded that this produces a lazy
 iterator that doesn’t show me the results</p>
 <pre class="python"><code>map(lambda x: x ** 2, [2, 3, 4, 5])</code></pre>
-<pre class="bg-success"><code>## &lt;map object at 0x11d2fb640&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;map object at 0x106c035e0&gt;</code></pre>
 <p>and so I need to wrap it into a list to get the values out</p>
 <pre class="python"><code>list(map(lambda x: x ** 2, [2, 3, 4, 5]))</code></pre>
 <pre class="bg-success"><code>## [4, 9, 16, 25]</code></pre>
@@ -260,6 +260,8 @@ to build up the courage to push to the production instance…
 <img src="images/rfuns_logo_small.png" width="300" alt="rfuns logo - R functions in Python… are fun" />
 <div class="figcaption">rfuns logo - R functions in Python… are fun</div>
 </div>
+<p>and the <a href="https://jonocarroll.github.io/rfuns/">documentation site</a> isn’t too bad,
+either (in my opinion).</p>
 <p>which means that you can now run</p>
 <pre class="bash"><code>uv add rfuns</code></pre>
 <p>(or the equivalent in whatever virtual environment management configuration you’re
