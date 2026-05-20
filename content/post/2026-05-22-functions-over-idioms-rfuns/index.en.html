@@ -48,7 +48,7 @@ in Python; instead of an <code>sapply(x, f)</code></p>
 <p>I should reach for <code>map</code>, in which case I am reminded that this produces a lazy
 iterator that doesn’t show me the results</p>
 <pre class="python"><code>map(lambda x: x ** 2, [2, 3, 4, 5])</code></pre>
-<pre class="bg-success"><code>## &lt;map object at 0x106c035e0&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;map object at 0x121cfb280&gt;</code></pre>
 <p>and so I need to wrap it into a list to get the values out</p>
 <pre class="python"><code>list(map(lambda x: x ** 2, [2, 3, 4, 5]))</code></pre>
 <pre class="bg-success"><code>## [4, 9, 16, 25]</code></pre>
@@ -72,9 +72,8 @@ sorted(Counter([&quot;b&quot;, &quot;a&quot;, &quot;c&quot;, &quot;a&quot;, &quo
 <code>.items()</code> extractor and the fact that they maybe want to sort the result. But I
 kept coming back to a question I ask myself: <em>what if I don’t want to</em>? Why is
 there not a function that wraps this idiom? If there was, why not just call it
-“table” (admittedly far from the catchiest, most memorable, or most useful
-name, apart from the fact that it’s potentially extremely familiar to an R
-user, ditto for “sapply”)?</p>
+“table”? Admittedly, it’s far from the catchiest, most memorable, or most useful
+name, but it’s immediately recognisable to an R user (ditto for “sapply”).</p>
 <p>One approach I considered here was to just call R from Python. That <em>can</em> be done,
 but I doubt I or anyone else wants to deal with that every time we want to iterate
 over a list. There’s a package on the Python package index which seems to support
@@ -109,7 +108,7 @@ I could use in Python. An idiom for finding the index of elements of a ‘vector
 which([False, False, True, False, True])</code></pre>
 <pre class="bg-success"><code>## [2, 4]</code></pre>
 <p>(remembering that Python is 0-indexed).</p>
-<p>How far could one take this? Quite a long way, it seems.</p>
+<p>How far could one take this? Quite a long way!</p>
 <p>I thought more about what differences would need to be accounted for, and one that
 immediately came to mind was that R is vectorised, so if I was to recreate R’s
 character counting function <code>nchar(s)</code> as essentially <code>len(s)</code>, I’d need to consider
@@ -175,7 +174,7 @@ def list_files(path):
     files = [os.path.join(path, f) for f in os.listdir(path)]
     return files
 
-path = &quot;path/to/files
+path = &quot;path/to/files&quot;
 
 list_files(path)</code></pre>
 <pre class="r bg-success"><code>## [&#39;path/to/files/file1.txt&#39;, &#39;path/to/files/file2.txt&#39;, &#39;path/to/files/file3.csv&#39;]</code></pre>
@@ -189,7 +188,7 @@ of, supporting as many common arguments as possible. This involved extending the
 decorator to support vectorising other arguments (which also need to be careful
 about dots).</p>
 <p>On testing it out, it looked like we had something viable.</p>
-<p>One last piece I wanted to support, though: the <code>where()</code> example above extracts
+<p>One last piece I wanted to support, though: the <code>which()</code> example above extracts
 the elements of a <em>logical</em> vector which are <code>True</code>, but in order to build that vector
 in the first place, I would naturally leverage R’s vectorisation as an array
 language. The two steps involved here are to first compute the comparison resulting
@@ -208,7 +207,7 @@ true</p>
 <p>The solution I’m fond of is to create a new ‘Vec’ class which wraps binary operators
 with a list comprehension, again abstracting away this detail. This means
 implementing <code>__eq__</code>, <code>__add__</code>, <code>__and__</code> and lots of other binary operations,
-but with that, and a wrapper to create an such object, the comparison operators
+but with that, and a wrapper to create such an object, the comparison operators
 can be vectorised</p>
 <pre class="python"><code>vals = vec([&#39;c&#39;, &#39;b&#39;, &#39;a&#39;, &#39;c&#39;, &#39;a&#39;, &#39;b&#39;])
 which(vals == &#39;a&#39;)</code></pre>
@@ -429,6 +428,10 @@ confusion as you’re hiding away the implementation and giving it a name they
 won’t recognise. That’s precisely what functions are for (with helpful names),
 of course, but unless this package becomes popular, I’ll bet that the inline
 idioms are more welcomed in a codebase.</p>
+<p>Doing <em>all</em> of this myself would have taken quite some time, so I’m grateful to
+be able to direct an agent towards accomplishing some of the tedious parts of this
+project. I still drove the decision making and made sure to verify outputs, so I
+don’t consider this a ‘vibe-coded’ project at all.</p>
 <p>I’d love to hear what people think about this, although I’m entirely fine with me
 being the sole user of it. Should I just force my muscle-memory to take on the
 Python idioms? Am I going to be punished for <a href="https://ghostbusters.fandom.com/wiki/Cross_the_Streams">‘crossing the

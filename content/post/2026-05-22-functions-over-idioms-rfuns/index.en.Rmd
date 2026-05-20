@@ -101,9 +101,8 @@ Probably Pythonistas remember that idiom and the package to import and the
 `.items()` extractor and the fact that they maybe want to sort the result. But I
 kept coming back to a question I ask myself: _what if I don't want to_? Why is
 there not a function that wraps this idiom? If there was, why not just call it
-"table" (admittedly far from the catchiest, most memorable, or most useful
-name, apart from the fact that it's potentially extremely familiar to an R
-user, ditto for "sapply")?
+"table"? Admittedly, it's far from the catchiest, most memorable, or most useful
+name, but it's immediately recognisable to an R user (ditto for "sapply").
 
 One approach I considered here was to just call R from Python. That _can_ be done, 
 but I doubt I or anyone else wants to deal with that every time we want to iterate 
@@ -154,7 +153,7 @@ which([False, False, True, False, True])
 
 (remembering that Python is 0-indexed). 
 
-How far could one take this? Quite a long way, it seems. 
+How far could one take this? Quite a long way! 
 
 I thought more about what differences would need to be accounted for, and one that 
 immediately came to mind was that R is vectorised, so if I was to recreate R's
@@ -239,7 +238,7 @@ def list_files(path):
     files = [os.path.join(path, f) for f in os.listdir(path)]
     return files
 
-path = "path/to/files
+path = "path/to/files"
 
 list_files(path)
 ```
@@ -260,7 +259,7 @@ about dots).
 
 On testing it out, it looked like we had something viable. 
 
-One last piece I wanted to support, though: the `where()` example above extracts 
+One last piece I wanted to support, though: the `which()` example above extracts 
 the elements of a _logical_ vector which are `True`, but in order to build that vector 
 in the first place, I would naturally leverage R's vectorisation as an array 
 language. The two steps involved here are to first compute the comparison resulting 
@@ -289,7 +288,7 @@ which(x == 'a' for x in ['c', 'b', 'a', 'c', 'a', 'b'])
 The solution I'm fond of is to create a new 'Vec' class which wraps binary operators 
 with a list comprehension, again abstracting away this detail. This means 
 implementing `__eq__`, `__add__`, `__and__` and lots of other binary operations, 
-but with that, and a wrapper to create an such object, the comparison operators 
+but with that, and a wrapper to create such an object, the comparison operators 
 can be vectorised 
 
 ```{python, eval = FALSE}
@@ -532,6 +531,11 @@ confusion as you're hiding away the implementation and giving it a name they
 won't recognise. That's precisely what functions are for (with helpful names),
 of course, but unless this package becomes popular, I'll bet that the inline
 idioms are more welcomed in a codebase.
+
+Doing _all_ of this myself would have taken quite some time, so I'm grateful to 
+be able to direct an agent towards accomplishing some of the tedious parts of this
+project. I still drove the decision making and made sure to verify outputs, so I 
+don't consider this a 'vibe-coded' project at all.
 
 I’d love to hear what people think about this, although I'm entirely fine with me 
 being the sole user of it. Should I just force my muscle-memory to take on the
