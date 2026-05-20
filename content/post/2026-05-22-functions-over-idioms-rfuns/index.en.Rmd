@@ -48,7 +48,7 @@ and taking on a strong Python development effort, releasing
 [Positron](https://posit.co/products/ide/positron) as a multi-language IDE, and
 [Quarto](https://quarto.org/) being a multi-language rethink of Rmarkdown.
 
-I occasionally _need_ to use python directly - an SDK wrapping an API exists and 
+I occasionally _need_ to use Python directly - an SDK wrapping an API exists and 
 I don't particularly want to spend a lot of time writing my own R version, 
 especially before I know what I want to get out of the endpoints. At this point 
 I tend to bump up against my muscle-memory from R and try to use functions I'm 
@@ -303,7 +303,7 @@ Not pristine, but quite clean, if you ask me.
 
 With all these pieces in place, adding implementations for common base R functions 
 including most arguments and a way to vectorise lists, I wrapped everything up
-into a python package (my first) to learn how to do it. 
+into a Python package (my first) to learn how to do it. 
 
 The workflow isn't particularly painful, with my biggest complication being 
 different versions of Python supporting different requirements in `pyproject.toml`, 
@@ -320,7 +320,7 @@ for `pytest` which does the realignment of e.g. `list_files` to `list.files`
 (and similarly for arguments), realigns the indexing where needed, and runs all 
 existing tests directly in R via `rpy2` (skipping over some for which I don't 
 have tests yet). I'm disabling automated testing of this because I suspect it 
-could get flaky dealing with both R _and_ python on GitHub Actions, but I can 
+could get flaky dealing with both R _and_ Python on GitHub Actions, but I can 
 confirm that all the current tests pass.
 
 I wanted to have a documentation website similar to what we have via {pkgdown} and 
@@ -354,7 +354,7 @@ to build up the courage to push to the production instance...
 and the [documentation site](https://jonocarroll.github.io/rfuns/) isn't too bad, 
 either (in my opinion).
 
-which means that you can now run
+This means that you can now run
 
 ```bash
 uv add rfuns

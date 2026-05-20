@@ -36,7 +36,7 @@ us to use Python within R code, RStudio rebranding as <a href="https://posit.co/
 and taking on a strong Python development effort, releasing
 <a href="https://posit.co/products/ide/positron">Positron</a> as a multi-language IDE, and
 <a href="https://quarto.org/">Quarto</a> being a multi-language rethink of Rmarkdown.</p>
-<p>I occasionally <em>need</em> to use python directly - an SDK wrapping an API exists and
+<p>I occasionally <em>need</em> to use Python directly - an SDK wrapping an API exists and
 I don’t particularly want to spend a lot of time writing my own R version,
 especially before I know what I want to get out of the endpoints. At this point
 I tend to bump up against my muscle-memory from R and try to use functions I’m
@@ -48,7 +48,7 @@ in Python; instead of an <code>sapply(x, f)</code></p>
 <p>I should reach for <code>map</code>, in which case I am reminded that this produces a lazy
 iterator that doesn’t show me the results</p>
 <pre class="python"><code>map(lambda x: x ** 2, [2, 3, 4, 5])</code></pre>
-<pre class="bg-success"><code>## &lt;map object at 0x121cfb280&gt;</code></pre>
+<pre class="bg-success"><code>## &lt;map object at 0x10c5fbd00&gt;</code></pre>
 <p>and so I need to wrap it into a list to get the values out</p>
 <pre class="python"><code>list(map(lambda x: x ** 2, [2, 3, 4, 5]))</code></pre>
 <pre class="bg-success"><code>## [4, 9, 16, 25]</code></pre>
@@ -215,7 +215,7 @@ which(vals == &#39;a&#39;)</code></pre>
 <p>Not pristine, but quite clean, if you ask me.</p>
 <p>With all these pieces in place, adding implementations for common base R functions
 including most arguments and a way to vectorise lists, I wrapped everything up
-into a python package (my first) to learn how to do it.</p>
+into a Python package (my first) to learn how to do it.</p>
 <p>The workflow isn’t particularly painful, with my biggest complication being
 different versions of Python supporting different requirements in <code>pyproject.toml</code>,
 and so some GitHub Actions are failing because of that.</p>
@@ -230,7 +230,7 @@ for <code>pytest</code> which does the realignment of e.g. <code>list_files</co
 (and similarly for arguments), realigns the indexing where needed, and runs all
 existing tests directly in R via <code>rpy2</code> (skipping over some for which I don’t
 have tests yet). I’m disabling automated testing of this because I suspect it
-could get flaky dealing with both R <em>and</em> python on GitHub Actions, but I can
+could get flaky dealing with both R <em>and</em> Python on GitHub Actions, but I can
 confirm that all the current tests pass.</p>
 <p>I wanted to have a documentation website similar to what we have via {pkgdown} and
 came across <a href="https://github.com/machow/quartodoc">quartodoc</a> which is what the
@@ -261,7 +261,7 @@ to build up the courage to push to the production instance…
 </div>
 <p>and the <a href="https://jonocarroll.github.io/rfuns/">documentation site</a> isn’t too bad,
 either (in my opinion).</p>
-<p>which means that you can now run</p>
+<p>This means that you can now run</p>
 <pre class="bash"><code>uv add rfuns</code></pre>
 <p>(or the equivalent in whatever virtual environment management configuration you’re
 using, e.g. <code>pip install rfuns</code>) and start using some R functions directly in
