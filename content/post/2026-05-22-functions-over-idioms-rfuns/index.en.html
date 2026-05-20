@@ -1,0 +1,520 @@
+---
+title: Functions over Idioms - Writing R in Python with rfuns
+author: Jonathan Carroll
+date: '2026-05-22'
+categories:
+  - python
+  - rstats
+tags:
+  - python
+  - rstats
+slug: functions-over-idioms-rfuns
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+<p>If you’ve read any of my past posts you know I like to program in several
+different languages, some of which I like more than others. Sometimes a problem
+calls for a particular language to be used, and with that comes adjusting one’s
+brain to thinking in that language and using the appropriate idioms to leverage
+that language’s features. But what if I don’t want to?</p>
+<!--more-->
+<p>If you’ve read any of my past posts you know I like to program in several
+different languages, some of which I like more than others. Sometimes a problem
+calls for a particular language to be used, and with that comes adjusting one’s
+brain to thinking in that language and using the appropriate idioms to leverage
+that language’s features. But what if I don’t want to?</p>
+<div class="float">
+<img src="images/IDontWantTo.gif" width="500" alt="I don’t want to" />
+<div class="figcaption">I don’t want to</div>
+</div>
+<p>The line between R and Python has been heavily blurred the last few years,
+particularly with <a href="https://rstudio.github.io/reticulate/">{reticulate}</a> enabling
+us to use Python within R code, RStudio rebranding as <a href="https://posit.co/">Posit</a>
+and taking on a strong Python development effort, releasing
+<a href="https://posit.co/products/ide/positron">Positron</a> as a multi-language IDE, and
+<a href="https://quarto.org/">Quarto</a> being a multi-language rethink of Rmarkdown.</p>
+<p>I occasionally <em>need</em> to use Python directly - an SDK wrapping an API exists and
+I don’t particularly want to spend a lot of time writing my own R version,
+especially before I know what I want to get out of the endpoints. At this point
+I tend to bump up against my muscle-memory from R and try to use functions I’m
+familiar with from R, but which don’t actually exist in Python. Now, that might
+sometimes be because the pattern I’m trying to encode simply has a different name
+in Python; instead of an <code>sapply(x, f)</code></p>
+<pre class="r"><code>sapply(c(2, 3, 4, 5), \(x) x ^ 2)</code></pre>
+<pre class="bg-success"><code>## [1]  4  9 16 25</code></pre>
+<p>I should reach for <code>map</code>, in which case I am reminded that this produces a lazy
+iterator that doesn’t show me the results</p>
+<pre class="python"><code>map(lambda x: x ** 2, [2, 3, 4, 5])</code></pre>
+<pre class="bg-success"><code>## &lt;map object at 0x108dfb730&gt;</code></pre>
+<p>and so I need to wrap it into a list to get the values out</p>
+<pre class="python"><code>list(map(lambda x: x ** 2, [2, 3, 4, 5]))</code></pre>
+<pre class="bg-success"><code>## [4, 9, 16, 25]</code></pre>
+<p>Or, I could use a list comprehension which <em>isn’t</em> lazy</p>
+<pre class="python"><code>[v ** 2 for v in [2, 3, 4, 5]]</code></pre>
+<pre class="bg-success"><code>## [4, 9, 16, 25]</code></pre>
+<p>That’s the <em>idiom</em> that I should be reaching for. Sure.</p>
+<p>Other times there’s a package I need to use and a slightly different way of
+approaching the problem. In R I love the <code>table()</code> function for getting
+histogram-like counts of the unique values of a vector</p>
+<pre class="r"><code>table(c(&quot;b&quot;, &quot;a&quot;, &quot;c&quot;, &quot;a&quot;, &quot;b&quot;, &quot;a&quot;))</code></pre>
+<pre class="bg-success"><code>## 
+## a b c 
+## 3 2 1</code></pre>
+<p>which in Python looks like</p>
+<pre class="python"><code>from collections import Counter
+
+sorted(Counter([&quot;b&quot;, &quot;a&quot;, &quot;c&quot;, &quot;a&quot;, &quot;b&quot;, &quot;a&quot;]).items())</code></pre>
+<pre class="bg-success"><code>## [(&#39;a&#39;, 3), (&#39;b&#39;, 2), (&#39;c&#39;, 1)]</code></pre>
+<p>Probably Pythonistas remember that idiom and the package to import and the
+<code>.items()</code> extractor and the fact that they maybe want to sort the result. But I
+kept coming back to a question I ask myself: <em>what if I don’t want to</em>? Why is
+there not a function that wraps this idiom? If there was, why not just call it
+“table”? Admittedly, it’s far from the catchiest, most memorable, or most useful
+name, but it’s immediately recognisable to an R user (ditto for “sapply”).</p>
+<p>One approach I considered here was to just call R from Python. That <em>can</em> be done,
+but I doubt I or anyone else wants to deal with that every time we want to iterate
+over a list. There’s a package on the Python package index which seems to support
+this nicely: <a href="https://pypi.org/project/r-functions/" class="uri">https://pypi.org/project/r-functions/</a> but it’s wrappers around
+individual R files, via RScript. I’m thinking more along the lines of ‘native
+Python with an R interface’.</p>
+<p>Python is an object-oriented language, but it <em>has</em> functions, so why not make one</p>
+<pre class="python"><code>from collections import Counter
+
+def table(x):
+    return dict(sorted(Counter(x).items()))
+
+table([&quot;b&quot;, &quot;a&quot;, &quot;c&quot;, &quot;a&quot;, &quot;b&quot;, &quot;a&quot;])</code></pre>
+<pre class="bg-success"><code>## {&#39;a&#39;: 3, &#39;b&#39;: 2, &#39;c&#39;: 1}</code></pre>
+<pre class="python"><code>def sapply(x, func):
+    return [func(v) for v in x]
+  
+sapply([2, 3, 4, 5], lambda x: x ** 2)</code></pre>
+<pre class="bg-success"><code>## [4, 9, 16, 25]</code></pre>
+<p>and have a nicer function interface to apply these idioms? I thought about this
+a bit longer, and realised there’s <strong>lots</strong> of functions I use in R that I wish
+I could use in Python. An idiom for finding the index of elements of a ‘vector’
+(list in Python) which are true (<code>TRUE</code> in R, <code>True</code> in Python) is</p>
+<pre class="python"><code>[i for i, v in enumerate(x) if v]</code></pre>
+<p>but I just want to call <code>which(x)</code></p>
+<pre class="r"><code>which(c(FALSE, FALSE, TRUE, FALSE , TRUE))</code></pre>
+<pre class="bg-success"><code>## [1] 3 5</code></pre>
+<p>so why not define this</p>
+<pre class="python"><code>def which(x):
+    return [i for i, v in enumerate(x) if v]
+  
+which([False, False, True, False, True])</code></pre>
+<pre class="bg-success"><code>## [2, 4]</code></pre>
+<p>(remembering that Python is 0-indexed).</p>
+<p>How far could one take this? Quite a long way!</p>
+<p>I thought more about what differences would need to be accounted for, and one that
+immediately came to mind was that R is vectorised, so if I was to recreate R’s
+character counting function <code>nchar(s)</code> as essentially <code>len(s)</code>, I’d need to consider
+whether I wanted it to work on a single string or a ‘vector’ of strings</p>
+<p>In R:</p>
+<pre class="r"><code>nchar(c(&quot;these&quot;, &quot;all&quot;, &quot;have&quot;, &quot;different&quot;, &quot;lengths&quot;))</code></pre>
+<pre class="bg-success"><code>## [1] 5 3 4 9 7</code></pre>
+<p>But in Python, <code>len()</code> expects a single value, so it calculates the length of
+the list</p>
+<pre class="python"><code>len([&quot;these&quot;, &quot;all&quot;, &quot;have&quot;, &quot;different&quot;, &quot;lengths&quot;])</code></pre>
+<pre class="bg-success"><code>## 5</code></pre>
+<p>The ‘proper’ way to do it is to map over the list</p>
+<pre class="python"><code>[len(s) for s in [&quot;these&quot;, &quot;all&quot;, &quot;have&quot;, &quot;different&quot;, &quot;lengths&quot;]]</code></pre>
+<pre class="bg-success"><code>## [5, 3, 4, 9, 7]</code></pre>
+<p>but again, why do I need to use an idiom for this? What if I just made a decorator
+to change a regular function to a vectorised one by applying this list
+comprehension internally when it’s passed a list (or a tuple), and which otherwise
+just evaluates the function with the argument?</p>
+<pre class="python"><code>import functools
+
+def make_vec(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if isinstance(args[0], (list, tuple)):
+            return [func(xi, *args[1:], **kwargs) for xi in args[0]]
+        return func(*args, **kwargs)
+    return wrapper
+
+@make_vec
+def my_len(s):
+    return len(s)
+
+my_len([&quot;these&quot;, &quot;all&quot;, &quot;have&quot;, &quot;different&quot;, &quot;lengths&quot;])</code></pre>
+<pre class="bg-success"><code>## [5, 3, 4, 9, 7]</code></pre>
+<p>and I could name it… “nchar”!</p>
+<p>The other use-case that came to mind was <a href="https://fosstodon.org/deck/@eliocamp@mastodon.social/116531644286276585">Elio venting</a>
+that they needed to list the files in the current directory</p>
+<blockquote class="mastodon-embed" data-embed-url="https://mastodon.social/@eliocamp/116531644254157709/embed" style="background: #FCF8FF; border-radius: 8px; border: 1px solid #C9C4DA; margin: 0; max-width: 540px; min-width: 270px; overflow: hidden; padding: 0;">
+<a href="https://mastodon.social/@eliocamp/116531644254157709" target="_blank" style="align-items: center; color: #1C1A25; display: flex; flex-direction: column; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Roboto, sans-serif; font-size: 14px; justify-content: center; letter-spacing: 0.25px; line-height: 20px; padding: 24px; text-decoration: none;"> <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 79 75"><path d="M63 45.3v-20c0-4.1-1-7.3-3.2-9.7-2.1-2.4-5-3.7-8.5-3.7-4.1 0-7.2 1.6-9.3 4.7l-2 3.3-2-3.3c-2-3.1-5.1-4.7-9.2-4.7-3.5 0-6.4 1.3-8.6 3.7-2.1 2.4-3.1 5.6-3.1 9.7v20h8V25.9c0-4.1 1.7-6.2 5.2-6.2 3.8 0 5.8 2.5 5.8 7.4V37.7H44V27.1c0-4.9 1.9-7.4 5.8-7.4 3.5 0 5.2 2.1 5.2 6.2V45.3h8ZM74.7 16.6c.6 6 .1 15.7.1 17.3 0 .5-.1 4.8-.1 5.3-.7 11.5-8 16-15.6 17.5-.1 0-.2 0-.3 0-4.9 1-10 1.2-14.9 1.4-1.2 0-2.4 0-3.6 0-4.8 0-9.7-.6-14.4-1.7-.1 0-.1 0-.1 0s-.1 0-.1 0 0 .1 0 .1 0 0 0 0c.1 1.6.4 3.1 1 4.5.6 1.7 2.9 5.7 11.4 5.7 5 0 9.9-.6 14.8-1.7 0 0 0 0 0 0 .1 0 .1 0 .1 0 0 .1 0 .1 0 .1.1 0 .1 0 .1.1v5.6s0 .1-.1.1c0 0 0 0 0 .1-1.6 1.1-3.7 1.7-5.6 2.3-.8.3-1.6.5-2.4.7-7.5 1.7-15.4 1.3-22.7-1.2-6.8-2.4-13.8-8.2-15.5-15.2-.9-3.8-1.6-7.6-1.9-11.5-.6-5.8-.6-11.7-.8-17.5C3.9 24.5 4 20 4.9 16 6.7 7.9 14.1 2.2 22.3 1c1.4-.2 4.1-1 16.5-1h.1C51.4 0 56.7.8 58.1 1c8.4 1.2 15.5 7.5 16.6 15.6Z" fill="currentColor"/></svg>
+<div style="color: #787588; margin-top: 16px;">
+Post by <span class="citation">@eliocamp</span><span class="citation">@mastodon.social</span>
+</div>
+<div style="font-weight: 500;">
+View on Mastodon
+</div>
+</a>
+</blockquote>
+<script data-allowed-prefixes="https://mastodon.social/" async src="https://mastodon.social/embed.js"></script>
+<p>with the idiom</p>
+<pre class="python"><code>import os
+
+[os.path.join(path, f) for f in os.listdir(path)]</code></pre>
+<p>The supplied suggestions included</p>
+<pre class="python"><code>from pathlib import Path
+
+list(Path(path).iterdir())</code></pre>
+<p>(just rolls off the tongue, doesn’t it?) which returns a list of <code>PosixPath()</code>
+objects and is hardly easy to parse visually.</p>
+<p>So, why not have a function?!?</p>
+<pre class="python"><code>import os
+
+def list_files(path):
+    files = [os.path.join(path, f) for f in os.listdir(path)]
+    return files
+
+path = &quot;path/to/files&quot;
+
+list_files(path)</code></pre>
+<pre class="r bg-success"><code>## [&#39;path/to/files/file1.txt&#39;, &#39;path/to/files/file2.txt&#39;, &#39;path/to/files/file3.csv&#39;]</code></pre>
+<p>I would have liked to call this <code>list.files()</code> but, since Python strictly uses
+the dot for method calling, it can’t be that.</p>
+<p>This then raises the question of “should I support the arguments already in the R
+functions?” In this case, should it support a <code>recursive</code> argument? Yes, that
+adds complexity, but it’s surely do-able. At this point I reached for some AI
+assistance and had Claude help me to implement as many functions as we could think
+of, supporting as many common arguments as possible. This involved extending the
+decorator to support vectorising other arguments (which also need to be careful
+about dots).</p>
+<p>On testing it out, it looked like we had something viable.</p>
+<p>One last piece I wanted to support, though: the <code>which()</code> example above extracts
+the elements of a <em>logical</em> vector which are <code>True</code>, but in order to build that vector
+in the first place, I would naturally leverage R’s vectorisation as an array
+language. The two steps involved here are to first compute the comparison resulting
+in a logical vector, then to use <code>which()</code> to identify the indices of those which are
+true</p>
+<pre class="r"><code>which(c(&quot;c&quot;, &quot;b&quot;, &quot;a&quot;, &quot;c&quot;, &quot;a&quot;, &quot;b&quot;) == &quot;a&quot;)</code></pre>
+<pre class="bg-success"><code>## [1] 3 5</code></pre>
+<p>The vectorisation decorator above doesn’t help here, because it’s at the point of
+<code>==</code> that we want to vectorise</p>
+<pre class="python"><code>[&#39;c&#39;, &#39;b&#39;, &#39;a&#39;, &#39;c&#39;, &#39;a&#39;, &#39;b&#39;] == &#39;a&#39;</code></pre>
+<pre class="bg-success"><code>## False</code></pre>
+<p>This is <code>False</code> because the character <code>'a'</code> is not equal to the given list.</p>
+<p>The appropriate idiom is once again to use a list comprehension</p>
+<pre class="python"><code>which(x == &#39;a&#39; for x in [&#39;c&#39;, &#39;b&#39;, &#39;a&#39;, &#39;c&#39;, &#39;a&#39;, &#39;b&#39;])</code></pre>
+<pre class="bg-success"><code>## [2, 4]</code></pre>
+<p>The solution I’m fond of is to create a new ‘Vec’ class which wraps binary operators
+with a list comprehension, again abstracting away this detail. This means
+implementing <code>__eq__</code>, <code>__add__</code>, <code>__and__</code> and lots of other binary operations,
+but with that, and a wrapper to create such an object, the comparison operators
+can be vectorised</p>
+<pre class="python"><code>vals = vec([&#39;c&#39;, &#39;b&#39;, &#39;a&#39;, &#39;c&#39;, &#39;a&#39;, &#39;b&#39;])
+which(vals == &#39;a&#39;)</code></pre>
+<pre class="r bg-success"><code>## [2, 4]</code></pre>
+<p>Not pristine, but quite clean, if you ask me.</p>
+<p>With all these pieces in place, adding implementations for common base R functions
+including most arguments and a way to vectorise lists, I wrapped everything up
+into a Python package (my first) to learn how to do it.</p>
+<p>The workflow isn’t particularly painful, with my biggest complication being
+different versions of Python supporting different requirements in <code>pyproject.toml</code>,
+and so some GitHub Actions are failing because of that.</p>
+<p>As part of building out the implementations I had Claude add tests for each of the
+functions with some expected values - if I <em>do</em> want to improve some of the idioms
+internally, I want to ensure I don’t change the values produced. That works for
+having any testing at all, but how can I be sure that I’m reproducing what I
+would get if I was working in R? One option was to just run all of the test
+functions by hand and confirm that the values look similar enough, accounting for
+list vs vector and 0 vs 1 indexing. Instead, Claude managed to write an adaptor
+for <code>pytest</code> which does the realignment of e.g. <code>list_files</code> to <code>list.files</code>
+(and similarly for arguments), realigns the indexing where needed, and runs all
+existing tests directly in R via <code>rpy2</code> (skipping over some for which I don’t
+have tests yet). I’m disabling automated testing of this because I suspect it
+could get flaky dealing with both R <em>and</em> Python on GitHub Actions, but I can
+confirm that all the current tests pass.</p>
+<p>I wanted to have a documentation website similar to what we have via {pkgdown} and
+came across <a href="https://github.com/machow/quartodoc">quartodoc</a> which is what the
+<a href="https://rstudio.github.io/pins-python/">Python version of {pins} uses</a>. Getting
+that to work required downgrading a specific Python dependency, but was otherwise
+painless.</p>
+<p>I have a working package locally - how do I share it? This seemed like the perfect
+opportunity to learn what the release process looks like for Python. I have a
+handful of packages on CRAN and one on Bioconductor, and the process there is
+far from frictionless, with the side-effect that there’s some trust you can place
+on the interoperability of packages and minimal (automated) code checking. While
+Python is more ‘wild west’ in terms of what can be uploaded, it’s really nice to see
+that they do have an <a href="https://test.pypi.org/">entirely separate test server</a>
+where you can upload your package and see how it looks. I’m reminded of the quote</p>
+<blockquote>
+<p>Everybody has a testing environment. Some people are lucky enough to have a totally separate environment to run production in.</p>
+</blockquote>
+<p>Given that it’s not currently possible to run 100% of the CRAN checks locally
+(and even some that you <em>can</em> give a different result to what’s on their systems)
+this does make me a little jealous. I wonder whether the decrease in load from
+rejecting failing submissions would offset supporting a test submission server.</p>
+<p>All went well pushing to the test server (via an authentication key) and I managed
+to build up the courage to push to the production instance…
+<a href="https://pypi.org/project/rfuns/">it’s live!</a></p>
+<div class="float">
+<img src="images/rfuns_logo_small.png" width="300" alt="rfuns logo - R functions in Python… are fun" />
+<div class="figcaption">rfuns logo - R functions in Python… are fun</div>
+</div>
+<p>and the <a href="https://jonocarroll.github.io/rfuns/">documentation site</a> isn’t too bad,
+either (in my opinion).</p>
+<p>This means that you can now run</p>
+<pre class="bash"><code>uv add rfuns</code></pre>
+<p>(or the equivalent in whatever virtual environment management configuration you’re
+using, e.g. <code>pip install rfuns</code>) and start using some R functions directly in
+Python!</p>
+<p>Depending on how you like to manage your imports, you can import everything</p>
+<pre class="python"><code>from rfuns import *
+
+which([False, False, True, False, True])</code></pre>
+<pre class="bg-success"><code>## [2, 4]</code></pre>
+<p>or, if you prefer to namespace</p>
+<pre class="python"><code>import rfuns as r
+
+r.which([False, False, True, False, True])</code></pre>
+<pre class="bg-success"><code>## [2, 4]</code></pre>
+<p>The list of functions currently imported, grouped into sections is:</p>
+<div id="strings" class="section level3">
+<h3>Strings</h3>
+<ul>
+<li><code>nchar(x)</code></li>
+<li><code>nzchar(x)</code></li>
+<li><code>paste(*args, sep=" ", collapse=None)</code></li>
+<li><code>paste0(*args, collapse=None)</code></li>
+<li><code>grepl(pattern, x, ignore_case=False, fixed=False)</code></li>
+<li><code>grep(pattern, x, ignore_case=False, fixed=False, value=False, invert=False)</code></li>
+<li><code>gsub(pattern, replacement, x, ignore_case=False, fixed=False)</code></li>
+<li><code>sub(pattern, replacement, x, ignore_case=False, fixed=False)</code></li>
+<li><code>trimws(x, which="both", whitespace=r"[ \t\r\n]")</code></li>
+<li><code>toupper(x)</code></li>
+<li><code>tolower(x)</code></li>
+<li><code>startsWith(x, prefix)</code></li>
+<li><code>endsWith(x, suffix)</code></li>
+<li><code>strsplit(x, split, fixed=False)</code></li>
+<li><code>substr(x, start, stop)</code></li>
+<li><code>chartr(old, new, x)</code></li>
+<li><code>formatC(x, digits=6, format="g", width=None)</code></li>
+</ul>
+</div>
+<div id="vectors" class="section level3">
+<h3>Vectors</h3>
+<ul>
+<li><code>which(x)</code></li>
+<li><code>which_min(x)</code></li>
+<li><code>which_max(x)</code></li>
+<li><code>diff(x, lag=1)</code></li>
+<li><code>cumsum(x)</code></li>
+<li><code>cumprod(x)</code></li>
+<li><code>cummax(x)</code></li>
+<li><code>cummin(x)</code></li>
+<li><code>rev(x)</code></li>
+<li><code>duplicated(x)</code></li>
+<li><code>setdiff(x, y)</code></li>
+<li><code>intersect(x, y)</code></li>
+<li><code>union(x, y)</code></li>
+<li><code>unique(x)</code></li>
+<li><code>seq_along(x)</code></li>
+<li><code>seq_len(n)</code></li>
+<li><code>seq(from_=0, to=None, by=None, length_out=None)</code> (<code>from</code> is a reserved keyword)</li>
+<li><code>sign(x)</code></li>
+<li><code>r_range(x)</code> (renamed to not conflict with <code>range()</code>)</li>
+</ul>
+</div>
+<div id="math" class="section level3">
+<h3>Math</h3>
+<ul>
+<li><code>sign(x)</code></li>
+<li><code>trunc(x)</code></li>
+<li><code>ceiling(x)</code></li>
+<li><code>floor(x)</code></li>
+<li><code>sqrt(x)</code></li>
+<li><code>log(x, base=None)</code></li>
+<li><code>log2(x)</code></li>
+<li><code>log10(x)</code></li>
+<li><code>exp(x)</code></li>
+<li><code>abs(x)</code></li>
+<li><code>var(x, na_rm=False)</code></li>
+<li><code>sd(x, na_rm=False)</code></li>
+<li><code>mean(x, na_rm=False)</code></li>
+<li><code>median(x, na_rm=False)</code></li>
+<li><code>quantile(x, probs=None, na_rm=False)</code></li>
+<li><code>scale(x, center=True, scale_=True)</code></li>
+<li><code>round(x, digits=0)</code></li>
+</ul>
+</div>
+<div id="files" class="section level3">
+<h3>Files</h3>
+<ul>
+<li><code>list_files(path=".", pattern=None, all_files=False, full_names=False, recursive=False, ignore_case=False, include_dirs=False, no_dot=False)</code></li>
+<li><code>file_exists(path)</code></li>
+<li><code>dir_exists(path)</code></li>
+<li><code>basename(path)</code></li>
+<li><code>dirname(path)</code></li>
+<li><code>file_path(*args)</code></li>
+</ul>
+</div>
+<div id="table" class="section level3">
+<h3>Table</h3>
+<ul>
+<li><code>table(x)</code></li>
+<li><code>prop_table(x)</code></li>
+<li><code>margin_table(x)</code></li>
+</ul>
+</div>
+<div id="functional" class="section level3">
+<h3>Functional</h3>
+<ul>
+<li><code>lapply(x, func)</code></li>
+<li><code>sapply(x, func)</code></li>
+<li><code>vapply(x, func, expected_type)</code></li>
+<li><code>tapply(x, index, func)</code></li>
+<li><code>rapply(x, func)</code></li>
+<li><code>Filter(func, x)</code></li>
+<li><code>Map(func, *args)</code></li>
+<li><code>Reduce(func, x, init=None, accumulate=False)</code></li>
+</ul>
+</div>
+<div id="inspect" class="section level3">
+<h3>Inspect</h3>
+<ul>
+<li><code>head(x, n=6)</code></li>
+<li><code>tail(x, n=6)</code></li>
+<li><code>length(x)</code></li>
+<li><code>nrow(x)</code></li>
+<li><code>ncol(x)</code></li>
+<li><code>dim(x)</code></li>
+<li><code>summary(x)</code></li>
+<li><code>rstr(x)</code> (renamed to not conflict with <code>str()</code>)</li>
+</ul>
+</div>
+<div id="utils" class="section level3">
+<h3>Utils</h3>
+<ul>
+<li><code>vec(x)</code></li>
+</ul>
+<p>Some of these are vectorised</p>
+<pre class="python"><code>nchar([&quot;these&quot;, &quot;all&quot;, &quot;have&quot;, &quot;different&quot;, &quot;lengths&quot;])</code></pre>
+<pre class="bg-success"><code>## [5, 3, 4, 9, 7]</code></pre>
+<pre class="python"><code>grepl(&quot;ar&quot;, [&quot;frog&quot;, &quot;carpet&quot;, &quot;basket&quot;, &quot;dart&quot;])</code></pre>
+<pre class="bg-success"><code>## [False, True, False, True]</code></pre>
+<pre class="python"><code>sqrt([36, 81, 9])</code></pre>
+<pre class="bg-success"><code>## [6.0, 9.0, 3.0]</code></pre>
+<p>while others (approximately, up to 0-indexing) preserve the R behaviour, such as
+how <code>seq()</code> works</p>
+<pre class="python"><code>seq(5)</code></pre>
+<pre class="bg-success"><code>## [0, 1, 2, 3, 4]</code></pre>
+<pre class="python"><code>seq(from_=0, to=10, by=2)</code></pre>
+<pre class="bg-success"><code>## [0, 2, 4, 6, 8, 10]</code></pre>
+<p>(note that <code>from</code> is a keyword in Python, so the argument here is now <code>from_</code>)
+and set operations</p>
+<pre class="python"><code>setdiff([5, 2, 4, 1], [2, 1])</code></pre>
+<pre class="bg-success"><code>## [5, 4]</code></pre>
+<p>whereas this does not preserve order</p>
+<pre class="python"><code>set([5, 2, 4, 1]) -  set([2, 1])</code></pre>
+<pre class="bg-success"><code>## {4, 5}</code></pre>
+<p>I’m not recommending you use this in production at all - I’ve taken whatever
+idiom I could find (or generate) for the internals of all of these, and haven’t
+paid any attention to their performance. The goal was to make it easier for me
+to work interactively in a REPL when I’m reaching for particular functions. That
+being said, I’ll gladly do my best to understand the Pythonic versions as best
+as I can so that I can better appreciate native Python and use the idioms when
+my helper package isn’t available (or unsuitable).</p>
+<p>If you’re working with non-R colleagues then introducing these abstractions —
+while they may make your life simpler in the moment — will probably result in
+confusion as you’re hiding away the implementation and giving it a name they
+won’t recognise. That’s precisely what functions are for (with helpful names),
+of course, but unless this package becomes popular, I’ll bet that the inline
+idioms are more welcomed in a codebase.</p>
+<p>Doing <em>all</em> of this myself would have taken quite some time, so I’m grateful to
+be able to direct an agent towards accomplishing some of the tedious parts of this
+project. I still drove the decision making and made sure to verify outputs, so I
+don’t consider this a ‘vibe-coded’ project at all.</p>
+<p>I’d love to hear what people think about this, although I’m entirely fine with me
+being the sole user of it. Should I just force my muscle-memory to take on the
+Python idioms? Am I going to be punished for <a href="https://ghostbusters.fandom.com/wiki/Cross_the_Streams">‘crossing the
+streams’</a> of two
+incompatible languages? Would this be helpful to you? Are there other
+considerations I’ve missed? As always, I can be found on
+<a href="https://fosstodon.org/@jonocarroll">Mastodon</a> and the comment section below.</p>
+<br />
+<details>
+<summary>
+<tt>devtools::session_info()</tt>
+</summary>
+<pre class="bg-success"><code>## ─ Session info ───────────────────────────────────────────────────────────────
+##  setting  value
+##  version  R version 4.5.3 (2026-03-11)
+##  os       macOS Tahoe 26.3.1
+##  system   aarch64, darwin20
+##  ui       X11
+##  language (EN)
+##  collate  en_US.UTF-8
+##  ctype    en_US.UTF-8
+##  tz       Australia/Adelaide
+##  date     2026-05-20
+##  pandoc   3.6.3 @ /Applications/RStudio.app/Contents/Resources/app/quarto/bin/tools/aarch64/ (via rmarkdown)
+##  quarto   1.7.31 @ /usr/local/bin/quarto
+## 
+## ─ Packages ───────────────────────────────────────────────────────────────────
+##  package     * version date (UTC) lib source
+##  blogdown      1.23    2026-01-18 [1] CRAN (R 4.5.2)
+##  bookdown      0.46    2025-12-05 [1] CRAN (R 4.5.2)
+##  bslib         0.10.0  2026-01-26 [1] CRAN (R 4.5.2)
+##  cachem        1.1.0   2024-05-16 [1] CRAN (R 4.5.0)
+##  cli           3.6.5   2025-04-23 [1] CRAN (R 4.5.0)
+##  devtools      2.4.6   2025-10-03 [1] CRAN (R 4.5.0)
+##  digest        0.6.39  2025-11-19 [1] CRAN (R 4.5.2)
+##  ellipsis      0.3.2   2021-04-29 [1] CRAN (R 4.5.0)
+##  evaluate      1.0.5   2025-08-27 [1] CRAN (R 4.5.0)
+##  fastmap       1.2.0   2024-05-15 [1] CRAN (R 4.5.0)
+##  fs            1.6.7   2026-03-06 [1] CRAN (R 4.5.2)
+##  glue          1.8.1   2026-04-17 [1] CRAN (R 4.5.2)
+##  htmltools     0.5.9   2025-12-04 [1] CRAN (R 4.5.2)
+##  jquerylib     0.1.4   2021-04-26 [1] CRAN (R 4.5.0)
+##  jsonlite      2.0.0   2025-03-27 [1] CRAN (R 4.5.0)
+##  knitr         1.51    2025-12-20 [1] CRAN (R 4.5.2)
+##  lattice       0.22-9  2026-02-09 [1] CRAN (R 4.5.3)
+##  lifecycle     1.0.5   2026-01-08 [1] CRAN (R 4.5.2)
+##  magrittr      2.0.4   2025-09-12 [1] CRAN (R 4.5.0)
+##  Matrix        1.7-4   2025-08-28 [1] CRAN (R 4.5.3)
+##  memoise       2.0.1   2021-11-26 [1] CRAN (R 4.5.0)
+##  otel          0.2.0   2025-08-29 [1] CRAN (R 4.5.0)
+##  pkgbuild      1.4.8   2025-05-26 [1] CRAN (R 4.5.0)
+##  pkgload       1.5.0   2026-02-03 [1] CRAN (R 4.5.2)
+##  png           0.1-9   2026-03-15 [1] CRAN (R 4.5.2)
+##  purrr         1.2.2   2026-04-10 [1] CRAN (R 4.5.2)
+##  R6            2.6.1   2025-02-15 [1] CRAN (R 4.5.0)
+##  Rcpp          1.1.1   2026-01-10 [1] CRAN (R 4.5.2)
+##  remotes       2.5.0   2024-03-17 [1] CRAN (R 4.5.0)
+##  reticulate    1.45.0  2026-02-13 [1] CRAN (R 4.5.2)
+##  rlang         1.1.7   2026-01-09 [1] CRAN (R 4.5.2)
+##  rmarkdown     2.30    2025-09-28 [1] CRAN (R 4.5.0)
+##  rstudioapi    0.18.0  2026-01-16 [1] CRAN (R 4.5.2)
+##  sass          0.4.10  2025-04-11 [1] CRAN (R 4.5.0)
+##  sessioninfo   1.2.3   2025-02-05 [1] CRAN (R 4.5.0)
+##  usethis       3.2.1   2025-09-06 [1] CRAN (R 4.5.0)
+##  vctrs         0.7.1   2026-01-23 [1] CRAN (R 4.5.2)
+##  withr         3.0.2   2024-10-28 [1] CRAN (R 4.5.0)
+##  xfun          0.56    2026-01-18 [1] CRAN (R 4.5.2)
+##  yaml          2.3.12  2025-12-10 [1] CRAN (R 4.5.2)
+## 
+##  [1] /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library
+## 
+## ─ Python configuration ───────────────────────────────────────────────────────
+##  python:         /Users/jono/.cache/uv/archive-v0/Q1veGTfRq3GBaNYBXjagV/bin/python
+##  libpython:      /Users/jono/.local/share/uv/python/cpython-3.12.12-macos-aarch64-none/lib/libpython3.12.dylib
+##  pythonhome:     /Users/jono/.cache/uv/archive-v0/Q1veGTfRq3GBaNYBXjagV:/Users/jono/.cache/uv/archive-v0/Q1veGTfRq3GBaNYBXjagV
+##  virtualenv:     /Users/jono/.cache/uv/archive-v0/Q1veGTfRq3GBaNYBXjagV/bin/activate_this.py
+##  version:        3.12.12 (main, Oct 28 2025, 11:52:25) [Clang 20.1.4 ]
+##  numpy:          /Users/jono/.cache/uv/archive-v0/Q1veGTfRq3GBaNYBXjagV/lib/python3.12/site-packages/numpy
+##  numpy_version:  2.4.6
+##  
+##  NOTE: Python version was forced by VIRTUAL_ENV
+## 
+## ──────────────────────────────────────────────────────────────────────────────</code></pre>
+</details>
+<p><br /></p>
+</div>

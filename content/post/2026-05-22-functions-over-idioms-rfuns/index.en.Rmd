@@ -1,0 +1,557 @@
+---
+title: Functions over Idioms - Writing R in Python with rfuns
+author: Jonathan Carroll
+date: '2026-05-22'
+categories:
+  - python
+  - rstats
+tags:
+  - python
+  - rstats
+slug: functions-over-idioms-rfuns
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(
+  class.output  = "bg-success",
+  class.message = "bg-info text-info",
+  class.warning = "bg-warning text-warning",
+  class.error   = "bg-danger text-danger"
+)
+knitr::opts_chunk$set(fig.path = "") 
+
+reticulate::py_require("rfuns")
+```
+
+If you've read any of my past posts you know I like to program in several
+different languages, some of which I like more than others. Sometimes a problem
+calls for a particular language to be used, and with that comes adjusting one's
+brain to thinking in that language and using the appropriate idioms to leverage
+that language's features. But what if I don't want to?
+
+<!--more-->
+
+If you've read any of my past posts you know I like to program in several
+different languages, some of which I like more than others. Sometimes a problem
+calls for a particular language to be used, and with that comes adjusting one's
+brain to thinking in that language and using the appropriate idioms to leverage
+that language's features. But what if I don't want to?
+
+![I don't want to](images/IDontWantTo.gif){width=500px}
+
+The line between R and Python has been heavily blurred the last few years,
+particularly with [{reticulate}](https://rstudio.github.io/reticulate/) enabling
+us to use Python within R code, RStudio rebranding as [Posit](https://posit.co/)
+and taking on a strong Python development effort, releasing
+[Positron](https://posit.co/products/ide/positron) as a multi-language IDE, and
+[Quarto](https://quarto.org/) being a multi-language rethink of Rmarkdown.
+
+I occasionally _need_ to use Python directly - an SDK wrapping an API exists and 
+I don't particularly want to spend a lot of time writing my own R version, 
+especially before I know what I want to get out of the endpoints. At this point 
+I tend to bump up against my muscle-memory from R and try to use functions I'm 
+familiar with from R, but which don't actually exist in Python. Now, that might 
+sometimes be because the pattern I'm trying to encode simply has a different name 
+in Python; instead of an `sapply(x, f)` 
+
+```{r}
+sapply(c(2, 3, 4, 5), \(x) x ^ 2)
+```
+
+I should reach for `map`, in which case I am reminded that this produces a lazy 
+iterator that doesn't show me the results
+
+```{python}
+map(lambda x: x ** 2, [2, 3, 4, 5])
+```
+
+and so I need to wrap it into a list to get the values out
+
+```{python}
+list(map(lambda x: x ** 2, [2, 3, 4, 5]))
+```
+
+Or, I could use a list comprehension which _isn't_ lazy
+
+```{python}
+[v ** 2 for v in [2, 3, 4, 5]]
+```
+
+That's the _idiom_ that I should be reaching for. Sure.
+
+Other times there's a package I need to use and a slightly different way of 
+approaching the problem. In R I love the `table()` function for getting 
+histogram-like counts of the unique values of a vector
+
+```{r}
+table(c("b", "a", "c", "a", "b", "a"))
+```
+
+which in Python looks like
+
+```{python}
+from collections import Counter
+
+sorted(Counter(["b", "a", "c", "a", "b", "a"]).items())
+```
+
+Probably Pythonistas remember that idiom and the package to import and the
+`.items()` extractor and the fact that they maybe want to sort the result. But I
+kept coming back to a question I ask myself: _what if I don't want to_? Why is
+there not a function that wraps this idiom? If there was, why not just call it
+"table"? Admittedly, it's far from the catchiest, most memorable, or most useful
+name, but it's immediately recognisable to an R user (ditto for "sapply").
+
+One approach I considered here was to just call R from Python. That _can_ be done, 
+but I doubt I or anyone else wants to deal with that every time we want to iterate 
+over a list. There's a package on the Python package index which seems to support 
+this nicely: https://pypi.org/project/r-functions/ but it's wrappers around 
+individual R files, via RScript. I'm thinking more along the lines of 'native 
+Python with an R interface'. 
+
+Python is an object-oriented language, but it _has_ functions, so why not make one
+
+```{python}
+from collections import Counter
+
+def table(x):
+    return dict(sorted(Counter(x).items()))
+
+table(["b", "a", "c", "a", "b", "a"])
+
+def sapply(x, func):
+    return [func(v) for v in x]
+  
+sapply([2, 3, 4, 5], lambda x: x ** 2)
+```
+
+and have a nicer function interface to apply these idioms? I thought about this
+a bit longer, and realised there's **lots** of functions I use in R that I wish
+I could use in Python. An idiom for finding the index of elements of a 'vector'
+(list in Python) which are true (`TRUE` in R, `True` in Python) is
+
+```python
+[i for i, v in enumerate(x) if v]
+```
+
+but I just want to call `which(x)`
+
+```{r}
+which(c(FALSE, FALSE, TRUE, FALSE , TRUE))
+```
+
+so why not define this
+
+```{python}
+def which(x):
+    return [i for i, v in enumerate(x) if v]
+  
+which([False, False, True, False, True])
+```
+
+(remembering that Python is 0-indexed). 
+
+How far could one take this? Quite a long way! 
+
+I thought more about what differences would need to be accounted for, and one that 
+immediately came to mind was that R is vectorised, so if I was to recreate R's
+character counting function `nchar(s)` as essentially `len(s)`, I'd need to consider
+whether I wanted it to work on a single string or a 'vector' of strings
+
+In R:
+
+```{r}
+nchar(c("these", "all", "have", "different", "lengths"))
+```
+
+But in Python, `len()` expects a single value, so it calculates the length of 
+the list
+
+```{python}
+len(["these", "all", "have", "different", "lengths"])
+```
+
+The 'proper' way to do it is to map over the list
+
+```{python}
+[len(s) for s in ["these", "all", "have", "different", "lengths"]]
+```
+
+but again, why do I need to use an idiom for this? What if I just made a decorator 
+to change a regular function to a vectorised one by applying this list 
+comprehension internally when it's passed a list (or a tuple), and which otherwise 
+just evaluates the function with the argument?
+
+
+```{python}
+import functools
+
+def make_vec(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if isinstance(args[0], (list, tuple)):
+            return [func(xi, *args[1:], **kwargs) for xi in args[0]]
+        return func(*args, **kwargs)
+    return wrapper
+
+@make_vec
+def my_len(s):
+    return len(s)
+
+my_len(["these", "all", "have", "different", "lengths"])
+```
+
+and I could name it... "nchar"!
+
+The other use-case that came to mind was [Elio venting](https://fosstodon.org/deck/@eliocamp@mastodon.social/116531644286276585) 
+that they needed to list the files in the current directory 
+
+<blockquote class="mastodon-embed" data-embed-url="https://mastodon.social/@eliocamp/116531644254157709/embed" style="background: #FCF8FF; border-radius: 8px; border: 1px solid #C9C4DA; margin: 0; max-width: 540px; min-width: 270px; overflow: hidden; padding: 0;"> <a href="https://mastodon.social/@eliocamp/116531644254157709" target="_blank" style="align-items: center; color: #1C1A25; display: flex; flex-direction: column; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', Roboto, sans-serif; font-size: 14px; justify-content: center; letter-spacing: 0.25px; line-height: 20px; padding: 24px; text-decoration: none;"> <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 79 75"><path d="M63 45.3v-20c0-4.1-1-7.3-3.2-9.7-2.1-2.4-5-3.7-8.5-3.7-4.1 0-7.2 1.6-9.3 4.7l-2 3.3-2-3.3c-2-3.1-5.1-4.7-9.2-4.7-3.5 0-6.4 1.3-8.6 3.7-2.1 2.4-3.1 5.6-3.1 9.7v20h8V25.9c0-4.1 1.7-6.2 5.2-6.2 3.8 0 5.8 2.5 5.8 7.4V37.7H44V27.1c0-4.9 1.9-7.4 5.8-7.4 3.5 0 5.2 2.1 5.2 6.2V45.3h8ZM74.7 16.6c.6 6 .1 15.7.1 17.3 0 .5-.1 4.8-.1 5.3-.7 11.5-8 16-15.6 17.5-.1 0-.2 0-.3 0-4.9 1-10 1.2-14.9 1.4-1.2 0-2.4 0-3.6 0-4.8 0-9.7-.6-14.4-1.7-.1 0-.1 0-.1 0s-.1 0-.1 0 0 .1 0 .1 0 0 0 0c.1 1.6.4 3.1 1 4.5.6 1.7 2.9 5.7 11.4 5.7 5 0 9.9-.6 14.8-1.7 0 0 0 0 0 0 .1 0 .1 0 .1 0 0 .1 0 .1 0 .1.1 0 .1 0 .1.1v5.6s0 .1-.1.1c0 0 0 0 0 .1-1.6 1.1-3.7 1.7-5.6 2.3-.8.3-1.6.5-2.4.7-7.5 1.7-15.4 1.3-22.7-1.2-6.8-2.4-13.8-8.2-15.5-15.2-.9-3.8-1.6-7.6-1.9-11.5-.6-5.8-.6-11.7-.8-17.5C3.9 24.5 4 20 4.9 16 6.7 7.9 14.1 2.2 22.3 1c1.4-.2 4.1-1 16.5-1h.1C51.4 0 56.7.8 58.1 1c8.4 1.2 15.5 7.5 16.6 15.6Z" fill="currentColor"/></svg> <div style="color: #787588; margin-top: 16px;">Post by @eliocamp@mastodon.social</div> <div style="font-weight: 500;">View on Mastodon</div> </a> </blockquote> <script data-allowed-prefixes="https://mastodon.social/" async src="https://mastodon.social/embed.js"></script>
+
+with the idiom
+
+```python
+import os
+
+[os.path.join(path, f) for f in os.listdir(path)]
+```
+
+The supplied suggestions included
+
+```python
+from pathlib import Path
+
+list(Path(path).iterdir())
+```
+
+(just rolls off the tongue, doesn't it?) which returns a list of `PosixPath()` 
+objects and is hardly easy to parse visually.
+
+So, why not have a function?!?
+
+```{python, eval = FALSE}
+import os
+
+def list_files(path):
+    files = [os.path.join(path, f) for f in os.listdir(path)]
+    return files
+
+path = "path/to/files"
+
+list_files(path)
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+## ['path/to/files/file1.txt', 'path/to/files/file2.txt', 'path/to/files/file3.csv']
+```
+
+I would have liked to call this `list.files()` but, since Python strictly uses 
+the dot for method calling, it can't be that.
+
+This then raises the question of "should I support the arguments already in the R 
+functions?" In this case, should it support a `recursive` argument? Yes, that 
+adds complexity, but it's surely do-able. At this point I reached for some AI 
+assistance and had Claude help me to implement as many functions as we could think 
+of, supporting as many common arguments as possible. This involved extending the 
+decorator to support vectorising other arguments (which also need to be careful 
+about dots).
+
+On testing it out, it looked like we had something viable. 
+
+One last piece I wanted to support, though: the `which()` example above extracts 
+the elements of a _logical_ vector which are `True`, but in order to build that vector 
+in the first place, I would naturally leverage R's vectorisation as an array 
+language. The two steps involved here are to first compute the comparison resulting 
+in a logical vector, then to use `which()` to identify the indices of those which are
+true
+
+```{r}
+which(c("c", "b", "a", "c", "a", "b") == "a")
+```
+
+The vectorisation decorator above doesn't help here, because it's at the point of 
+`==` that we want to vectorise
+
+```{python}
+['c', 'b', 'a', 'c', 'a', 'b'] == 'a'
+```
+
+This is `False` because the character `'a'` is not equal to the given list. 
+
+The appropriate idiom is once again to use a list comprehension
+
+```{python}
+which(x == 'a' for x in ['c', 'b', 'a', 'c', 'a', 'b'])
+```
+
+The solution I'm fond of is to create a new 'Vec' class which wraps binary operators 
+with a list comprehension, again abstracting away this detail. This means 
+implementing `__eq__`, `__add__`, `__and__` and lots of other binary operations, 
+but with that, and a wrapper to create such an object, the comparison operators 
+can be vectorised 
+
+```{python, eval = FALSE}
+vals = vec(['c', 'b', 'a', 'c', 'a', 'b'])
+which(vals == 'a')
+```
+```{r, eval = FALSE, class.source = "bg-success"}
+## [2, 4]
+```
+
+Not pristine, but quite clean, if you ask me.
+
+With all these pieces in place, adding implementations for common base R functions 
+including most arguments and a way to vectorise lists, I wrapped everything up
+into a Python package (my first) to learn how to do it. 
+
+The workflow isn't particularly painful, with my biggest complication being 
+different versions of Python supporting different requirements in `pyproject.toml`, 
+and so some GitHub Actions are failing because of that. 
+
+As part of building out the implementations I had Claude add tests for each of the 
+functions with some expected values - if I _do_ want to improve some of the idioms
+internally, I want to ensure I don't change the values produced. That works for 
+having any testing at all, but how can I be sure that I'm reproducing what I 
+would get if I was working in R? One option was to just run all of the test 
+functions by hand and confirm that the values look similar enough, accounting for 
+list vs vector and 0 vs 1 indexing. Instead, Claude managed to write an adaptor 
+for `pytest` which does the realignment of e.g. `list_files` to `list.files` 
+(and similarly for arguments), realigns the indexing where needed, and runs all 
+existing tests directly in R via `rpy2` (skipping over some for which I don't 
+have tests yet). I'm disabling automated testing of this because I suspect it 
+could get flaky dealing with both R _and_ Python on GitHub Actions, but I can 
+confirm that all the current tests pass.
+
+I wanted to have a documentation website similar to what we have via {pkgdown} and 
+came across [quartodoc](https://github.com/machow/quartodoc) which is what the 
+[Python version of {pins} uses](https://rstudio.github.io/pins-python/). Getting 
+that to work required downgrading a specific Python dependency, but was otherwise
+painless. 
+
+I have a working package locally - how do I share it? This seemed like the perfect 
+opportunity to learn what the release process looks like for Python. I have a 
+handful of packages on CRAN and one on Bioconductor, and the process there is 
+far from frictionless, with the side-effect that there's some trust you can place 
+on the interoperability of packages and minimal (automated) code checking. While 
+Python is more 'wild west' in terms of what can be uploaded, it's really nice to see 
+that they do have an [entirely separate test server](https://test.pypi.org/) 
+where you can upload your package and see how it looks. I'm reminded of the quote
+
+>Everybody has a testing environment. Some people are lucky enough to have a totally separate environment to run production in.
+
+Given that it's not currently possible to run 100% of the CRAN checks locally 
+(and even some that you _can_ give a different result to what's on their systems) 
+this does make me a little jealous. I wonder whether the decrease in load from 
+rejecting failing submissions would offset supporting a test submission server. 
+
+All went well pushing to the test server (via an authentication key) and I managed 
+to build up the courage to push to the production instance... 
+[it's live!](https://pypi.org/project/rfuns/)
+
+![rfuns logo - R functions in Python... are fun](images/rfuns_logo_small.png){width=300px}
+
+and the [documentation site](https://jonocarroll.github.io/rfuns/) isn't too bad, 
+either (in my opinion).
+
+This means that you can now run
+
+```bash
+uv add rfuns
+```
+
+(or the equivalent in whatever virtual environment management configuration you're
+using, e.g. `pip install rfuns`) and start using some R functions directly in 
+Python!
+
+Depending on how you like to manage your imports, you can import everything 
+
+```{python}
+from rfuns import *
+
+which([False, False, True, False, True])
+```
+
+or, if you prefer to namespace 
+
+```{python}
+import rfuns as r
+
+r.which([False, False, True, False, True])
+```
+
+The list of functions currently imported, grouped into sections is:
+
+### Strings
+
+- `nchar(x)` 
+- `nzchar(x)` 
+- `paste(*args, sep=" ", collapse=None)`
+- `paste0(*args, collapse=None)`
+- `grepl(pattern, x, ignore_case=False, fixed=False)`
+- `grep(pattern, x, ignore_case=False, fixed=False, value=False, invert=False)`
+- `gsub(pattern, replacement, x, ignore_case=False, fixed=False)` 
+- `sub(pattern, replacement, x, ignore_case=False, fixed=False)`
+- `trimws(x, which="both", whitespace=r"[ \t\r\n]")` 
+- `toupper(x)` 
+- `tolower(x)`
+- `startsWith(x, prefix)` 
+- `endsWith(x, suffix)`
+- `strsplit(x, split, fixed=False)` 
+- `substr(x, start, stop)`
+- `chartr(old, new, x)` 
+- `formatC(x, digits=6, format="g", width=None)` 
+
+### Vectors
+
+- `which(x)`
+- `which_min(x)` 
+- `which_max(x)` 
+- `diff(x, lag=1)`
+- `cumsum(x)`
+- `cumprod(x)`
+- `cummax(x)`
+- `cummin(x)`
+- `rev(x)`
+- `duplicated(x)`
+- `setdiff(x, y)`
+- `intersect(x, y)`
+- `union(x, y)`
+- `unique(x)`
+- `seq_along(x)` 
+- `seq_len(n)`
+- `seq(from_=0, to=None, by=None, length_out=None)` (`from` is a reserved keyword)
+- `sign(x)` 
+- `r_range(x)` (renamed to not conflict with `range()`)
+
+### Math
+
+- `sign(x)`
+- `trunc(x)`
+- `ceiling(x)`
+- `floor(x)`
+- `sqrt(x)`
+- `log(x, base=None)`
+- `log2(x)`
+- `log10(x)`
+- `exp(x)`
+- `abs(x)`
+- `var(x, na_rm=False)`
+- `sd(x, na_rm=False)`
+- `mean(x, na_rm=False)`
+- `median(x, na_rm=False)`
+- `quantile(x, probs=None, na_rm=False)`
+- `scale(x, center=True, scale_=True)`
+- `round(x, digits=0)`
+
+### Files
+
+- `list_files(path=".", pattern=None, all_files=False, full_names=False, recursive=False, ignore_case=False, include_dirs=False, no_dot=False)`
+- `file_exists(path)`
+- `dir_exists(path)`
+- `basename(path)` 
+- `dirname(path)`
+- `file_path(*args)` 
+
+### Table
+
+- `table(x)`
+- `prop_table(x)` 
+- `margin_table(x)` 
+
+### Functional
+
+- `lapply(x, func)`
+- `sapply(x, func)`
+- `vapply(x, func, expected_type)`
+- `tapply(x, index, func)`
+- `rapply(x, func)`
+- `Filter(func, x)`
+- `Map(func, *args)`
+- `Reduce(func, x, init=None, accumulate=False)`
+
+### Inspect
+
+- `head(x, n=6)`
+- `tail(x, n=6)`
+- `length(x)`
+- `nrow(x)`
+- `ncol(x)`
+- `dim(x)`
+- `summary(x)`
+- `rstr(x)` (renamed to not conflict with `str()`)
+
+### Utils
+
+- `vec(x)`
+
+Some of these are vectorised
+
+```{python}
+nchar(["these", "all", "have", "different", "lengths"])
+
+grepl("ar", ["frog", "carpet", "basket", "dart"])
+
+sqrt([36, 81, 9])
+```
+
+while others (approximately, up to 0-indexing) preserve the R behaviour, such as 
+how `seq()` works
+
+```{python}
+seq(5)
+
+seq(from_=0, to=10, by=2)
+```
+
+(note that `from` is a keyword in Python, so the argument here is now `from_`) 
+and set operations
+
+```{python}
+setdiff([5, 2, 4, 1], [2, 1])
+```
+
+whereas this does not preserve order
+
+```{python}
+set([5, 2, 4, 1]) -  set([2, 1])
+```
+
+I'm not recommending you use this in production at all - I've taken whatever 
+idiom I could find (or generate) for the internals of all of these, and haven't 
+paid any attention to their performance. The goal was to make it easier for me 
+to work interactively in a REPL when I'm reaching for particular functions. That
+being said, I'll gladly do my best to understand the Pythonic versions as best 
+as I can so that I can better appreciate native Python and use the idioms when 
+my helper package isn't available (or unsuitable).
+
+If you're working with non-R colleagues then introducing these abstractions —
+while they may make your life simpler in the moment — will probably result in
+confusion as you're hiding away the implementation and giving it a name they
+won't recognise. That's precisely what functions are for (with helpful names),
+of course, but unless this package becomes popular, I'll bet that the inline
+idioms are more welcomed in a codebase.
+
+Doing _all_ of this myself would have taken quite some time, so I'm grateful to 
+be able to direct an agent towards accomplishing some of the tedious parts of this
+project. I still drove the decision making and made sure to verify outputs, so I 
+don't consider this a 'vibe-coded' project at all.
+
+I’d love to hear what people think about this, although I'm entirely fine with me 
+being the sole user of it. Should I just force my muscle-memory to take on the
+Python idioms? Am I going to be punished for ['crossing the
+streams'](https://ghostbusters.fandom.com/wiki/Cross_the_Streams) of two
+incompatible languages? Would this be helpful to you? Are there other
+considerations I’ve missed? As always, I can be found on
+[Mastodon](https://fosstodon.org/@jonocarroll) and the comment section below.
+
+<br />
+<details>
+  <summary>
+    <tt>devtools::session_info()</tt>
+  </summary>
+```{r sessionInfo, echo = FALSE}
+devtools::session_info()
+```
+</details>
+<br />
